@@ -1,0 +1,22 @@
+name: Quality
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - name: Check committed bundles
+        run: git diff --exit-code -- auralis-cards.js auralis-cards.js.map orbit-home-cards.js orbit-home-cards.js.map

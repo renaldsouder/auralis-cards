@@ -1,0 +1,291 @@
+title: Auralis Home
+views:
+  - title: Maison
+    path: maison
+    icon: mdi:home-automation
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:auralis-room-card
+            name: Salon
+            theme: carbon
+            background_position: center
+            accent_color: "#79d6f2"
+            # Une image est intégrée par défaut. Vous pouvez la remplacer ici.
+            # background_image: /local/auralis-cards/images/salon.jpg
+            temperature_entity: sensor.salon_temperature
+            humidity_entity: sensor.salon_humidity
+            climate_entity: climate.salon
+            media_player_entity: media_player.salon
+            ambiance:
+              label: Ambiance
+              icon: mdi:creation-outline
+              position: bottom-right
+            scenes:
+              - entity: scene.soiree_salon
+                label: Mode soirée
+                icon: mdi:weather-night
+            left_controls:
+              - type: lights
+                label: Lumières
+                icon: mdi:ceiling-light-outline
+            right_controls:
+              - type: media
+                entity: media_player.salon
+                label: Musique
+                icon: mdi:music-note
+            thermostat:
+              position: bottom-left
+              show_border: true
+              show_background: true
+              entity: climate.salon
+              label: Thermostat
+              step: 0.5
+              label_color: "#B9C6D5"
+              value_color: "#FFFFFF"
+              button_color: "#79D6F2"
+              background_color: "rgba(13, 18, 25, 0.78)"
+              border_color: "rgba(121, 214, 242, 0.28)"
+            popup_titles:
+              lights: Éclairage
+              covers: Volets
+              climate: Température et humidité
+              media: Musique
+              tv: Télévision
+              ambiance: Choisir une ambiance
+            entity_labels:
+              light.plafonnier_salon: Plafonnier
+              light.lampadaire_salon: Lampadaire
+              light.bibliotheque_salon: Bibliothèque
+              light.ambiance_tv: Ambiance TV
+              cover.baie_vitree_salon: Baie vitrée
+              cover.fenetre_salon: Fenêtre
+              sensor.salon_temperature: Température
+              sensor.salon_humidity: Humidité
+              climate.salon: Thermostat
+              media_player.salon: Enceinte du salon
+            climate_popup:
+              graph_entities:
+                - sensor.salon_temperature
+                - sensor.salon_humidity
+              graph_period: 7
+              graph_period_unit: days
+              show_overview: true
+              show_current_values: false
+              show_thermostat: true
+            lights:
+              - light.plafonnier_salon
+              - light.lampadaire_salon
+              - light.bibliotheque_salon
+              - light.ambiance_tv
+            covers:
+              - cover.baie_vitree_salon
+              - cover.fenetre_salon
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:auralis-pc-card
+                name: Aurora
+                theme: carbon
+                # background_image: /local/auralis-cards/images/pc-bureau.jpg
+                background_position: 58% center
+                image_opacity: 35
+                accent_color: "#7997ff"
+                image_brightness: 72
+                glass_opacity: 0.84
+                online_entity: binary_sensor.pc_bureau_online
+                session_entity: sensor.pc_bureau_session
+                uptime_entity: sensor.pc_bureau_uptime
+                cpu_entity: sensor.pc_bureau_cpu
+                cpu_temperature_entity: sensor.pc_bureau_cpu_temperature
+                gpu_entity: sensor.pc_bureau_gpu
+                gpu_temperature_entity: sensor.pc_bureau_gpu_temperature
+                memory_entity: sensor.pc_bureau_memory
+                storage_entity: sensor.pc_bureau_storage_percent
+                storage_label_entity: sensor.pc_bureau_storage_label
+                network_down_entity: sensor.pc_bureau_network_down
+                network_up_entity: sensor.pc_bureau_network_up
+                lock_entity: button.pc_bureau_lock
+                sleep_entity: button.pc_bureau_sleep
+                restart_entity: button.pc_bureau_restart
+                shutdown_entity: button.pc_bureau_shutdown
+                wake_entity: button.pc_bureau_wake
+
+              - type: custom:auralis-unraid-card
+                name: Atlas
+                theme: carbon
+                # background_image: /local/auralis-cards/images/unraid.jpg
+                background_position: 51% center
+                accent_color: "#ff8055"
+                image_brightness: 72
+                glass_opacity: 0.84
+                status_entity: binary_sensor.unraid_online
+                uptime_entity: sensor.unraid_uptime
+                array_usage_entity: sensor.unraid_array_usage
+                array_label_entity: sensor.unraid_array_capacity
+                healthy_disks_entity: sensor.unraid_healthy_disks
+                total_disks_entity: sensor.unraid_total_disks
+                parity_entity: sensor.unraid_parity_status
+                parity_age_entity: sensor.unraid_last_parity_check
+                parity_errors_entity: sensor.unraid_parity_errors
+                cpu_entity: sensor.unraid_cpu
+                cpu_temperature_entity: sensor.unraid_cpu_temperature
+                disk_temperature_entity: sensor.unraid_disk_max_temperature
+                memory_entity: sensor.unraid_memory
+                network_down_entity: sensor.unraid_network_down
+                network_up_entity: sensor.unraid_network_up
+                array_start_entity: button.unraid_array_start
+                array_stop_entity: button.unraid_array_stop
+                restart_entity: button.unraid_restart
+                shutdown_entity: button.unraid_shutdown
+                disks:
+                  - name: Disque 1
+                    usage_entity: sensor.unraid_disk_1_usage
+                    capacity_entity: sensor.unraid_disk_1_capacity
+                    temperature_entity: sensor.unraid_disk_1_temperature
+                    status_entity: binary_sensor.unraid_disk_1_healthy
+                  - name: Disque 2
+                    usage_entity: sensor.unraid_disk_2_usage
+                    capacity_entity: sensor.unraid_disk_2_capacity
+                    temperature_entity: sensor.unraid_disk_2_temperature
+                    status_entity: binary_sensor.unraid_disk_2_healthy
+                docker:
+                  - name: Home Assistant
+                    entity: switch.unraid_docker_home_assistant
+                    icon: mdi:home-assistant
+                    group: Maison
+                    cpu_entity: sensor.unraid_docker_home_assistant_cpu
+                    restart_entity: button.unraid_docker_home_assistant_restart
+                    stop_entity: button.unraid_docker_home_assistant_stop
+                  - name: Mosquitto
+                    entity: switch.unraid_docker_mosquitto
+                    icon: mdi:access-point
+                    group: Maison
+                    restart_entity: button.unraid_docker_mosquitto_restart
+                    stop_entity: button.unraid_docker_mosquitto_stop
+                  - name: Plex
+                    entity: switch.unraid_docker_plex
+                    icon: mdi:play-box-outline
+                    group: Médias
+                    restart_entity: button.unraid_docker_plex_restart
+                    stop_entity: button.unraid_docker_plex_stop
+                  - name: Grafana
+                    entity: switch.unraid_docker_grafana
+                    icon: mdi:chart-timeline-variant
+                    group: Infrastructure
+                    restart_entity: button.unraid_docker_grafana_restart
+                    stop_entity: button.unraid_docker_grafana_stop
+                vms:
+                  - name: HomeLab Ubuntu
+                    entity: switch.unraid_vm_homelab
+                    icon: mdi:linux
+                    group: Production
+                    vcpus: 4
+                    memory: 8 Go
+                    storage: 120 Go
+                    ip_entity: sensor.unraid_vm_homelab_ip
+                    start_entity: button.unraid_vm_homelab_start
+                    stop_entity: button.unraid_vm_homelab_stop
+                    restart_entity: button.unraid_vm_homelab_restart
+                    pause_entity: button.unraid_vm_homelab_pause
+                    resume_entity: button.unraid_vm_homelab_resume
+                    console_url: https://unraid.example.local/vms/homelab
+                  - name: Windows 11
+                    entity: switch.unraid_vm_windows_11
+                    icon: mdi:microsoft-windows
+                    group: Bureau
+                    vcpus: 8
+                    memory: 16 Go
+                    storage: 256 Go
+                    start_entity: button.unraid_vm_windows_11_start
+                    stop_entity: button.unraid_vm_windows_11_stop
+                    restart_entity: button.unraid_vm_windows_11_restart
+
+              - type: custom:auralis-proxmox-card
+                name: Nova
+                theme: carbon
+                # background_image: /local/auralis-cards/images/proxmox.jpg
+                background_position: 47% center
+                accent_color: "#50d59b"
+                image_brightness: 72
+                glass_opacity: 0.84
+                status_entity: binary_sensor.proxmox_online
+                version_entity: sensor.proxmox_version
+                quorum_entity: sensor.proxmox_quorum
+                cluster_usage_entity: sensor.proxmox_cluster_cpu
+                memory_entity: sensor.proxmox_memory_percent
+                memory_label_entity: sensor.proxmox_memory_used
+                storage_entity: sensor.proxmox_storage_percent
+                storage_label_entity: sensor.proxmox_storage_used
+                ceph_entity: sensor.proxmox_ceph_health
+                backup_entity: sensor.proxmox_next_backup
+                alerts_entity: sensor.proxmox_active_alerts
+                backup_action_entity: button.proxmox_backup_now
+                restart_entity: button.proxmox_cluster_restart
+                shutdown_entity: button.proxmox_cluster_shutdown
+                nodes:
+                  - name: pve-01
+                    status_entity: binary_sensor.pve_01_online
+                    cpu_entity: sensor.pve_01_cpu
+                    memory_entity: sensor.pve_01_memory
+                    temperature_entity: sensor.pve_01_temperature
+                    restart_entity: button.pve_01_restart
+                    shutdown_entity: button.pve_01_shutdown
+                  - name: pve-02
+                    status_entity: binary_sensor.pve_02_online
+                    cpu_entity: sensor.pve_02_cpu
+                    memory_entity: sensor.pve_02_memory
+                    temperature_entity: sensor.pve_02_temperature
+                    restart_entity: button.pve_02_restart
+                    shutdown_entity: button.pve_02_shutdown
+                  - name: pve-03
+                    status_entity: binary_sensor.pve_03_online
+                    cpu_entity: sensor.pve_03_cpu
+                    memory_entity: sensor.pve_03_memory
+                    temperature_entity: sensor.pve_03_temperature
+                    restart_entity: button.pve_03_restart
+                    shutdown_entity: button.pve_03_shutdown
+                vms:
+                  - name: Home Assistant
+                    entity: switch.proxmox_vm_home_assistant
+                    icon: mdi:home-assistant
+                    group: Maison
+                    node: pve-01
+                    vcpus: 4
+                    memory: 8 Go
+                    storage: 64 Go
+                    ip_entity: sensor.proxmox_vm_home_assistant_ip
+                    start_entity: button.proxmox_vm_home_assistant_start
+                    restart_entity: button.proxmox_vm_home_assistant_restart
+                    pause_entity: button.proxmox_vm_home_assistant_pause
+                    resume_entity: button.proxmox_vm_home_assistant_resume
+                    console_url: https://proxmox.example.local/?console=kvm&vmid=100
+                  - name: Windows 11
+                    entity: switch.proxmox_vm_windows_11
+                    icon: mdi:microsoft-windows
+                    group: Bureau
+                    node: pve-02
+                    vcpus: 8
+                    memory: 16 Go
+                    storage: 256 Go
+                    start_entity: button.proxmox_vm_windows_11_start
+                    restart_entity: button.proxmox_vm_windows_11_restart
+                containers:
+                  - name: Mosquitto
+                    entity: switch.proxmox_lxc_mosquitto
+                    icon: mdi:access-point
+                    group: Maison
+                    node: pve-01
+                    vcpus: 1
+                    memory: 1 Go
+                    start_entity: button.proxmox_lxc_mosquitto_start
+                    restart_entity: button.proxmox_lxc_mosquitto_restart
+                  - name: Grafana
+                    entity: switch.proxmox_lxc_grafana
+                    icon: mdi:chart-timeline-variant
+                    group: Infrastructure
+                    node: pve-03
+                    vcpus: 2
+                    memory: 2 Go
+                    start_entity: button.proxmox_lxc_grafana_start
+                    restart_entity: button.proxmox_lxc_grafana_restart

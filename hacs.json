@@ -1,0 +1,7 @@
+{
+  "name": "Auralis Cards",
+  "content_in_root": true,
+  "render_readme": true,
+  "filename": "auralis-cards.js",
+  "homeassistant": "2026.6.0"
+}

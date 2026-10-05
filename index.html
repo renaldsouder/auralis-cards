@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auralis Cards — Démonstration</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; background:#dde5ee; }
+      body { margin:0; padding:32px; }
+      header.demo { max-width:1440px; margin:0 auto 24px; }
+      header.demo h1 { margin:0; font-size:32px; letter-spacing:-.05em; color:#14203a; }
+      header.demo p { margin:7px 0 0; color:#657084; }
+      main { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; max-width:1800px; margin:auto; align-items:start; }
+      @media (max-width:1050px) { main { grid-template-columns:repeat(2,minmax(300px,1fr)); } }
+      @media (max-width:700px) { body { padding:16px; } main { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <header class="demo"><h1>Auralis Cards</h1><p>Démonstration locale avec données simulées</p></header>
+    <main id="demo"></main>
+    <script type="module" src="/src/demo.ts"></script>
+  </body>
+</html>

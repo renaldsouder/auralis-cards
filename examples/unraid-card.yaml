@@ -1,0 +1,52 @@
+type: custom:auralis-unraid-card
+name: Serveur UNRAID
+theme: carbon
+
+card_background:
+  mode: gradient
+  gradient: "linear-gradient(145deg, #09111A 0%, #0D1822 58%, #081018 100%)"
+show_grid: false
+
+# background_image: /local/auralis-cards/images/unraid.jpg
+background_position: center
+image_opacity: 35
+accent_color: "#FF8055"
+
+status_entity: binary_sensor.unraid_online
+array_state_entity: sensor.unraid_array_state
+uptime_entity: sensor.unraid_uptime
+version_entity: sensor.unraid_version
+array_usage_entity: sensor.unraid_array_usage
+array_label_entity: sensor.unraid_array_capacity
+cpu_entity: sensor.unraid_cpu
+cpu_temperature_entity: sensor.unraid_cpu_temperature
+memory_entity: sensor.unraid_memory
+network_down_entity: sensor.unraid_network_down
+network_up_entity: sensor.unraid_network_up
+
+disks:
+  - name: Disque 1
+    group: Array
+    usage_entity: sensor.unraid_disk_1_usage
+    temperature_entity: sensor.unraid_disk_1_temperature
+    status_entity: binary_sensor.unraid_disk_1_healthy
+  - name: Cache
+    group: Cache et pools
+    usage_entity: sensor.unraid_cache_usage
+    temperature_entity: sensor.unraid_cache_temperature
+    status_entity: binary_sensor.unraid_cache_healthy
+
+docker:
+  - name: Plex
+    entity: switch.unraid_docker_plex
+    restart_entity: button.unraid_docker_plex_restart
+
+vms:
+  - name: HomeLab
+    entity: switch.unraid_vm_homelab
+    restart_entity: button.unraid_vm_homelab_restart
+
+array_start_entity: button.unraid_array_start
+array_stop_entity: button.unraid_array_stop
+restart_entity: button.unraid_restart
+shutdown_entity: button.unraid_shutdown

@@ -1,0 +1,104 @@
+type: custom:auralis-room-card
+name: Salon
+icon: mdi:sofa-outline
+theme: carbon
+card_background:
+  mode: gradient
+  gradient: "linear-gradient(145deg, #09111A 0%, #0D1822 58%, #081018 100%)"
+show_grid: false
+background_position: center
+accent_color: "#79d6f2"
+
+# Une image de salon est intégrée par défaut dans la carte.
+# Pour utiliser votre propre photo :
+# background_image: /local/auralis-cards/images/salon.jpg
+
+temperature_entity: sensor.salon_temperature
+humidity_entity: sensor.salon_humidity
+climate_entity: climate.salon
+media_player_entity: media_player.salon
+
+ambiance:
+  label: Ambiance
+  icon: mdi:creation-outline
+  position: bottom-right
+
+scenes:
+  - entity: scene.soiree_salon
+    label: Mode soirée
+    icon: mdi:weather-night
+  # - entity: scene.normal_salon
+  #   label: Mode normal
+  #   icon: mdi:lightbulb-group-outline
+
+left_controls:
+  - type: lights
+    label: Lumières
+    icon: mdi:ceiling-light-outline
+
+right_controls:
+  - type: media
+    entity: media_player.salon
+    label: Musique
+    icon: mdi:music-note
+  # Décommenter après avoir remplacé l'entité par celle de votre télévision.
+  # - type: tv
+  #   entity: media_player.tv_salon
+  #   label: TV
+  #   icon: mdi:television
+
+thermostat:
+  position: bottom-left
+  show_border: true
+  show_background: true
+  entity: climate.salon
+  label: Thermostat
+  step: 0.5
+  label_color: "#B9C6D5"
+  value_color: "#FFFFFF"
+  button_color: "#79D6F2"
+  background_color: "rgba(13, 18, 25, 0.78)"
+  border_color: "rgba(121, 214, 242, 0.28)"
+
+popup_titles:
+  details: Salon
+  lights: Éclairage
+  covers: Volets
+  climate: Température et humidité
+  media: Musique
+  tv: Télévision
+  ambiance: Choisir une ambiance
+
+# Chaque entité affichée dans une pop-up peut recevoir son propre libellé.
+entity_labels:
+  light.plafonnier_salon: Plafonnier
+  light.lampadaire_salon: Lampadaire
+  light.bibliotheque_salon: Bibliothèque
+  light.ambiance_tv: Ambiance TV
+  cover.baie_vitree_salon: Baie vitrée
+  cover.fenetre_salon: Fenêtre
+  sensor.salon_temperature: Température
+  sensor.salon_humidity: Humidité
+  climate.salon: Thermostat
+  media_player.salon: Enceinte du salon
+
+# Un graphe distinct est créé pour chaque entité de cette liste.
+climate_popup:
+  graph_entities:
+    - sensor.salon_temperature
+    - sensor.salon_humidity
+  graph_period: 7
+  graph_period_unit: days # hours, days ou months
+  show_overview: true
+  show_current_values: false
+  show_thermostat: true
+
+lights:
+  - light.plafonnier_salon
+  - light.lampadaire_salon
+  - light.bibliotheque_salon
+  - light.ambiance_tv
+
+covers:
+  - cover.baie_vitree_salon
+  - cover.fenetre_salon

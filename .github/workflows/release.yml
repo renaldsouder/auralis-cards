@@ -1,0 +1,28 @@
+name: Build release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check tag and package version
+        run: node -e "const v=require('./package.json').version; if(process.env.GITHUB_REF_NAME !== 'v'+v) throw new Error('Le tag doit être v'+v)"
+      - run: npm run verify
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/auralis-cards.js
+          generate_release_notes: true
+          fail_on_unmatched_files: true

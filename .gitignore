@@ -1,0 +1,17 @@
+node_modules/
+.npm-cache/
+dist/
+.vite/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Fichiers de conception et configurations propres à l'installation locale
+_Conception/
+auralis-pc-card.ts
+docs/UNRAID_SKYNET_ENTITY_ANALYSIS.md
+examples/pc-246-lap-pc-rso-card.yaml
+examples/pc-246-lap-pc-rso-helpers.yaml
+examples/salon-card-complete.yaml
+examples/skynet-unraid-card.yaml
