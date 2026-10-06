@@ -1,6 +1,7 @@
 import "./index";
 import type { HassEntity, HomeAssistant } from "./types/home-assistant";
 import type {
+  NavbarCardConfig,
   PcCardConfig,
   ProxmoxCardConfig,
   RoomCardConfig,
@@ -285,9 +286,11 @@ const unraid: UnraidCardConfig = {
   restart_entity: "button.unraid_restart",
   shutdown_entity: "button.unraid_shutdown",
   disks: [
-    { name: "Disque 1", group: "Array", usage_entity: "sensor.unraid_disk_1_usage", capacity_entity: "sensor.unraid_disk_1_capacity", temperature_entity: "sensor.unraid_disk_1_temp", status_entity: "binary_sensor.unraid_disk_1_healthy" },
-    { name: "Disque 2", group: "Array", usage_entity: "sensor.unraid_disk_2_usage", capacity_entity: "sensor.unraid_disk_2_capacity", temperature_entity: "sensor.unraid_disk_2_temp", status_entity: "binary_sensor.unraid_disk_2_healthy" },
+    { name: "Disque 1", group: "Array", show_on_card: true, usage_entity: "sensor.unraid_disk_1_usage", capacity_entity: "sensor.unraid_disk_1_capacity", temperature_entity: "sensor.unraid_disk_1_temp", status_entity: "binary_sensor.unraid_disk_1_healthy" },
+    { name: "Disque 2", group: "Array", show_on_card: true, usage_entity: "sensor.unraid_disk_2_usage", capacity_entity: "sensor.unraid_disk_2_capacity", temperature_entity: "sensor.unraid_disk_2_temp", status_entity: "binary_sensor.unraid_disk_2_healthy" },
   ],
+  docker_group_labels: { Maison: "Domotique", Médias: "Multimédia", default: "Applications" },
+  vm_group_labels: { Production: "Serveurs", Bureau: "Postes de travail", default: "Machines virtuelles" },
   docker: [
     { name: "Home Assistant", entity: "switch.docker_ha", group: "Maison", restart_entity: "button.docker_ha_restart" },
     { name: "Mosquitto", entity: "switch.docker_mqtt", group: "Maison", restart_entity: "button.docker_mqtt_restart" },
@@ -297,6 +300,18 @@ const unraid: UnraidCardConfig = {
   vms: [
     { name: "HomeLab Ubuntu", entity: "switch.vm_homelab", group: "Production", vcpus: 4, memory: "8 Go", storage: "120 Go", ip_entity: "sensor.vm_homelab_ip", restart_entity: "button.vm_homelab_restart", pause_entity: "button.vm_homelab_pause", resume_entity: "button.vm_homelab_resume", console_url: "#" },
     { name: "Windows 11", entity: "switch.vm_windows", group: "Bureau", vcpus: 8, memory: "16 Go", storage: "256 Go" },
+  ],
+};
+
+const navbar: NavbarCardConfig = {
+  type: "custom:auralis-navbar-card",
+  name: "Navigation principale",
+  theme: "carbon",
+  items: [
+    { label: "Accueil", icon: "mdi:home-outline", path: "/" },
+    { label: "Pièces", icon: "mdi:floor-plan", path: "/pieces" },
+    { label: "Systèmes", icon: "mdi:server-network", path: "/systemes", badge_entity: "sensor.unraid_notifications" },
+    { label: "Énergie", icon: "mdi:lightning-bolt-outline", path: "/energie" },
   ],
 };
 
@@ -343,6 +358,7 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
   document.querySelector("#demo")?.append(card);
 };
 
+mount("auralis-navbar-card", navbar);
 mount("auralis-room-card", room);
 mount("auralis-pc-card", pc);
 mount("auralis-unraid-card", unraid);

@@ -1,12 +1,13 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : pièce tout-en-un, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un cluster Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un cluster Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
 ## Cartes disponibles
 
 - `custom:auralis-room-card`
+- `custom:auralis-navbar-card`
 - `custom:auralis-pc-card`
 - `custom:auralis-unraid-card`
 - `custom:auralis-proxmox-card`
@@ -71,6 +72,33 @@ Les anciens types `custom:orbit-*` restent temporairement reconnus par le bundle
 Chaque GitHub Release contenant `auralis-cards.js` devient une version sélectionnable et met à disposition les mises à jour dans HACS.
 
 Le fichier `examples/dashboard.yaml` est une configuration complète à coller dans l'éditeur de configuration brute du dashboard. Les blocs commençant directement par `type: custom:...` sont, eux, destinés à l'éditeur YAML d'une carte individuelle.
+
+## Exemple minimal — Navigation
+
+Une configuration autonome est disponible dans [`examples/navbar-card.yaml`](examples/navbar-card.yaml).
+
+```yaml
+type: custom:auralis-navbar-card
+theme: carbon
+accent_color: "#79D6F2"
+show_labels: true
+items:
+  - label: Accueil
+    icon: mdi:home-outline
+    path: /dashboard-auralis/accueil
+  - label: Pièces
+    icon: mdi:floor-plan
+    path: /dashboard-auralis/pieces
+    active_paths:
+      - /dashboard-auralis/salon
+      - /dashboard-auralis/cuisine
+  - label: Systèmes
+    icon: mdi:server-network
+    path: /dashboard-auralis/systemes
+    badge_entity: sensor.systemes_en_alerte
+```
+
+`path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
 
 ## Exemple minimal — Pièce
 
@@ -236,17 +264,27 @@ parity_age_entity: sensor.unraid_last_parity_check
 parity_errors_entity: sensor.unraid_parity_errors
 disks:
   - name: Disque 1
+    group: array
+    show_on_card: true
     usage_entity: sensor.unraid_disk_1_usage
     capacity_entity: sensor.unraid_disk_1_capacity
     temperature_entity: sensor.unraid_disk_1_temperature
     status_entity: binary_sensor.unraid_disk_1_healthy
+docker_group_labels:
+  default: Applications
+  media: Multimédia
+vm_group_labels:
+  default: Machines virtuelles
+  production: Production
 docker:
   - name: Plex
+    group: media
     entity: switch.unraid_docker_plex
     restart_entity: button.unraid_docker_plex_restart
     stop_entity: button.unraid_docker_plex_stop
 vms:
   - name: HomeLab Ubuntu
+    group: production
     entity: switch.unraid_vm_homelab
     start_entity: button.unraid_vm_homelab_start
     stop_entity: button.unraid_vm_homelab_stop
@@ -256,11 +294,11 @@ vms:
     console_url: https://unraid.example.local/vms/homelab
 ```
 
-La carte principale affiche l’occupation et la capacité de l’array, la température disque maximale, la santé des disques et les ratios Docker/VM actifs. La pop-up **Explorer** ajoute la parité, la date du dernier contrôle, les erreurs, le détail de chaque disque et le trafic réseau.
+La carte principale affiche l’occupation et l’état de l’array, deux jauges CPU/RAM et les disques sélectionnés. Le rail ouvre trois fonctions séparées : **Détails**, **Docker** et **VM** ; le bouton **Disques** du panneau inférieur ouvre la liste complète des volumes. La pop-up Détails regroupe l’état du serveur, l’array, le CPU, la RAM, le réseau, la parité et l’onduleur sans mélanger les listes Docker, VM ou disques.
 
-Chaque entrée de `disks` accepte `group` pour séparer l’array des caches et pools, ainsi que `healthy_state` pour les intégrations dont un capteur binaire à `off` signifie « sain ». Les champs facultatifs `version_entity`, `updates_entity`, `notifications_entity`, `docker_cpu_entity`, `docker_memory_entity` et `ups_*` restent dans **Explorer** afin de préserver la hiérarchie de la carte principale. Les sections et commandes sans entité configurée sont masquées.
+Chaque entrée de `disks` accepte `group` pour séparer l’array des caches et pools, `show_on_card` pour l’inclure ou non dans le panneau inférieur, et `healthy_state` pour les intégrations dont un capteur binaire à `off` signifie « sain ». Le champ `name` devient le libellé affiché. `docker_group_labels` et `vm_group_labels` remplacent les libellés de groupe sans modifier les valeurs `group` des éléments. Les sections et commandes sans entité configurée sont masquées.
 
-Dans les pop-ups Docker et VM, chaque élément distingue les états actif, arrêté, suspendu et indisponible. Une entité `switch` sert automatiquement au démarrage et à l’arrêt lorsque `start_entity` ou `stop_entity` ne sont pas fournis. Les commandes dédiées restent recommandées pour les intégrations UNRAID qui les exposent. L’arrêt et le redémarrage demandent confirmation.
+Les pop-up Docker et VM sont indépendantes. Chaque élément distingue les états actif, arrêté, suspendu et indisponible, et son icône devient verte lorsqu’il fonctionne. Une entité `switch` sert automatiquement au démarrage et à l’arrêt lorsque `start_entity` ou `stop_entity` ne sont pas fournis. Les commandes dédiées restent recommandées pour les intégrations UNRAID qui les exposent. L’arrêt et le redémarrage demandent confirmation.
 
 ## Exemple minimal — Proxmox
 

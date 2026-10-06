@@ -74,6 +74,12 @@ describe("UNRAID card helpers", () => {
     expect(unraidCard.unraidActionEntity(switchOnly, "stop")).toBe("switch.grafana");
     expect(unraidCard.unraidActionEntity({ name: "Lecture", entity: "sensor.read_only" }, "start")).toBeUndefined();
   });
+
+  it("allows Docker and VM group labels to be renamed independently", () => {
+    expect(unraidCard.unraidGroupLabel("media", { media: "Multimédia" }, "Services")).toBe("Multimédia");
+    expect(unraidCard.unraidGroupLabel(undefined, { default: "Applications" }, "Services")).toBe("Applications");
+    expect(unraidCard.unraidGroupLabel("production", undefined, "Machines virtuelles")).toBe("production");
+  });
 });
 
 describe("AuralisUnraidCard configuration and commands", () => {
@@ -100,9 +106,52 @@ describe("AuralisUnraidCard configuration and commands", () => {
       "notifications_entity",
       "ups_status_entity",
       "server_url_entity",
+      "docker_group_labels",
+      "vm_group_labels",
       "card_background",
       "show_grid",
     ]));
+  });
+
+  it("keeps Docker and VM popups isolated", () => {
+    const docker: ManagedService = { name: "Plex", entity: "switch.plex" };
+    const vm: ManagedVm = { name: "HomeLab", entity: "switch.homelab" };
+    const card = new unraidCard.AuralisUnraidCard();
+    card.setConfig(config({ docker: [docker], vms: [vm] }));
+    card.hass = {
+      states: {
+        "binary_sensor.unraid_online": state("binary_sensor.unraid_online", "on"),
+        "switch.plex": state("switch.plex", "on"),
+        "switch.homelab": state("switch.homelab", "off"),
+      },
+      callService: vi.fn(async () => undefined),
+    };
+
+    const internals = card as unknown as {
+      openServices(tab: "docker" | "vm"): void;
+      serviceItems(): Array<ManagedService | ManagedVm>;
+      dialog: string | null;
+    };
+    internals.openServices("docker");
+    expect(internals.dialog).toBe("services");
+    expect(internals.serviceItems()).toEqual([docker]);
+
+    internals.openServices("vm");
+    expect(internals.serviceItems()).toEqual([vm]);
+  });
+
+  it("uses explicit disk selections for the main-card summary and preserves labels", () => {
+    const card = new unraidCard.AuralisUnraidCard();
+    card.setConfig(config({
+      disks: [
+        { name: "Array principal", usage_entity: "sensor.array", show_on_card: true },
+        { name: "Cache NVMe", usage_entity: "sensor.cache", show_on_card: false },
+      ],
+    }));
+    const internals = card as unknown as { featuredDisks(): Array<{ name: string }> };
+    expect(internals.featuredDisks()).toEqual([
+      expect.objectContaining({ name: "Array principal" }),
+    ]);
   });
 
   it("starts and stops a switch-backed Docker container", async () => {

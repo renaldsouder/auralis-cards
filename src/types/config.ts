@@ -23,6 +23,25 @@ export interface BaseCardConfig extends LovelaceCardConfig {
   show_grid?: boolean;
 }
 
+export interface NavbarItemConfig {
+  label: string;
+  icon?: string;
+  path?: string;
+  /** Alias compatible avec les conventions Lovelace. */
+  navigation_path?: string;
+  exact?: boolean;
+  active_paths?: string[];
+  badge_entity?: string;
+}
+
+export interface NavbarCardConfig extends BaseCardConfig {
+  type: "custom:auralis-navbar-card";
+  items: NavbarItemConfig[];
+  show_labels?: boolean;
+  compact?: boolean;
+  aria_label?: string;
+}
+
 export interface RoomPopupTitles {
   details?: string;
   lights?: string;
@@ -191,6 +210,8 @@ export interface ManagedVm extends ManagedService {
 export interface UnraidDisk {
   name: string;
   group?: string;
+  /** Affiche ce disque dans la synthèse de la carte principale. */
+  show_on_card?: boolean;
   usage_entity?: string;
   capacity_entity?: string;
   temperature_entity?: string;
@@ -231,6 +252,8 @@ export interface UnraidCardConfig extends BaseCardConfig {
   docker?: ManagedService[];
   vms?: ManagedVm[];
   disks?: UnraidDisk[];
+  docker_group_labels?: Record<string, string>;
+  vm_group_labels?: Record<string, string>;
   array_start_entity?: string;
   array_stop_entity?: string;
   shutdown_entity?: string;

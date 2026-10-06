@@ -46,10 +46,13 @@ export function unraidStateIsHealthy(
   );
 }
 
-function unraidNumber(state?: HassEntity): number | undefined {
-  if (!isAvailable(state)) return undefined;
-  const value = numericState(state, Number.NaN);
-  return Number.isFinite(value) ? value : undefined;
+export function unraidGroupLabel(
+  group: string | undefined,
+  labels: Record<string, string> | undefined,
+  fallback: string,
+): string {
+  const key = group || "default";
+  return labels?.[key]?.trim() || labels?.default?.trim() || group || fallback;
 }
 
 export function unraidActionAvailable(
@@ -154,6 +157,83 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         border-radius: 12px;
         background: var(--auralis-accent-soft);
         color: var(--auralis-info);
+      }
+
+      .service-icon.active {
+        background: color-mix(in srgb, var(--auralis-healthy) 18%, var(--auralis-layer));
+        color: var(--auralis-healthy);
+        box-shadow: 0 0 18px color-mix(in srgb, var(--auralis-healthy) 22%, transparent);
+      }
+
+      .service-icon.paused {
+        background: color-mix(in srgb, var(--auralis-active) 16%, var(--auralis-layer));
+        color: var(--auralis-active);
+      }
+
+      .service-icon.unavailable {
+        opacity: 0.45;
+      }
+
+      .rail-button.has-active {
+        color: var(--auralis-healthy);
+      }
+
+      .resource-gauge-stack {
+        position: absolute;
+        top: 0;
+        right: 58px;
+        display: grid;
+        gap: 7px;
+      }
+
+      .resource-gauge {
+        --value: 0;
+        display: grid;
+        width: 62px;
+        height: 62px;
+        place-items: center;
+        border-radius: 18px;
+        background:
+          linear-gradient(to top, color-mix(in srgb, var(--machine-accent) 72%, transparent) calc(var(--value) * 1%), transparent 0),
+          rgba(10, 14, 20, var(--machine-glass-alpha, 0.84));
+        box-shadow: inset 0 0 0 1px rgba(195, 211, 229, 0.16);
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+
+      .resource-gauge small {
+        display: block;
+        color: #91a0b2;
+        font-size: 8px;
+        font-weight: 760;
+        letter-spacing: 0.06em;
+      }
+
+      .resource-gauge strong {
+        display: block;
+        margin-top: 3px;
+        color: #f4f7fb;
+        font-size: 13px;
+      }
+
+      .disk-summary-empty {
+        padding: 12px;
+        margin-top: 14px;
+        border: 1px dashed rgba(195, 211, 229, 0.18);
+        border-radius: 14px;
+        color: #91a0b2;
+        font-size: 10px;
+        text-align: center;
+      }
+
+      .disk-summary {
+        grid-template-columns: minmax(62px, 0.75fr) minmax(0, 1.35fr) 38px;
+      }
+
+      .disk-summary > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .selection {
@@ -287,6 +367,12 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
           grid-template-columns: 1fr;
         }
       }
+
+      @container (max-width: 290px) {
+        .resource-gauge-stack {
+          display: none;
+        }
+      }
     `,
   ];
 
@@ -344,6 +430,8 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         { name: "ups_load_entity", selector: { entity: {} } },
         { name: "ups_runtime_entity", selector: { entity: {} } },
         { name: "server_url_entity", selector: { entity: {} } },
+        { name: "docker_group_labels", selector: { object: {} } },
+        { name: "vm_group_labels", selector: { object: {} } },
         { name: "array_start_entity", selector: { entity: {} } },
         { name: "array_stop_entity", selector: { entity: {} } },
         { name: "restart_entity", selector: { entity: {} } },
@@ -376,63 +464,24 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
     const online = isAvailable(status) && isActive(status);
     const available = isAvailable(status);
     const usage = unraidPercentage(entity(this.hass, this.config.array_usage_entity));
-    const healthyValue = unraidNumber(entity(this.hass, this.config.healthy_disks_entity));
-    const totalValue = unraidNumber(entity(this.hass, this.config.total_disks_entity));
-    const monitoredDisks = (this.config.disks || []).filter((disk) =>
-      isAvailable(entity(this.hass, disk.status_entity)),
-    );
-    const derivedHealthy = monitoredDisks.filter((disk) =>
-      unraidStateIsHealthy(entity(this.hass, disk.status_entity), disk.healthy_state || "on"),
-    ).length;
-    const healthy = healthyValue === undefined
-      ? monitoredDisks.length
-        ? derivedHealthy
-        : undefined
-      : Math.round(healthyValue);
-    const total = totalValue === undefined
-      ? monitoredDisks.length || undefined
-      : Math.round(totalValue);
     const activeDocker = (this.config.docker || []).filter((item) => this.itemActive(item)).length;
     const activeVms = (this.config.vms || []).filter((item) => this.itemActive(item)).length;
     const totalDocker = this.config.docker?.length || 0;
     const totalVms = this.config.vms?.length || 0;
+    const cpu = unraidPercentage(entity(this.hass, this.config.cpu_entity));
     const memory = unraidPercentage(entity(this.hass, this.config.memory_entity));
-    const diskHealth = healthy !== undefined && total ? clamp((healthy / total) * 100) : undefined;
-    const diskTemperatureEntity = this.config.disk_temperature_entity || this.config.cpu_temperature_entity;
-    const temperatureLabel = this.config.disk_temperature_entity ? "Disque max." : "CPU";
-    const parityState = entity(this.hass, this.config.parity_entity);
-    const parityHealthy = this.config.parity_healthy_state
-      ? unraidStateIsHealthy(parityState, this.config.parity_healthy_state)
-      : isAvailable(parityState) &&
-        /^(ok|valid|valide|healthy|protected|protégée)$/i.test(parityState!.state.trim());
-    const parityLabel = !this.config.parity_entity
-      ? "—"
-      : !isAvailable(parityState)
+    const featuredDisks = this.featuredDisks();
+    const arrayState = this.config.array_state_entity
+      ? displayState(this.hass, this.config.array_state_entity)
+      : !available
         ? "Indisponible"
-        : parityHealthy
-          ? "Valide"
-          : displayState(this.hass, this.config.parity_entity);
-    const contextTitle = this.config.parity_entity
-      ? "Parité"
-      : this.config.array_state_entity
-        ? "Array"
-        : this.config.updates_entity || this.config.notifications_entity
-          ? "Surveillance"
-          : "Système";
-    const contextText = this.config.parity_entity
-      ? `${parityLabel}${this.config.parity_age_entity ? ` · vérifiée ${displayState(this.hass, this.config.parity_age_entity)}` : ""}`
-      : this.config.array_state_entity
-        ? displayState(this.hass, this.config.array_state_entity)
-        : [
-            this.config.updates_entity ? `${displayState(this.hass, this.config.updates_entity)} mises à jour` : "",
-            this.config.notifications_entity ? `${displayState(this.hass, this.config.notifications_entity)} notifications` : "",
-          ].filter(Boolean).join(" · ") || "—";
+        : online
+          ? "Démarré"
+          : "Arrêté";
     const statusLabel = !available
       ? "état indisponible"
       : online
-        ? parityHealthy
-          ? "array protégée"
-          : "serveur en ligne"
+        ? "serveur en ligne"
         : "serveur hors ligne";
     const machineStyle = this.machineStyle("#ff7b55");
 
@@ -441,23 +490,23 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         <div class="machine-shell ${this.machineGridClass()}" style=${machineStyle}>
           <div class="machine-content">
             <header class="machine-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${online ? "healthy" : "danger"}"></span>UNRAID · ${statusLabel}</div></div></header>
-            <div class="machine-stat-stack">
-              <div class="machine-mini-stat"><small>Utilisé</small><strong>${percentageLabel(usage)}</strong></div>
-              <div class="machine-mini-stat"><small>${temperatureLabel}</small><strong>${displayState(this.hass, diskTemperatureEntity)}</strong></div>
+            <div class="resource-gauge-stack">
+              <div class="resource-gauge" style=${`--value:${cpu ?? 0}`}><div><small>CPU</small><strong>${percentageLabel(cpu)}</strong></div></div>
+              <div class="resource-gauge" style=${`--value:${memory ?? 0}`}><div><small>RAM</small><strong>${percentageLabel(memory)}</strong></div></div>
             </div>
             <div class="machine-rail">
-              <button class="rail-button" @click=${() => this.openDialog("server")} aria-label="Détails"><ha-icon icon="mdi:harddisk"></ha-icon></button>
-              <button class="rail-button" @click=${() => this.openServices("docker")} aria-label="Docker"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
-              <button class="rail-button" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:shield-server-outline"></ha-icon></button>
+              <button class="rail-button" @click=${() => this.openDialog("server")} aria-label="Détails du serveur"><ha-icon icon="mdi:information-outline"></ha-icon></button>
+              <button class="rail-button ${activeDocker ? "has-active" : ""}" @click=${() => this.openServices("docker")} aria-label="Docker"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
+              <button class="rail-button ${activeVms ? "has-active" : ""}" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
             </div>
-            <div class="machine-gauge" style=${`--value:${usage ?? 0}`}><div class="machine-gauge-content"><strong>${percentageLabel(usage)}</strong><small>${this.config.array_label_entity ? displayState(this.hass, this.config.array_label_entity) : "Array"}</small></div></div>
-            <div class="machine-context"><small>${contextTitle}</small><strong>${contextText}</strong></div>
+            <div class="machine-gauge" style=${`--value:${usage ?? 0}`}><div class="machine-gauge-content"><strong>${percentageLabel(usage)}</strong><small>Array</small></div></div>
+            <div class="machine-context"><small>État de l’array</small><strong>${arrayState}</strong></div>
             <section class="machine-panel">
-              <div class="machine-panel-head"><div class="machine-panel-title"><small>Array</small><strong>${this.config.array_label_entity ? displayState(this.hass, this.config.array_label_entity) : `${percentageLabel(usage)} utilisés`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("server")}><ha-icon icon="mdi:database-outline"></ha-icon>Explorer</button></div>
+              <div class="machine-panel-head"><div class="machine-panel-title"><small>Stockage</small><strong>${featuredDisks.length ? `${featuredDisks.length} disque${featuredDisks.length > 1 ? "s" : ""} affiché${featuredDisks.length > 1 ? "s" : ""}` : "Aucun disque sélectionné"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("disks")}><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button></div>
               <div class="machine-bars">
-                <div class="machine-bar"><span>Disques</span><div class="track"><span style=${`width:${diskHealth ?? 0}%`}></span></div><strong>${healthy === undefined || total === undefined ? "—" : `${healthy}/${total}`}</strong></div>
-                <div class="machine-bar"><span>RAM</span><div class="track"><span style=${`width:${memory ?? 0}%`}></span></div><strong>${percentageLabel(memory)}</strong></div>
+                ${featuredDisks.map((disk) => this.renderDiskSummary(disk))}
               </div>
+              ${featuredDisks.length ? nothing : html`<div class="disk-summary-empty">Ajoutez <strong>show_on_card: true</strong> aux disques à afficher ici.</div>`}
               <div class="machine-foot"><span>Docker <strong>${activeDocker}/${totalDocker || "—"} actifs</strong></span><span>VM <strong>${activeVms}/${totalVms || "—"} actives</strong></span></div>
             </section>
           </div>
@@ -465,6 +514,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
       </ha-card>
       ${this.dialog === "services" ? this.renderServicesDialog() : nothing}
       ${this.dialog === "server" ? this.renderServerDialog() : nothing}
+      ${this.dialog === "disks" ? this.renderDisksDialog() : nothing}
     `;
   }
 
@@ -518,8 +568,12 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
 
   private groupedItems(): Map<string, Array<ManagedService | ManagedVm>> {
     const groups = new Map<string, Array<ManagedService | ManagedVm>>();
+    const labels = this.serviceTab === "docker"
+      ? this.config?.docker_group_labels
+      : this.config?.vm_group_labels;
+    const fallback = this.serviceTab === "docker" ? "Services" : "Machines virtuelles";
     for (const item of this.serviceItems()) {
-      const group = item.group || (this.serviceTab === "docker" ? "Services" : "Machines virtuelles");
+      const group = unraidGroupLabel(item.group, labels, fallback);
       groups.set(group, [...(groups.get(group) || []), item]);
     }
     return groups;
@@ -531,15 +585,11 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
     const stopped = all.filter((item) => this.itemState(item) === "stopped").length;
     const paused = all.filter((item) => this.itemPaused(item)).length;
     return this.renderDialog(
-      "Services & machines",
+      this.serviceTab === "docker" ? "Docker" : "Machines virtuelles",
       this.serviceTab === "docker" ? "mdi:cube-outline" : "mdi:monitor-multiple",
       html`
         <div class="dialog-body">
           <div class="dialog-overview"><div><span class="eyebrow">${this.serviceTab === "docker" ? "Conteneurs Docker" : "Machines virtuelles"}</span><strong>${active} actif${active > 1 ? "s" : ""} sur ${all.length}</strong><span class="muted">Rechercher, filtrer et piloter sans quitter le tableau de bord</span></div><div class="dialog-stat"><strong>${stopped}</strong><small>arrêté${stopped > 1 ? "s" : ""}</small></div></div>
-          <div class="tabs">
-            <button class=${this.serviceTab === "docker" ? "active" : ""} @click=${() => this.changeTab("docker")}>Docker · ${this.config?.docker?.length || 0}</button>
-            <button class=${this.serviceTab === "vm" ? "active" : ""} @click=${() => this.changeTab("vm")}>Machines virtuelles · ${this.config?.vms?.length || 0}</button>
-          </div>
           <input class="search" placeholder=${this.serviceTab === "docker" ? "Rechercher un service" : "Rechercher une VM"} .value=${this.query} @input=${(event: Event) => { this.query = (event.target as HTMLInputElement).value; this.requestUpdate(); }} />
           <div class="filters">
             ${this.filterButton("all", `Tous · ${all.length}`)}
@@ -566,13 +616,6 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
     return html`<button class=${this.serviceFilter === filter ? "active" : ""} @click=${() => { this.serviceFilter = filter; this.requestUpdate(); }}>${label}</button>`;
   }
 
-  private changeTab(tab: ServiceTab): void {
-    this.serviceTab = tab;
-    this.serviceFilter = "all";
-    this.selected = new Set();
-    this.requestUpdate();
-  }
-
   private renderServiceRow(item: ManagedService | ManagedVm): TemplateResult {
     const state = this.itemState(item);
     const stateClass = state === "active" ? "healthy" : state === "paused" ? "warning" : "danger";
@@ -584,7 +627,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
       <div class="list-row">
         <input class="selection" type="checkbox" .checked=${this.selected.has(item.entity)} ?disabled=${state !== "stopped" || !startAvailable} @change=${() => this.toggleSelected(item.entity)} />
         <div class="service-main">
-          <span class="service-icon"><ha-icon .icon=${item.icon || (isVm ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
+          <span class="service-icon ${state}"><ha-icon .icon=${item.icon || (isVm ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
           <div class="meta">
             <div class="name">${item.name}</div>
             <div class="state"><span class="dot ${stateClass}" style="display:inline-block;margin-right:5px;"></span>${stateLabel}${item.cpu_entity ? ` · CPU ${displayState(this.hass, item.cpu_entity)}` : ""}</div>
@@ -678,7 +721,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
   }
 
   private startSelected = async (): Promise<void> => {
-    const all = [...(this.config?.docker || []), ...(this.config?.vms || [])];
+    const all = this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || [];
     const selected = all.filter((item) => this.selected.has(item.entity));
     await Promise.all(selected.map((item) => this.startItem(item)));
     this.selected = new Set();
@@ -736,6 +779,25 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
     `;
   }
 
+  private featuredDisks(): UnraidDisk[] {
+    const disks = this.config?.disks || [];
+    const explicitlySelected = disks.filter((disk) => disk.show_on_card === true);
+    return explicitlySelected.length
+      ? explicitlySelected
+      : disks.filter((disk) => disk.show_on_card !== false);
+  }
+
+  private renderDiskSummary(disk: UnraidDisk): TemplateResult {
+    const usage = unraidPercentage(entity(this.hass, disk.usage_entity));
+    return html`
+      <div class="machine-bar disk-summary">
+        <span title=${disk.name}>${disk.name}</span>
+        <div class="track"><span style=${`width:${usage ?? 0}%`}></span></div>
+        <strong>${percentageLabel(usage)}</strong>
+      </div>
+    `;
+  }
+
   private groupedDisks(disks: UnraidDisk[]): Map<string, UnraidDisk[]> {
     const groups = new Map<string, UnraidDisk[]>();
     for (const disk of disks) {
@@ -743,6 +805,34 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
       groups.set(group, [...(groups.get(group) || []), disk]);
     }
     return groups;
+  }
+
+  private renderDisksDialog(): TemplateResult {
+    const disks = this.config?.disks || [];
+    const available = disks.filter((disk) => isAvailable(entity(this.hass, disk.status_entity))).length;
+    const healthy = disks.filter((disk) =>
+      disk.status_entity && unraidStateIsHealthy(
+        entity(this.hass, disk.status_entity),
+        disk.healthy_state || "on",
+      ),
+    ).length;
+    return this.renderDialog(
+      "Disques",
+      "mdi:harddisk",
+      html`
+        <div class="dialog-body">
+          <div class="dialog-overview">
+            <div><span class="eyebrow">Stockage UNRAID</span><strong>${disks.length} disque${disks.length > 1 ? "s" : ""} configuré${disks.length > 1 ? "s" : ""}</strong><span class="muted">Occupation, capacité, température et état de santé</span></div>
+            <div class="dialog-stat"><strong>${healthy}/${available || "—"}</strong><small>sains</small></div>
+          </div>
+          ${disks.length
+            ? Array.from(this.groupedDisks(disks)).map(([group, items]) => html`
+                <div class="disk-group"><div class="disk-group-title">${group}</div><div class="disk-list">${items.map((disk) => this.renderDiskRow(disk))}</div></div>
+              `)
+            : html`<div class="empty">Aucun disque n’est configuré.</div>`}
+        </div>
+      `,
+    );
   }
 
   private configuredServerUrl(): string | undefined {
@@ -758,13 +848,8 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
 
   private renderServerDialog(): TemplateResult {
     const usage = unraidPercentage(entity(this.hass, this.config?.array_usage_entity));
-    const activeDocker = (this.config?.docker || []).filter((item) => this.itemActive(item)).length;
-    const activeVms = (this.config?.vms || []).filter((item) => this.itemActive(item)).length;
-    const totalDocker = this.config?.docker?.length || 0;
-    const totalVms = this.config?.vms?.length || 0;
     const status = entity(this.hass, this.config?.status_entity);
     const online = isAvailable(status) && isActive(status);
-    const disks = this.config?.disks || [];
     const parityState = entity(this.hass, this.config?.parity_entity);
     const parityHealthy = this.config?.parity_healthy_state
       ? unraidStateIsHealthy(parityState, this.config.parity_healthy_state)
@@ -846,9 +931,6 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
                 ${this.config?.parity_errors_entity ? html`<div class="dialog-stat"><strong>${displayState(this.hass, this.config.parity_errors_entity)}</strong><small>erreurs détectées</small></div>` : nothing}
               </div></div>`
             : nothing}
-          ${disks.length
-            ? html`<div class="dialog-section"><div class="dialog-section-title">Détail des disques</div>${Array.from(this.groupedDisks(disks)).map(([group, items]) => html`<div class="disk-group"><div class="disk-group-title">${group}</div><div class="disk-list">${items.map((disk) => this.renderDiskRow(disk))}</div></div>`)}</div>`
-            : nothing}
           ${hasNetwork
             ? html`<div class="dialog-section"><div class="dialog-section-title">Activité réseau</div><div class="grid two">
                 ${this.config?.network_down_entity ? this.statusTile("Entrant", displayState(this.hass, this.config.network_down_entity), "mdi:download-network-outline") : nothing}
@@ -868,8 +950,6 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
             <div class="dialog-section-title">Services</div>
             <div class="actions">
               ${this.config?.array_start_entity ? html`<button class="action primary" ?disabled=${!unraidActionAvailable(this.hass, this.config.array_start_entity)} @click=${() => activateEntity(this.hass!, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : nothing}
-              <button class="action" @click=${() => this.openServices("docker")}><ha-icon icon="mdi:cube-outline"></ha-icon>Docker · ${activeDocker}/${totalDocker}</button>
-              <button class="action" @click=${() => this.openServices("vm")}><ha-icon icon="mdi:monitor-multiple"></ha-icon>VM · ${activeVms}/${totalVms}</button>
               ${serverUrl ? html`<button class="action primary" @click=${() => window.open(serverUrl, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:open-in-new"></ha-icon>Ouvrir UNRAID</button>` : nothing}
             </div>
           </div>

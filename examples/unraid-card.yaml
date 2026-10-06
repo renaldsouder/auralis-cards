@@ -27,22 +27,34 @@ network_up_entity: sensor.unraid_network_up
 disks:
   - name: Disque 1
     group: Array
+    show_on_card: true
     usage_entity: sensor.unraid_disk_1_usage
     temperature_entity: sensor.unraid_disk_1_temperature
     status_entity: binary_sensor.unraid_disk_1_healthy
   - name: Cache
     group: Cache et pools
+    show_on_card: true
     usage_entity: sensor.unraid_cache_usage
     temperature_entity: sensor.unraid_cache_temperature
     status_entity: binary_sensor.unraid_cache_healthy
 
+docker_group_labels:
+  default: Applications
+  media: Multimédia
+
+vm_group_labels:
+  default: Machines virtuelles
+  production: Production
+
 docker:
   - name: Plex
+    group: media
     entity: switch.unraid_docker_plex
     restart_entity: button.unraid_docker_plex_restart
 
 vms:
   - name: HomeLab
+    group: production
     entity: switch.unraid_vm_homelab
     restart_entity: button.unraid_vm_homelab_restart
 

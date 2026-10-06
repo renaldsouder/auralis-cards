@@ -1,0 +1,27 @@
+type: custom:auralis-navbar-card
+theme: carbon
+accent_color: "#79D6F2"
+show_labels: true
+compact: false
+
+items:
+  - label: Accueil
+    icon: mdi:home-outline
+    path: /dashboard-auralis/accueil
+
+  - label: Pièces
+    icon: mdi:floor-plan
+    path: /dashboard-auralis/pieces
+    active_paths:
+      - /dashboard-auralis/salon
+      - /dashboard-auralis/cuisine
+
+  - label: Systèmes
+    icon: mdi:server-network
+    path: /dashboard-auralis/systemes
+    badge_entity: sensor.systemes_en_alerte
+
+  - label: Énergie
+    icon: mdi:lightning-bolt-outline
+    path: /dashboard-auralis/energie
+    exact: true

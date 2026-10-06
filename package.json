@@ -1,7 +1,7 @@
 {
   "name": "auralis-cards",
-  "version": "0.10.1",
-  "description": "Auralis Frame cards for rooms, PCs, UNRAID and Proxmox in Home Assistant.",
+  "version": "0.11.0",
+  "description": "Auralis Frame navigation, room, PC, UNRAID and Proxmox cards for Home Assistant.",
   "type": "module",
   "main": "dist/auralis-cards.js",
   "files": [
@@ -21,7 +21,8 @@
     "lovelace",
     "hacs",
     "custom-card",
-    "unraid"
+    "unraid",
+    "navigation"
   ],
   "license": "MIT",
   "dependencies": {

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0
+
+- Ajoute `custom:auralis-navbar-card` pour naviguer entre les vues et sous-vues Lovelace sans rechargement.
+- Détecte automatiquement la route active, prend en charge les sous-routes, les libellés masquables et les badges d’entité.
+- Réorganise la carte UNRAID autour de la jauge d’occupation et de l’état de l’array, avec deux jauges compactes CPU/RAM.
+- Sépare les pop-up Détails, Docker, VM et Disques ; Docker et VM ne mélangent plus leurs listes.
+- Colore les icônes des conteneurs, VM et boutons du rail lorsqu’une charge est active.
+- Ajoute `docker_group_labels` et `vm_group_labels` pour renommer les groupes, ainsi que `show_on_card` pour choisir les disques de la synthèse.
+
 ## 0.10.1
 
 - Restaure la composition PC Auralis Frame d'origine : cadran CPU, contexte session/uptime et panneau inférieur.
