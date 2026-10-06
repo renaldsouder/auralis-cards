@@ -15,6 +15,30 @@ memory_label_entity: sensor.jarvis_memory_used
 uptime_entity: sensor.jarvis_uptime
 version_entity: sensor.jarvis_version
 
+# Zone libre : liste sans limite, dans l'ordre souhaité. [] pour la masquer.
+# Libellés, icônes et entités sont personnalisables. Auralis >= 0.12.2.
+info_columns: 3
+info_items:
+  - label: En ligne depuis
+    icon: mdi:clock-outline
+    entity: sensor.jarvis_uptime
+    format: duration
+    duration_unit: hours # À adapter à l'unité de votre capteur.
+  - label: Sauvegarde
+    icon: mdi:backup-restore
+    entity: sensor.jarvis_last_backup
+    format: datetime
+    active_entity: binary_sensor.jarvis_backup_running
+    active_state: "on"
+    active_text: En cours
+  - label: RAM utilisée
+    icon: mdi:memory
+    entity: sensor.jarvis_memory_used
+    format: ratio
+    total_entity: sensor.jarvis_memory_total
+    unit: Gio # Les deux capteurs doivent utiliser la même unité.
+    precision: 1
+
 # Ajouter autant d'entrées que nécessaire. name est le libellé affiché.
 storages:
   - name: Système local

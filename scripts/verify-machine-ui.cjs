@@ -23,6 +23,32 @@ fs.mkdirSync(output, { recursive: true });
       assert.deepEqual(labels, ["CPU", "RAM"], tag);
     }
     const card = page.locator("auralis-proxmox-card");
+    assert.equal(await card.locator(".info-tile").count(), 3);
+    assert.match(await card.locator(".node-information").innerText(), /12 j 3 h/);
+    assert.match(await card.locator(".node-information").innerText(), /11,3 \/ 15,4 Gio/);
+    // Configured order, additional rows and availability transitions are live.
+    await card.evaluate(el => {
+      el._initialInfoItems = el.config.info_items;
+      el.setConfig({ ...el.config, info_columns: 2, info_items: [
+        ...el.config.info_items,
+        { entity: "sensor.proxmox_version", label: "Version personnalisée" },
+        { entity: "sensor.missing", label: "Masquée" },
+        { entity: "sensor.missing", label: "Visible indisponible", hide_unavailable: false },
+        { entity: "sensor.proxmox_version", label: "Désactivée", show: false },
+      ] });
+    });
+    assert.equal(await card.locator(".info-tile").count(), 5);
+    assert.match(await card.locator(".node-information").innerText(), /Version personnalisée/);
+    assert.doesNotMatch(await card.locator(".node-information").innerText(), /Masquée|Désactivée/);
+    await card.evaluate(el => {
+      el.hass = { ...el.hass, states: { ...el.hass.states,
+        "binary_sensor.proxmox_backup_running": { ...el.hass.states["binary_sensor.proxmox_backup_running"], state: "on" },
+      } };
+    });
+    assert.match(await card.locator(".node-information").innerText(), /En cours/);
+    await card.evaluate(el => el.setConfig({ ...el.config, info_items: [] }));
+    assert.equal(await card.locator(".node-information").count(), 0);
+    await card.evaluate(el => el.setConfig({ ...el.config, info_columns: 3, info_items: el._initialInfoItems }));
     await card.getByRole("button", { name: "Machines virtuelles", exact: true }).click();
     let dialog = card.getByRole("dialog");
     assert.match(await dialog.innerText(), /Home Assistant/);
@@ -100,13 +126,15 @@ fs.mkdirSync(output, { recursive: true });
           assert.ok(boxes[1].right <= r.x, tag + " clear of rail");
         }
       }
+      assert.ok(await card.locator(".node-information").evaluate(el => el.scrollWidth <= el.clientWidth), "Info tiles fit narrow cards");
     }
     await card.evaluate(el => el.setConfig({ ...el.config, storages: [
       { name: "Système local", usage_entity: "sensor.proxmox_storage" },
       { name: "Disques des VM", usage_entity: "sensor.proxmox_storage" },
       { name: "Sauvegardes", usage_entity: "sensor.proxmox_storage" },
     ] }));
-    await card.screenshot({ path: path.join(output, "proxmox-0.12.0.png") });
+    await card.evaluate(el => { el.style.width = "390px"; });
+    await card.screenshot({ path: path.join(output, "proxmox-0.12.2.png") });
     // Unavailable metrics disappear while a real 0% CPU stays visible.
     await card.evaluate(el => {
       el.hass = { ...el.hass, states: { ...el.hass.states,
@@ -116,8 +144,17 @@ fs.mkdirSync(output, { recursive: true });
     });
     assert.equal(await card.locator(".machine-resource-gauges [role=meter]").count(), 1);
     assert.equal(await card.locator(".machine-resource-gauges [role=meter]").getAttribute("aria-valuenow"), "0");
+    await card.evaluate(el => {
+      el.hass = { ...el.hass, states: { ...el.hass.states,
+        [el.config.cluster_usage_entity]: { ...el.hass.states[el.config.cluster_usage_entity], state: "unavailable" },
+      } };
+    });
+    assert.equal(await card.locator(".machine-resource-gauges").count(), 0);
+    const infoBox = await card.locator(".node-information").boundingBox();
+    const railBox = await card.locator(".machine-rail").boundingBox();
+    assert.ok(infoBox.y > railBox.y + railBox.height, "Info zone clears the rail when CPU and RAM are unavailable");
     assert.deepEqual(errors, []);
-    console.log("PASS: CPU/RAM gauges on 3 cards at 4 widths; isolated VM/LXC/details/storage popups; active colors; 20 storages; unavailable metrics; no browser exceptions.");
+    console.log("PASS: configurable info tiles, missing data, backup state transitions; CPU/RAM gauges on 3 cards at 4 widths; isolated VM/LXC/details/storage popups; active colors; 20 storages; unavailable metrics; no browser exceptions.");
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });
 

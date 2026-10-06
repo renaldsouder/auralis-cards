@@ -7,6 +7,7 @@ import type {
 } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { activateEntity } from "../utils/actions";
+import { informationValue } from "../utils/information";
 import {
   clamp,
   displayState,
@@ -122,6 +123,29 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
       .storage-detail .machine-bar, .storage-detail .machine-bar strong { color: var(--auralis-text); }
       .storage-detail .track span { background: var(--auralis-healthy); }
       .machine-panel { margin-top: auto; max-height: 285px; overflow: auto; }
+      .node-information {
+        display: grid;
+        grid-template-columns: repeat(var(--info-columns, 3), minmax(0, 1fr));
+        gap: 8px;
+        margin: 10px 0 20px;
+      }
+      .info-tile {
+        min-width: 0;
+        padding: 11px 10px;
+        border: 1px solid var(--auralis-border);
+        border-radius: 14px;
+        background: rgba(9, 14, 20, var(--machine-glass-alpha, .84));
+        color: var(--auralis-text);
+        backdrop-filter: blur(8px);
+        overflow-wrap: anywhere;
+      }
+      .info-label { display: flex; align-items: center; gap: 5px; color: #a1b0c2; font-size: 10px; line-height: 1.35; }
+      .info-label ha-icon { flex: 0 0 auto; --mdc-icon-size: 14px; color: var(--machine-accent); }
+      .info-value { display: block; margin-top: 7px; color: #f7f9fc; font-size: 12px; line-height: 1.45; font-weight: 700; }
+      .machine-rail + .node-information { margin-top: 120px; }
+      @container (max-width: 310px) {
+        .node-information { grid-template-columns: repeat(var(--info-mobile-columns, 2), minmax(0, 1fr)); }
+      }
       .selection {
         grid-column: 1;
       }
@@ -164,6 +188,12 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
 
   public setConfig(config: ProxmoxCardConfig): void {
     if (!config.status_entity) throw new Error("status_entity est obligatoire.");
+    if (config.info_items !== undefined && (!Array.isArray(config.info_items) || config.info_items.some((item) => !item || typeof item.entity !== "string" || !item.entity.trim()))) {
+      throw new Error("info_items doit être une liste de tuiles avec une entity pour chacune.");
+    }
+    if (config.info_columns !== undefined && (!Number.isInteger(config.info_columns) || config.info_columns < 1 || config.info_columns > 4)) {
+      throw new Error("info_columns doit être un entier entre 1 et 4.");
+    }
     this.config = {
       ...config,
       name: config.name || "Proxmox",
@@ -200,6 +230,8 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
         { name: "quorum_entity", selector: { entity: {} } },
         { name: "cpu_entity", selector: { entity: {} } },
         { name: "uptime_entity", selector: { entity: {} } },
+        { name: "info_items", selector: { object: {} } },
+        { name: "info_columns", selector: { number: { min: 1, max: 4, mode: "box" } } },
         { name: "temperature_entity", selector: { entity: {} } },
         { name: "network_down_entity", selector: { entity: {} } },
         { name: "network_up_entity", selector: { entity: {} } },
@@ -266,6 +298,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
               <button class="rail-button ${activeContainers ? "has-active" : ""}" @click=${() => this.openWorkloads("container")} title="Conteneurs LXC" aria-label="Conteneurs LXC"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
             </div>
             ${this.renderResourceGauges(cpu, memory)}
+            ${this.renderInformation()}
             <section class="machine-panel">
               <div class="machine-panel-head">
                 <div class="machine-panel-title"><small>Stockage</small><strong>Espaces de stockage</strong></div>
@@ -281,6 +314,24 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
       ${this.dialog === "workloads" ? this.renderWorkloadsDialog() : nothing}
       ${this.dialog === "storage" ? this.renderStorageDialog() : nothing}
     `;
+  }
+
+  private renderInformation(): TemplateResult | typeof nothing {
+    const items = (this.config?.info_items ?? [])
+      .filter((item) => item.show !== false)
+      .map((item) => ({ item, value: informationValue(this.hass, item) }))
+      .filter(({ item, value }) => value !== undefined || item.hide_unavailable === false);
+    if (!items.length) return nothing;
+    const columns = this.config?.info_columns ?? 3;
+    return html`<section class="node-information" aria-label="Informations du nœud"
+      style=${`--info-columns:${columns};--info-mobile-columns:${Math.min(columns, 2)}`}>
+      ${items.map(({ item, value }) => html`<div class="info-tile">
+        <div class="info-label">${item.icon ? html`<ha-icon icon=${item.icon}></ha-icon>` : nothing}
+          <span>${item.label ?? entity(this.hass, item.entity)?.attributes.friendly_name ?? item.entity}</span>
+        </div>
+        <strong class="info-value">${value ?? "Indisponible"}</strong>
+      </div>`)}
+    </section>`;
   }
 
   private storageItems(): ProxmoxStorage[] {

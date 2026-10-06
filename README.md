@@ -356,6 +356,45 @@ La pop-up Détails regroupe l’état, CPU, RAM, version, quorum, température, 
 
 Compatibilité : `cluster_usage_entity` reste un alias CPU ; `storage_entity` et `storage_label_entity` fournissent une ligne de stockage lorsque `storages` est absent. Consultez [l’exemple YAML Proxmox complet](examples/proxmox-card.yaml) et remplacez ses entités d’exemple par celles de votre nœud.
 
+### Informations libres sur la carte Proxmox (depuis 0.12.2)
+
+Entre les cadrans et le stockage, `info_items` affiche les informations choisies par l'utilisateur. La liste n'a pas de limite de nombre et suit l'ordre du YAML. Pour supprimer la zone, omettre la clé ou utiliser `info_items: []`. `info_columns` règle le nombre de colonnes (1 à 4, 3 par défaut, au maximum 2 sur petit écran). Les lignes supplémentaires agrandissent la carte.
+
+```yaml
+info_columns: 3
+info_items:
+  - label: En ligne depuis
+    icon: mdi:clock-outline
+    entity: sensor.mon_noeud_uptime
+    format: duration
+    duration_unit: hours
+  - label: Sauvegarde
+    icon: mdi:backup-restore
+    entity: sensor.mon_noeud_last_backup
+    format: datetime
+    active_entity: binary_sensor.mon_noeud_backup_running
+    active_state: "on"
+    active_text: En cours
+  - label: RAM utilisée
+    icon: mdi:memory
+    entity: sensor.mon_noeud_memory_used
+    format: ratio
+    total_entity: sensor.mon_noeud_memory_total
+    unit: Gio
+    precision: 1
+```
+
+Chaque entrée demande une `entity`. `label` et `icon` sont libres ; sans libellé, le nom de l'entité est utilisé. `attribute` permet de lire un attribut au lieu de l'état. `show: false` masque une tuile. Les données absentes, invalides ou indisponibles sont masquées par défaut ; `hide_unavailable: false` affiche « Indisponible ».
+
+| Format | Affichage et options |
+| --- | --- |
+| `state` (défaut) | État de n'importe quelle entité, par exemple température, débit ou version. `unit` remplace le suffixe et `precision` règle les décimales (0 à 6). |
+| `duration` | Durée numérique en jours/heures, puis heures/minutes pour moins d'un jour. `duration_unit` : `seconds`, `minutes`, `hours` ou `days`. Sans ce champ, utilise l'unité du capteur (s, min, h, d), ou les secondes si aucune unité n'est déclarée. |
+| `datetime` | Date ISO affichée en date/heure locales du navigateur. |
+| `ratio` | Valeur / total, avec `total_entity` et éventuellement `total_attribute`. Les deux valeurs doivent être dans la même unité : `unit` modifie le texte, sans conversion. |
+
+Pour tous les formats, `active_entity` remplace temporairement la valeur par `active_text` (défaut « En cours ») lorsque son état correspond à `active_state` (défaut `"on"`). Les tuiles sont informatives et ne déclenchent aucune commande. Exemple : ajouter une quatrième entrée avec `label: Température`, `entity: sensor.mon_noeud_temperature` et `icon: mdi:thermometer`.
+
 ## Sécurité
 
 Les cartes appellent uniquement les services Home Assistant associés aux entités configurées. Ne placez aucun jeton ou mot de passe dans la configuration Lovelace. Les actions dangereuses sont affichées séparément et demandent confirmation.

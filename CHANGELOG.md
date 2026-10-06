@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.2
+
+- Ajoute une zone Proxmox de tuiles libres avec `info_items` : entités, attributs, libellés, icônes et ordre configurables, sans limite de nombre.
+- Propose les formats état, durée, date/heure et utilisé/total, avec texte conditionnel (par exemple une sauvegarde en cours).
+- Permet de régler le nombre de colonnes avec `info_columns` et masque par défaut les informations indisponibles.
+
 ## 0.12.1
 
 - Masque les cases de sélection des VM et LXC Proxmox actifs, tout en conservant l’alignement des lignes.

@@ -275,9 +275,30 @@ export interface ManagedProxmoxWorkload extends ManagedVm {
   node?: string;
 }
 
+/** Tuiles libres, affichées dans l'ordre du YAML entre les cadrans et le stockage. */
+export interface InformationItem {
+  entity: string;
+  label?: string;
+  icon?: string;
+  attribute?: string;
+  format?: "state" | "duration" | "datetime" | "ratio";
+  unit?: string;
+  precision?: number;
+  duration_unit?: "seconds" | "minutes" | "hours" | "days";
+  total_entity?: string;
+  total_attribute?: string;
+  active_entity?: string;
+  active_state?: string;
+  active_text?: string;
+  show?: boolean;
+  hide_unavailable?: boolean;
+}
+
 export interface ProxmoxCardConfig extends BaseCardConfig {
   type: "custom:auralis-proxmox-card";
   status_entity: string;
+  info_items?: InformationItem[];
+  info_columns?: number;
   version_entity?: string;
   quorum_entity?: string;
   cluster_usage_entity?: string;
