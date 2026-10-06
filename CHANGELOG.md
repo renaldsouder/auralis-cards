@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1
+
+- Masque les cases de sélection des VM et LXC Proxmox actifs, tout en conservant l’alignement des lignes.
+- Retire de la sélection de démarrage les éléments qui deviennent actifs, suspendus ou indisponibles.
+
 ## 0.12.0
 
 - Harmonise PC, UNRAID et Proxmox avec deux cadrans circulaires CPU/RAM côte à côte.

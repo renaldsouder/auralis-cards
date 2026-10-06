@@ -125,6 +125,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
       .selection {
         grid-column: 1;
       }
+      .selection-placeholder { width: 25px; height: 19px; }
 
       .resource-tags {
         display: flex;
@@ -148,6 +149,18 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
   private workloadFilter: WorkloadFilter = "all";
   private query = "";
   private selected = new Set<string>();
+
+  protected updated(): void {
+    super.updated();
+    const selectable = new Set(this.allWorkloads()
+      .filter((item) => !this.itemActive(item) && !this.itemPaused(item) && isAvailable(entity(this.hass, item.entity)))
+      .map((item) => item.entity));
+    const next = new Set([...this.selected].filter((id) => selectable.has(id)));
+    if (next.size !== this.selected.size) {
+      this.selected = next;
+      this.requestUpdate();
+    }
+  }
 
   public setConfig(config: ProxmoxCardConfig): void {
     if (!config.status_entity) throw new Error("status_entity est obligatoire.");
@@ -408,7 +421,9 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
     const stateLabel = !available ? "Indisponible" : active ? "Actif" : paused ? "Suspendu" : "Arrêté";
     return html`
       <div class="list-row">
-        <input class="selection" type="checkbox" .checked=${this.selected.has(item.entity)} ?disabled=${active || paused || !startAvailable} @change=${() => this.toggleSelected(item.entity)} />
+        ${active
+          ? html`<span class="selection selection-placeholder" aria-hidden="true"></span>`
+          : html`<input class="selection" type="checkbox" aria-label=${`Sélectionner ${item.name}`} .checked=${this.selected.has(item.entity)} ?disabled=${paused || !startAvailable} @change=${() => this.toggleSelected(item.entity)} />`}
         <div class="service-main">
           <span class="service-icon ${stateClass}"><ha-icon .icon=${item.icon || (this.workloadTab === "vm" ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
           <div class="meta">

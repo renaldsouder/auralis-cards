@@ -30,10 +30,34 @@ fs.mkdirSync(output, { recursive: true });
     const onColor = await dialog.locator(".service-icon.healthy").first().evaluate(n => getComputedStyle(n).color);
     const offColor = await dialog.locator(".service-icon.stopped").first().evaluate(n => getComputedStyle(n).color);
     assert.notEqual(onColor, offColor);
+    assert.equal(await dialog.locator(".list-row").filter({ hasText: "Home Assistant" }).getByRole("checkbox").count(), 0, "No checkbox for running VM");
+    // Supply an available start command for the selected-start transition fixture.
+    await card.evaluate(el => {
+      el.hass = { ...el.hass, states: { ...el.hass.states,
+        "button.proxmox_vm_windows_start": {
+          entity_id: "button.proxmox_vm_windows_start", state: "2026-10-06T08:00:00Z", attributes: {},
+        },
+      }};
+    });
+    await dialog.getByRole("checkbox", { name: "Sélectionner Windows 11", exact: true }).check();
+    await card.evaluate(el => {
+      el.hass = { ...el.hass, states: { ...el.hass.states,
+        "switch.proxmox_vm_windows": { ...el.hass.states["switch.proxmox_vm_windows"], state: "on" },
+      }};
+    });
+    await dialog.locator(".list-row").filter({ hasText: "Windows 11" }).getByRole("checkbox").waitFor({ state: "detached" });
+    assert.match(await dialog.locator(".sticky-actions").innerText(), /0 sélectionné/);
+    await card.evaluate(el => {
+      el.hass = { ...el.hass, states: { ...el.hass.states,
+        "switch.proxmox_vm_windows": { ...el.hass.states["switch.proxmox_vm_windows"], state: "off" },
+      }};
+    });
+    await dialog.getByRole("checkbox", { name: "Sélectionner Windows 11", exact: true }).waitFor();
     await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
     await card.getByRole("button", { name: "Conteneurs LXC", exact: true }).click();
     dialog = card.getByRole("dialog");
     assert.match(await dialog.innerText(), /Mosquitto/);
+    assert.equal(await dialog.getByRole("checkbox").count(), 0, "No checkbox for running LXC");
     assert.doesNotMatch(await dialog.innerText(), /Home Assistant|Windows 11|Machines virtuelles/);
     await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
     await card.getByRole("button", { name: "Détails du nœud", exact: true }).click();

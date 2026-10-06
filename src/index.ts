@@ -5,7 +5,7 @@ import { AuralisUnraidCard } from "./cards/auralis-unraid-card";
 import { AuralisProxmoxCard } from "./cards/auralis-proxmox-card";
 import { AuralisNavbarCard } from "./cards/auralis-navbar-card";
 
-const VERSION = "0.12.0";
+const VERSION = "0.12.1";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-pc-card")) customElements.define("auralis-pc-card", AuralisPcCard);

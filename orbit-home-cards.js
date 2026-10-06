@@ -4790,6 +4790,7 @@ var ft = class extends P {
       .selection {
         grid-column: 1;
       }
+      .selection-placeholder { width: 25px; height: 19px; }
 
       .resource-tags {
         display: flex;
@@ -4807,6 +4808,11 @@ var ft = class extends P {
       }
 
     `];
+	}
+	updated() {
+		super.updated();
+		let e = new Set(this.allWorkloads().filter((e) => !this.itemActive(e) && !this.itemPaused(e) && I(F(this.hass, e.entity))).map((e) => e.entity)), t = new Set([...this.selected].filter((t) => e.has(t)));
+		t.size !== this.selected.size && (this.selected = t, this.requestUpdate());
 	}
 	setConfig(e) {
 		if (!e.status_entity) throw Error("status_entity est obligatoire.");
@@ -5107,7 +5113,7 @@ var ft = class extends P {
 		let t = this.itemActive(e), n = this.itemPaused(e), r = I(F(this.hass, e.entity)) && Q(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0)), i = I(F(this.hass, e.entity)), a = i ? t ? "healthy" : n ? "warning" : "stopped" : "unavailable", o = i ? t ? "Actif" : n ? "Suspendu" : "Arrêté" : "Indisponible";
 		return D`
       <div class="list-row">
-        <input class="selection" type="checkbox" .checked=${this.selected.has(e.entity)} ?disabled=${t || n || !r} @change=${() => this.toggleSelected(e.entity)} />
+        ${t ? D`<span class="selection selection-placeholder" aria-hidden="true"></span>` : D`<input class="selection" type="checkbox" aria-label=${`Sélectionner ${e.name}`} .checked=${this.selected.has(e.entity)} ?disabled=${n || !r} @change=${() => this.toggleSelected(e.entity)} />`}
         <div class="service-main">
           <span class="service-icon ${a}"><ha-icon .icon=${e.icon || (this.workloadTab === "vm" ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
           <div class="meta">
@@ -5469,7 +5475,7 @@ var gt = class extends P {
 			min_columns: 4
 		};
 	}
-}, _t = "0.12.0";
+}, _t = "0.12.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", it), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ct), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", ft), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", gt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends it {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ct {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends ft {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends gt {}), window.customCards = window.customCards || [];
 var vt = [
 	{
