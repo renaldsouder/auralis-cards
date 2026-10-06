@@ -272,7 +272,8 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
   }
 
   public getGridOptions(): Record<string, number> {
-    return { rows: 11, min_rows: 10, columns: 6, min_columns: 3 };
+    // Omit rows so Sections uses the content height, including optional info tiles.
+    return { columns: 6, min_columns: 3 };
   }
 
   protected render(): TemplateResult {

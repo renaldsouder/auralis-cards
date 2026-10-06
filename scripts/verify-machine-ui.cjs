@@ -23,6 +23,34 @@ fs.mkdirSync(output, { recursive: true });
       assert.deepEqual(labels, ["CPU", "RAM"], tag);
     }
     const card = page.locator("auralis-proxmox-card");
+    // Reproduce Sections' grid sizing (56px rows + 8px gaps) around real cards.
+    // The old 11-row default reserved 696px around a roughly 568px card.
+    await card.evaluate(async el => {
+      const fixture = document.createElement("section");
+      fixture.id = "proxmox-height-fixture";
+      fixture.style.cssText = "display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:auto;gap:8px;width:788px;";
+      document.body.append(fixture);
+      for (const infoItems of [[], el.config.info_items]) {
+        const copy = document.createElement("auralis-proxmox-card");
+        copy.hass = el.hass;
+        copy.setConfig({ ...el.config, info_items: infoItems });
+        const options = copy.getGridOptions();
+        const cell = document.createElement("div");
+        cell.style.cssText = `grid-column:span 6;grid-row:span ${typeof options.rows === "number" ? options.rows : 1};position:relative;`;
+        if (typeof options.rows === "number") cell.style.height = `${options.rows * 64 - 8}px`;
+        cell.append(copy);
+        fixture.append(cell);
+        await copy.updateComplete;
+      }
+    });
+    const heights = await page.locator("#proxmox-height-fixture > div").evaluateAll(cells => cells.map(cell => ({
+      reserved: cell.getBoundingClientRect().height,
+      visible: cell.firstElementChild.shadowRoot.querySelector("ha-card").getBoundingClientRect().height,
+    })));
+    for (const height of heights) assert.ok(Math.abs(height.reserved - height.visible) < 2, "Sections has no unused reserved height");
+    assert.ok(Math.abs(heights[0].visible - heights[1].visible) < 2, "Three info tiles fit the same card height");
+    await page.locator("#proxmox-height-fixture").screenshot({ path: path.join(output, "proxmox-height-0.12.3.png") });
+    await page.locator("#proxmox-height-fixture").evaluate(el => el.remove());
     assert.equal(await card.locator(".info-tile").count(), 3);
     assert.match(await card.locator(".node-information").innerText(), /12 j 3 h/);
     assert.match(await card.locator(".node-information").innerText(), /11,3 \/ 15,4 Gio/);

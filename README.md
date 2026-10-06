@@ -358,6 +358,14 @@ Compatibilité : `cluster_usage_entity` reste un alias CPU ; `storage_entity` et
 
 ### Informations libres sur la carte Proxmox (depuis 0.12.2)
 
+Depuis 0.12.3, la hauteur Proxmox suit automatiquement son contenu dans une vue Sections. Pour une carte existante qui conserve une hauteur enregistrée, remplacer uniquement `rows` par `auto` dans son bloc `grid_options` (garder la valeur actuelle de `columns`). Cela évite l'espace vide sous le fond de la carte. Par exemple :
+
+```yaml
+grid_options:
+  columns: 6
+  rows: auto
+```
+
 Entre les cadrans et le stockage, `info_items` affiche les informations choisies par l'utilisateur. La liste n'a pas de limite de nombre et suit l'ordre du YAML. Pour supprimer la zone, omettre la clé ou utiliser `info_items: []`. `info_columns` règle le nombre de colonnes (1 à 4, 3 par défaut, au maximum 2 sur petit écran). Les lignes supplémentaires agrandissent la carte.
 
 ```yaml

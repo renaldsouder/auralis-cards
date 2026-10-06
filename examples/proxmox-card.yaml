@@ -1,6 +1,9 @@
 # Une carte par nœud. Remplacer les entités d'exemple par celles de votre installation.
 type: custom:auralis-proxmox-card
 name: Proxmox Jarvis
+grid_options:
+  columns: 6
+  rows: auto # Hauteur réelle du contenu, sans espace réservé sous la carte.
 theme: carbon
 accent_color: "#50d59b"
 card_background:

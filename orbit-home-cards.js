@@ -5070,8 +5070,6 @@ var ht = class extends N {
 	}
 	getGridOptions() {
 		return {
-			rows: 11,
-			min_rows: 10,
 			columns: 6,
 			min_columns: 3
 		};
@@ -5587,7 +5585,7 @@ var yt = class extends N {
 			min_columns: 4
 		};
 	}
-}, bt = "0.12.2";
+}, bt = "0.12.3";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ct), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", ht), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", yt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ke {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ct {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends ht {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends yt {}), window.customCards = window.customCards || [];
 var xt = [
 	{

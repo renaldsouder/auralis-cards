@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.3
+
+- Corrige la hauteur par défaut de Proxmox dans les vues Sections : la grille suit le contenu au lieu de réserver 11 lignes et de laisser un espace vide sous la carte.
+- Documente `grid_options.rows: auto` pour les cartes existantes dont la hauteur a été enregistrée dans le dashboard.
+
 ## 0.12.2
 
 - Ajoute une zone Proxmox de tuiles libres avec `info_items` : entités, attributs, libellés, icônes et ordre configurables, sans limite de nombre.
