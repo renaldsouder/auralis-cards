@@ -178,44 +178,6 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         color: var(--auralis-healthy);
       }
 
-      .resource-gauge-stack {
-        position: absolute;
-        top: 0;
-        right: 58px;
-        display: grid;
-        gap: 7px;
-      }
-
-      .resource-gauge {
-        --value: 0;
-        display: grid;
-        width: 62px;
-        height: 62px;
-        place-items: center;
-        border-radius: 18px;
-        background:
-          linear-gradient(to top, color-mix(in srgb, var(--machine-accent) 72%, transparent) calc(var(--value) * 1%), transparent 0),
-          rgba(10, 14, 20, var(--machine-glass-alpha, 0.84));
-        box-shadow: inset 0 0 0 1px rgba(195, 211, 229, 0.16);
-        text-align: center;
-        backdrop-filter: blur(10px);
-      }
-
-      .resource-gauge small {
-        display: block;
-        color: #91a0b2;
-        font-size: 8px;
-        font-weight: 760;
-        letter-spacing: 0.06em;
-      }
-
-      .resource-gauge strong {
-        display: block;
-        margin-top: 3px;
-        color: #f4f7fb;
-        font-size: 13px;
-      }
-
       .disk-summary-empty {
         padding: 12px;
         margin-top: 14px;
@@ -368,11 +330,6 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         }
       }
 
-      @container (max-width: 290px) {
-        .resource-gauge-stack {
-          display: none;
-        }
-      }
     `,
   ];
 
@@ -490,17 +447,13 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         <div class="machine-shell ${this.machineGridClass()}" style=${machineStyle}>
           <div class="machine-content">
             <header class="machine-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${online ? "healthy" : "danger"}"></span>UNRAID · ${statusLabel}</div></div></header>
-            <div class="resource-gauge-stack">
-              <div class="resource-gauge" style=${`--value:${cpu ?? 0}`}><div><small>CPU</small><strong>${percentageLabel(cpu)}</strong></div></div>
-              <div class="resource-gauge" style=${`--value:${memory ?? 0}`}><div><small>RAM</small><strong>${percentageLabel(memory)}</strong></div></div>
-            </div>
             <div class="machine-rail">
               <button class="rail-button" @click=${() => this.openDialog("server")} aria-label="Détails du serveur"><ha-icon icon="mdi:information-outline"></ha-icon></button>
               <button class="rail-button ${activeDocker ? "has-active" : ""}" @click=${() => this.openServices("docker")} aria-label="Docker"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
               <button class="rail-button ${activeVms ? "has-active" : ""}" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
             </div>
-            <div class="machine-gauge" style=${`--value:${usage ?? 0}`}><div class="machine-gauge-content"><strong>${percentageLabel(usage)}</strong><small>Array</small></div></div>
-            <div class="machine-context"><small>État de l’array</small><strong>${arrayState}</strong></div>
+            ${this.renderResourceGauges(cpu, memory)}
+            <div class="machine-context"><small>Array${usage === undefined ? "" : ` · ${percentageLabel(usage)} utilisés`}</small><strong>${arrayState}</strong></div>
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Stockage</small><strong>${featuredDisks.length ? `${featuredDisks.length} disque${featuredDisks.length > 1 ? "s" : ""} affiché${featuredDisks.length > 1 ? "s" : ""}` : "Aucun disque sélectionné"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("disks")}><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button></div>
               <div class="machine-bars">

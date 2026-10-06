@@ -694,6 +694,30 @@ export const sharedStyles = css`
     backdrop-filter: blur(12px);
   }
 
+  .machine-resource-gauges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 100px));
+    gap: 22px;
+    padding: 10px;
+    margin: 32px 58px 24px 0;
+  }
+
+  .machine-resource-gauges .machine-gauge {
+    width: 100%;
+    max-width: 100px;
+    margin-top: 0;
+  }
+
+  .machine-resource-gauges .machine-gauge::before { width: 77%; }
+  .machine-resource-gauges .machine-gauge-content strong { font-size: clamp(16px, 6cqw, 24px); }
+  .machine-resource-gauges:empty { display: none; }
+  .rail-button.has-active { color: var(--auralis-healthy); }
+
+  @container (max-width: 320px) {
+    .machine-resource-gauges { gap: 18px; padding: 8px; margin-right: 54px; }
+    .machine-resource-gauges .machine-gauge { box-shadow: 0 0 0 4px rgba(8,12,18,.88), 0 0 0 6px rgba(195,211,229,.16); }
+  }
+
   .machine-context small {
     display: block;
     color: #91a0b2;

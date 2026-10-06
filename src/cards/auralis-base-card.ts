@@ -75,6 +75,20 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     return (this.config?.show_grid ?? defaultGrid) ? "show-grid" : "";
   }
 
+  protected renderResourceGauges(cpu?: number, memory?: number): TemplateResult {
+    const metrics = [{ label: "CPU", value: cpu }, { label: "RAM", value: memory }]
+      .filter((metric): metric is { label: string; value: number } =>
+        metric.value !== undefined && Number.isFinite(metric.value));
+    if (!metrics.length) return html``;
+    return html`<div class="machine-resource-gauges">
+      ${metrics.map(({ label, value }) => html`<div class="machine-gauge"
+        style=${`--value:${Math.min(100, Math.max(0, value))}`}
+        role="meter" aria-label=${label} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${value}>
+        <div class="machine-gauge-content"><strong>${Math.round(value)}%</strong><small>${label}</small></div>
+      </div>`)}
+    </div>`;
+  }
+
   protected updated(): void {
     this.syncTheme();
   }

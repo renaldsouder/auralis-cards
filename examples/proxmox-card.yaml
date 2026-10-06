@@ -1,0 +1,48 @@
+# Une carte par nœud. Remplacer les entités d'exemple par celles de votre installation.
+type: custom:auralis-proxmox-card
+name: Proxmox Jarvis
+theme: carbon
+accent_color: "#50d59b"
+card_background:
+  mode: solid
+  color: "#090d12"
+show_grid: false
+status_entity: binary_sensor.jarvis_online
+# Ces capteurs doivent donner un pourcentage (0–100), pas une quantité en GiB.
+cpu_entity: sensor.jarvis_cpu_percent
+memory_entity: sensor.jarvis_memory_percent
+memory_label_entity: sensor.jarvis_memory_used
+uptime_entity: sensor.jarvis_uptime
+version_entity: sensor.jarvis_version
+
+# Ajouter autant d'entrées que nécessaire. name est le libellé affiché.
+storages:
+  - name: Système local
+    usage_entity: sensor.jarvis_local_percent
+    capacity_entity: sensor.jarvis_local_capacity
+  - name: Disques des VM
+    usage_entity: sensor.jarvis_local_lvm_percent
+    capacity_entity: sensor.jarvis_local_lvm_capacity
+  - name: Sauvegardes
+    usage_entity: sensor.jarvis_backup_percent
+    show_on_card: false # Visible dans la pop-up uniquement
+
+# Les disques physiques sont affichés dans la pop-up Stockages et disques.
+disks:
+  - name: SSD système
+    status_entity: sensor.jarvis_ssd_health
+    capacity_entity: sensor.jarvis_ssd_capacity
+    temperature_entity: sensor.jarvis_ssd_temperature
+
+vms:
+  - name: Home Assistant
+    entity: binary_sensor.jarvis_vm_home_assistant_running
+    group: Maison
+    start_entity: button.jarvis_vm_home_assistant_start
+    restart_entity: button.jarvis_vm_home_assistant_restart
+containers:
+  - name: Mosquitto
+    entity: binary_sensor.jarvis_lxc_mosquitto_running
+    group: Maison
+    start_entity: button.jarvis_lxc_mosquitto_start
+    restart_entity: button.jarvis_lxc_mosquitto_restart

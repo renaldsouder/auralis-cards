@@ -281,6 +281,14 @@ export interface ProxmoxCardConfig extends BaseCardConfig {
   version_entity?: string;
   quorum_entity?: string;
   cluster_usage_entity?: string;
+  /** CPU en %, cluster_usage_entity reste accepté pour compatibilité. */
+  cpu_entity?: string;
+  uptime_entity?: string;
+  temperature_entity?: string;
+  network_down_entity?: string;
+  network_up_entity?: string;
+  storages?: ProxmoxStorage[];
+  disks?: ProxmoxStorage[];
   memory_entity?: string;
   memory_label_entity?: string;
   storage_entity?: string;
@@ -294,4 +302,13 @@ export interface ProxmoxCardConfig extends BaseCardConfig {
   backup_action_entity?: string;
   restart_entity?: string;
   shutdown_entity?: string;
+}
+
+export interface ProxmoxStorage {
+  name: string;
+  usage_entity?: string;
+  capacity_entity?: string;
+  status_entity?: string;
+  temperature_entity?: string;
+  show_on_card?: boolean;
 }

@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un cluster Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -238,7 +238,7 @@ wake_entity: button.pc_bureau_wake
 
 La carte distingue un PC hors ligne d'un état Home Assistant indisponible. Dans ce dernier cas, les commandes sont suspendues et les métriques non disponibles affichent `—` plutôt qu'une valeur nulle. Un capteur numérique HASS.Agent peut désormais servir de `online_entity` : tant qu'il est disponible, la machine est considérée en ligne.
 
-La façade reprend la composition Auralis Frame d'origine : cadran CPU, contexte session/uptime et panneau inférieur. Elle affiche chaque entrée valide de `drives` sur une ligne distincte, en plus du GPU et de la mémoire. Un seul bouton **Détails** ouvre les informations secondaires : disques, périphériques audio, alimentation, activité système, interfaces réseau et commandes. Une zone dont la donnée est absente, indisponible ou invalide est entièrement masquée ; une température égale à `0` n'est donc pas présentée comme une mesure réelle. `drives` lit directement les attributs HASS.Agent `UsedSpacePercentage`, `UsedSpaceMB` et `TotalSizeMB`. `last_boot_entity` permet de calculer l'uptime sans capteur modèle. `session_entity` attend l'état de session HASS.Agent (`Locked`, `Unlocked`, `Active` ou `Disconnected`) tandis que `user_entity` contient le nom de l'utilisateur connecté. Consultez [`examples/pc-card.yaml`](examples/pc-card.yaml) pour une configuration complète et neutralisée.
+La façade reprend la composition Auralis Frame d'origine : cadrans circulaires CPU et RAM côte à côte, contexte session/uptime et panneau inférieur. Elle affiche chaque entrée valide de `drives` sur une ligne distincte, en plus du GPU. Un seul bouton **Détails** ouvre les informations secondaires : disques, périphériques audio, alimentation, activité système, interfaces réseau et commandes. Une zone dont la donnée est absente, indisponible ou invalide est entièrement masquée ; une température égale à `0` n'est donc pas présentée comme une mesure réelle. `drives` lit directement les attributs HASS.Agent `UsedSpacePercentage`, `UsedSpaceMB` et `TotalSizeMB`. `last_boot_entity` permet de calculer l'uptime sans capteur modèle. `session_entity` attend l'état de session HASS.Agent (`Locked`, `Unlocked`, `Active` ou `Disconnected`) tandis que `user_entity` contient le nom de l'utilisateur connecté. Consultez [`examples/pc-card.yaml`](examples/pc-card.yaml) pour une configuration complète et neutralisée.
 
 `background_image` ajoute une photographie derrière la carte PC. `image_opacity` règle uniquement l'opacité de ce fond de `0` à `100`, sans modifier les textes, boutons et indicateurs. `background_position` permet de recadrer l'image et `image_brightness` d'ajuster sa luminosité.
 
@@ -294,7 +294,7 @@ vms:
     console_url: https://unraid.example.local/vms/homelab
 ```
 
-La carte principale affiche l’occupation et l’état de l’array, deux jauges CPU/RAM et les disques sélectionnés. Le rail ouvre trois fonctions séparées : **Détails**, **Docker** et **VM** ; le bouton **Disques** du panneau inférieur ouvre la liste complète des volumes. La pop-up Détails regroupe l’état du serveur, l’array, le CPU, la RAM, le réseau, la parité et l’onduleur sans mélanger les listes Docker, VM ou disques.
+La carte principale affiche deux cadrans circulaires CPU/RAM côte à côte, l’occupation et l’état de l’array en contexte, et les disques sélectionnés. Le rail ouvre trois fonctions séparées : **Détails**, **Docker** et **VM** ; le bouton **Disques** du panneau inférieur ouvre la liste complète des volumes. La pop-up Détails regroupe l’état du serveur, l’array, le CPU, la RAM, le réseau, la parité et l’onduleur sans mélanger les listes Docker, VM ou disques.
 
 Chaque entrée de `disks` accepte `group` pour séparer l’array des caches et pools, `show_on_card` pour l’inclure ou non dans le panneau inférieur, et `healthy_state` pour les intégrations dont un capteur binaire à `off` signifie « sain ». Le champ `name` devient le libellé affiché. `docker_group_labels` et `vm_group_labels` remplacent les libellés de groupe sans modifier les valeurs `group` des éléments. Les sections et commandes sans entité configurée sont masquées.
 
@@ -311,20 +311,27 @@ accent_color: "#50d59b"
 status_entity: binary_sensor.proxmox_online
 version_entity: sensor.proxmox_version
 quorum_entity: sensor.proxmox_quorum
-cluster_usage_entity: sensor.proxmox_cpu
+cpu_entity: sensor.proxmox_cpu
 memory_entity: sensor.proxmox_memory_percent
 memory_label_entity: sensor.proxmox_memory_used
-storage_entity: sensor.proxmox_storage_percent
-storage_label_entity: sensor.proxmox_storage_used
+storages:
+  - name: Local système
+    usage_entity: sensor.proxmox_local_percent
+    capacity_entity: sensor.proxmox_local_capacity
+  - name: Volumes des VM
+    usage_entity: sensor.proxmox_lvm_percent
+  - name: Sauvegardes
+    usage_entity: sensor.proxmox_backup_percent
+    show_on_card: false
+disks:
+  - name: SSD système
+    status_entity: sensor.proxmox_ssd_health
+    capacity_entity: sensor.proxmox_ssd_capacity
+    temperature_entity: sensor.proxmox_ssd_temperature
 ceph_entity: sensor.proxmox_ceph_health
 backup_entity: sensor.proxmox_next_backup
 alerts_entity: sensor.proxmox_active_alerts
 backup_action_entity: button.proxmox_backup_now
-nodes:
-  - name: pve-01
-    status_entity: binary_sensor.pve_01_online
-    cpu_entity: sensor.pve_01_cpu
-    temperature_entity: sensor.pve_01_temperature
 vms:
   - name: Home Assistant
     entity: switch.proxmox_vm_home_assistant
@@ -339,13 +346,23 @@ containers:
     restart_entity: button.proxmox_lxc_mosquitto_restart
 ```
 
-La carte Nova conserve sa composition immersive tout en affichant en permanence la charge, la mémoire, les nœuds, les ratios de VM/LXC actives, le stockage, Ceph et la prochaine sauvegarde. `alerts_entity` est facultatif et ajoute un signal d’alerte à la synthèse et à la pop-up Cluster. Les valeurs indisponibles restent affichées avec `—` au lieu d’être interprétées comme zéro.
+Une carte représente un nœud Proxmox. Son état apparaît sous son nom, puis deux cadrans circulaires affichent CPU et RAM côte à côte. `cpu_entity` et `memory_entity` attendent des pourcentages de 0 à 100 ; une valeur en GiB ne doit pas être utilisée comme pourcentage. `memory_label_entity` peut afficher une quantité de mémoire dans les détails. Les jauges indisponibles sont masquées, tandis que 0 % reste une valeur valide.
 
-Les pop-up suivent toujours la même organisation : un résumé en tête, les commandes courantes, les éléments individuels, puis une zone séparée pour les actions sensibles avec confirmation. Les listes Proxmox prennent en charge les VM et conteneurs LXC, les filtres, le démarrage multiple et les consoles configurées.
+Le panneau inférieur contient uniquement les entrées de `storages`, sans limite de nombre. Chaque `name` est libre. `show_on_card: false` masque une entrée de la façade tout en la conservant dans la pop-up. Le bouton **Disques** ouvre les stockages et les disques physiques de `disks`. Les champs facultatifs sont `usage_entity` (pourcentage utilisé), `capacity_entity` (capacité ou résumé), `status_entity` et `temperature_entity`. Un disque sans mesure d’occupation reste visible avec ses autres informations, sans inventer un taux d’utilisation.
+
+Le rail comporte **Détails du nœud**, **VM** et **LXC**. Chaque pop-up VM/LXC présente exclusivement son type de charge, avec recherche, groupes, filtres, sélection multiple et commandes disponibles. Les icônes sont vertes pour les charges actives, neutres pour les charges arrêtées, orange pour les suspendues et atténuées pour les indisponibles. Les groupes se nomment via `group` et chaque charge via `name`.
+
+La pop-up Détails regroupe l’état, CPU, RAM, version, quorum, température, uptime, réseau, Ceph, sauvegarde et alertes si leurs capteurs sont disponibles. Elle ne répète aucune liste de disques, VM ou LXC. L’ancien bouton circulaire était la commande de sauvegarde : elle se trouve désormais ici, avec son libellé explicite. Les commandes sensibles conservent leur confirmation.
+
+Compatibilité : `cluster_usage_entity` reste un alias CPU ; `storage_entity` et `storage_label_entity` fournissent une ligne de stockage lorsque `storages` est absent. Consultez [l’exemple YAML Proxmox complet](examples/proxmox-card.yaml) et remplacez ses entités d’exemple par celles de votre nœud.
 
 ## Sécurité
 
 Les cartes appellent uniquement les services Home Assistant associés aux entités configurées. Ne placez aucun jeton ou mot de passe dans la configuration Lovelace. Les actions dangereuses sont affichées séparément et demandent confirmation.
+
+## Vérification visuelle locale
+
+Après `npm run verify`, lancer la démo avec `npm run dev -- --host 127.0.0.1 --port 4173`, puis `node scripts/verify-machine-ui.cjs` dans un environnement disposant de Playwright et d’Edge. Le script teste le bundle distribué avec des données simulées. `AURALIS_PLAYWRIGHT_MODULE` peut désigner une installation existante de Playwright ; `AURALIS_BROWSER_CHANNEL` permet de choisir un autre navigateur installé. Les captures sont enregistrées dans `dist/ui-audit`.
 
 ## Licence
 

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { ProxmoxCardConfig } from "../src/types/config";
+import type { ProxmoxCardConfig, ProxmoxStorage, ManagedProxmoxWorkload } from "../src/types/config";
 import type { HassEntity, HomeAssistant } from "../src/types/home-assistant";
 
 type ProxmoxCardModule = typeof import("../src/cards/auralis-proxmox-card");
@@ -38,6 +38,7 @@ describe("Proxmox card helpers", () => {
     expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "invalid"))).toBeUndefined();
     expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "42,5"))).toBe(42.5);
     expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "120"))).toBe(100);
+    expect(proxmoxCard.proxmoxPercentage({ ...state("sensor.ram", "11.4"), attributes: { unit_of_measurement: "GiB" } })).toBeUndefined();
   });
 
   it("requires an available Home Assistant entity before enabling an action", () => {
@@ -56,6 +57,80 @@ describe("Proxmox card helpers", () => {
   });
 });
 
+describe("Proxmox isolated popups and configurable storage", () => {
+  const vm = { name: "Machine test", entity: "switch.vm" };
+  const lxc = { name: "Conteneur test", entity: "switch.lxc" };
+  const makeCard = (overrides: Partial<ProxmoxCardConfig> = {}) => {
+    const card = new proxmoxCard.AuralisProxmoxCard();
+    card.setConfig(config({ vms: [vm], containers: [lxc], ...overrides }));
+    card.hass = {
+      states: {
+        "binary_sensor.proxmox_online": state("binary_sensor.proxmox_online", "on"),
+        "switch.vm": state("switch.vm", "off"),
+        "switch.lxc": state("switch.lxc", "off"),
+      },
+      callService: vi.fn(async () => undefined),
+    };
+    return card;
+  };
+
+  it("clears selections across popups and cannot start the other workload type", async () => {
+    const card = makeCard();
+    const internals = card as unknown as {
+      openWorkloads(tab: "vm" | "container"): void;
+      selected: Set<string>;
+      workloadItems(): ManagedProxmoxWorkload[];
+      startSelected(): Promise<void>;
+    };
+    internals.openWorkloads("vm");
+    internals.selected.add(vm.entity);
+    internals.openWorkloads("container");
+    expect(internals.selected.size).toBe(0);
+    expect(internals.workloadItems()).toEqual([lxc]);
+    // A stale selection from the other popup must not dispatch a command.
+    internals.selected = new Set([vm.entity, lxc.entity]);
+    await internals.startSelected();
+    expect(card.hass!.callService).toHaveBeenCalledTimes(1);
+    expect(card.hass!.callService).toHaveBeenCalledWith("homeassistant", "turn_on", {}, { entity_id: lxc.entity });
+  });
+
+  it("rechecks running and unavailable states before a selected start command", async () => {
+    const card = makeCard();
+    const internals = card as unknown as {
+      openWorkloads(tab: "vm"): void;
+      selected: Set<string>;
+      startSelected(): Promise<void>;
+    };
+    internals.openWorkloads("vm");
+    for (const current of ["on", "paused", "unavailable"]) {
+      internals.selected = new Set([vm.entity]);
+      card.hass!.states[vm.entity] = state(vm.entity, current);
+      await internals.startSelected();
+    }
+    expect(card.hass!.callService).not.toHaveBeenCalled();
+  });
+
+  it("does not send turn_on to a read-only status sensor", async () => {
+    const item = { name: "Lecture seule", entity: "binary_sensor.read_only" };
+    const card = makeCard({ vms: [item] });
+    card.hass!.states[item.entity] = state(item.entity, "off");
+    const internals = card as unknown as { startItem(item: ManagedProxmoxWorkload): Promise<void> };
+    await internals.startItem(item);
+    expect(card.hass!.callService).not.toHaveBeenCalled();
+  });
+
+  it("keeps any number of named storages and preserves legacy fallback", () => {
+    const storages = Array.from({ length: 32 }, (_, i) => ({ name: "Volume " + i, usage_entity: "sensor.volume_" + i }));
+    const card = makeCard({ storages, storage_entity: "sensor.legacy" });
+    const internals = card as unknown as { storageItems(): ProxmoxStorage[] };
+    expect(internals.storageItems()).toEqual(storages);
+    card.setConfig(config({ storage_entity: "sensor.legacy", storage_label_entity: "sensor.capacity" }));
+    expect(internals.storageItems()).toEqual([{ name: "Stockage", usage_entity: "sensor.legacy", capacity_entity: "sensor.capacity" }]);
+    card.setConfig(config({ storages: [], storage_entity: "sensor.legacy" }));
+    expect(internals.storageItems()).toEqual([]);
+  });
+});
+
 describe("AuralisProxmoxCard configuration and guarded actions", () => {
   it("requires the status entity, applies defaults and exposes the summary fields", () => {
     const card = new proxmoxCard.AuralisProxmoxCard();
@@ -64,7 +139,7 @@ describe("AuralisProxmoxCard configuration and guarded actions", () => {
     card.setConfig(config());
 
     const configured = card as unknown as { config: ProxmoxCardConfig };
-    expect(configured.config.name).toBe("Cluster Proxmox");
+    expect(configured.config.name).toBe("Proxmox");
     expect(configured.config.theme).toBe("auto");
 
     const form = proxmoxCard.AuralisProxmoxCard.getConfigForm() as {

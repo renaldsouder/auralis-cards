@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0
+
+- Harmonise PC, UNRAID et Proxmox avec deux cadrans circulaires CPU/RAM côte à côte.
+- Recentre la carte Proxmox sur un nœud : état sous le nom, sans bloc Nœuds redondant.
+- Ajoute une liste illimitée de `storages` configurables et une pop-up Stockages et disques avec `disks`.
+- Sépare les pop-ups VM et LXC et colore leurs icônes selon leur état.
+- Réserve Détails aux informations du nœud et déplace la commande de sauvegarde dans cette pop-up.
+- Préserve les anciennes clés `cluster_usage_entity`, `storage_entity` et `storage_label_entity`.
+
 ## 0.11.0
 
 - Ajoute `custom:auralis-navbar-card` pour naviguer entre les vues et sous-vues Lovelace sans rechargement.

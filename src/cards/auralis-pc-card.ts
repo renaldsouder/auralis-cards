@@ -215,7 +215,6 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
     const hasContext = Boolean(user || session || uptime);
     const panelMetrics = [
       gpu === undefined ? undefined : { label: "GPU", value: gpu },
-      memory === undefined ? undefined : { label: "RAM", value: memory },
       ...drives.map((drive) => ({ label: drive.label, value: drive.usage })),
     ].filter((item): item is { label: string; value: number } => Boolean(item));
 
@@ -225,7 +224,7 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
           <div class="machine-content pc-content">
             <header class="machine-header pc-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${statusClass}"></span>${statusLabel}</div></div></header>
             ${cpuTemperature || gpuTemperature ? html`<div class="machine-stat-stack">${cpuTemperature ? html`<div class="machine-mini-stat"><small>CPU</small><strong>${cpuTemperature}</strong></div>` : nothing}${gpuTemperature ? html`<div class="machine-mini-stat"><small>GPU</small><strong>${gpuTemperature}</strong></div>` : nothing}</div>` : nothing}
-            ${cpu === undefined ? nothing : html`<div class="machine-gauge" style=${`--value:${cpu}`}><div class="machine-gauge-content"><strong>${percentageLabel(cpu)}</strong><small>CPU</small></div></div>`}
+            ${this.renderResourceGauges(cpu, memory)}
             ${hasContext ? html`<div class="machine-context"><small>${user ? "Utilisateur" : session ? "Session" : "Uptime"}</small><strong>${user || session || uptime}</strong>${user && session ? html`<span>Session · ${session}</span>` : nothing}${uptime && (user || session) ? html`<span>Uptime · ${uptime}</span>` : nothing}</div>` : nothing}
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${availability === "online" ? `${this.config.name} fonctionne normalement` : availability === "offline" ? `${this.config.name} est hors ligne` : `État de ${this.config.name} indisponible`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>

@@ -29,7 +29,7 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", _ = h.reactiveElementPolyfillSupport, v = (e, t) => e, y = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", te = h.reactiveElementPolyfillSupport, _ = (e, t) => e, v = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, te = (e, t) => !l(e, t), ne = {
+}, ne = (e, t) => !l(e, t), re = {
 	attribute: !0,
 	type: String,
-	converter: y,
+	converter: v,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: te
+	hasChanged: ne
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var b = class extends HTMLElement {
+var y = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = ne) {
+	static createProperty(e, t = re) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && u(this.prototype, e, r);
@@ -100,16 +100,16 @@ var b = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? ne;
+		return this.elementProperties.get(e) ?? re;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(v("elementProperties"))) return;
+		if (this.hasOwnProperty(_("elementProperties"))) return;
 		let e = m(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(v("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(v("properties"))) {
+		if (this.hasOwnProperty(_("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(_("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var b = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? y : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? v : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? y : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? v : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var b = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? te)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? ne)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,10 +251,10 @@ var b = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[v("elementProperties")] = /* @__PURE__ */ new Map(), b[v("finalized")] = /* @__PURE__ */ new Map(), _?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
+y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[_("elementProperties")] = /* @__PURE__ */ new Map(), y[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var re = globalThis, ie = (e) => e, ae = re.trustedTypes, oe = ae ? ae.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, se = "$lit$", x = `lit$${Math.random().toFixed(9).slice(2)}$`, ce = "?" + x, le = `<${ce}>`, S = document, C = () => S.createComment(""), w = (e) => e === null || typeof e != "object" && typeof e != "function", ue = Array.isArray, de = (e) => ue(e) || typeof e?.[Symbol.iterator] == "function", fe = "[ 	\n\f\r]", T = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, pe = /-->/g, me = />/g, E = RegExp(`>|${fe}(?:([^\\s"'>=/]+)(${fe}*=${fe}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), he = /'/g, ge = /"/g, _e = /^(?:script|style|textarea|title)$/i, D = ((e) => (t, ...n) => ({
+var ie = globalThis, ae = (e) => e, b = ie.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, se = "$lit$", x = `lit$${Math.random().toFixed(9).slice(2)}$`, ce = "?" + x, le = `<${ce}>`, S = document, C = () => S.createComment(""), w = (e) => e === null || typeof e != "object" && typeof e != "function", ue = Array.isArray, de = (e) => ue(e) || typeof e?.[Symbol.iterator] == "function", fe = "[ 	\n\f\r]", T = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, pe = /-->/g, me = />/g, E = RegExp(`>|${fe}(?:([^\\s"'>=/]+)(${fe}*=${fe}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), he = /'/g, ge = /"/g, _e = /^(?:script|style|textarea|title)$/i, D = ((e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
@@ -299,7 +299,7 @@ var be = (e, t) => {
 				if (_e.test(i.tagName)) {
 					let e = i.textContent.split(x), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = ae ? ae.emptyScript : "";
+						i.textContent = b ? b.emptyScript : "";
 						for (let n = 0; n < t; n++) i.append(e[n], C()), A.nextNode(), c.push({
 							type: 2,
 							index: ++a
@@ -409,8 +409,8 @@ var Se = class {
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = ie(e).nextSibling;
-			ie(e).remove(), e = t;
+			let t = ae(e).nextSibling;
+			ae(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
@@ -474,8 +474,8 @@ var Se = class {
 	_$AI(e) {
 		j(this, e);
 	}
-}, Oe = re.litHtmlPolyfillSupport;
-Oe?.(xe, Ce), (re.litHtmlVersions ??= []).push("3.3.3");
+}, Oe = ie.litHtmlPolyfillSupport;
+Oe?.(xe, Ce), (ie.litHtmlVersions ??= []).push("3.3.3");
 var ke = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
@@ -483,7 +483,7 @@ var ke = (e, t, n) => {
 		r._$litPart$ = i = new Ce(t.insertBefore(C(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, Ae = globalThis, N = class extends b {
+}, Ae = globalThis, N = class extends y {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -1204,6 +1204,30 @@ var Me = o`
     backdrop-filter: blur(12px);
   }
 
+  .machine-resource-gauges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 100px));
+    gap: 22px;
+    padding: 10px;
+    margin: 32px 58px 24px 0;
+  }
+
+  .machine-resource-gauges .machine-gauge {
+    width: 100%;
+    max-width: 100px;
+    margin-top: 0;
+  }
+
+  .machine-resource-gauges .machine-gauge::before { width: 77%; }
+  .machine-resource-gauges .machine-gauge-content strong { font-size: clamp(16px, 6cqw, 24px); }
+  .machine-resource-gauges:empty { display: none; }
+  .rail-button.has-active { color: var(--auralis-healthy); }
+
+  @container (max-width: 320px) {
+    .machine-resource-gauges { gap: 18px; padding: 8px; margin-right: 54px; }
+    .machine-resource-gauges .machine-gauge { box-shadow: 0 0 0 4px rgba(8,12,18,.88), 0 0 0 6px rgba(195,211,229,.16); }
+  }
+
   .machine-context small {
     display: block;
     color: #91a0b2;
@@ -1398,6 +1422,22 @@ var Me = o`
 		let e = this.config?.card_background?.mode === "grid";
 		return this.config?.show_grid ?? e ? "show-grid" : "";
 	}
+	renderResourceGauges(e, t) {
+		let n = [{
+			label: "CPU",
+			value: e
+		}, {
+			label: "RAM",
+			value: t
+		}].filter((e) => e.value !== void 0 && Number.isFinite(e.value));
+		return n.length ? D`<div class="machine-resource-gauges">
+      ${n.map(({ label: e, value: t }) => D`<div class="machine-gauge"
+        style=${`--value:${Math.min(100, Math.max(0, t))}`}
+        role="meter" aria-label=${e} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${t}>
+        <div class="machine-gauge-content"><strong>${Math.round(t)}%</strong><small>${e}</small></div>
+      </div>`)}
+    </div>` : D``;
+	}
 	updated() {
 		this.syncTheme();
 	}
@@ -1581,7 +1621,7 @@ async function We(e, t, n) {
 async function U(e, t, n) {
 	t.length && await e.callService("cover", `${n}_cover`, {}, { entity_id: t });
 }
-function Ge(e, t) {
+function W(e, t) {
 	t && e.dispatchEvent(new CustomEvent("hass-more-info", {
 		bubbles: !0,
 		composed: !0,
@@ -1590,7 +1630,7 @@ function Ge(e, t) {
 }
 //#endregion
 //#region src/cards/auralis-room-card.ts
-var Ke = class extends P {
+var Ge = class extends P {
 	constructor(...e) {
 		super(...e), this.historyGraphConfigs = /* @__PURE__ */ new Map(), this.selectedMediaKind = "media", this.toggleAllLights = async () => {
 			let e = this.config?.lights || [], t = e.some((e) => L(F(this.hass, e)));
@@ -3105,7 +3145,7 @@ var Ke = class extends P {
 				return;
 			}
 			if (e.action === "more-info") {
-				Ge(this, e.entity);
+				W(this, e.entity);
 				return;
 			}
 			this.hass?.callService("homeassistant", "toggle", {}, { entity_id: e.entity });
@@ -3371,7 +3411,7 @@ var Ke = class extends P {
             ${e.map((e) => {
 			let t = F(this.hass, e), n = this.entityLabel(e, e);
 			return D`
-                <button class="tile clickable" style="color:inherit;text-align:left;" @click=${() => Ge(this, e)}>
+                <button class="tile clickable" style="color:inherit;text-align:left;" @click=${() => W(this, e)}>
                   <div class="tile-head"><span class="tile-icon"><ha-icon .icon=${t?.attributes.icon || "mdi:circle-outline"}></ha-icon></span><ha-icon icon="mdi:chevron-right"></ha-icon></div>
                   <div style="margin-top:12px;font-weight:680;">${n}</div>
                   <div class="muted">${B(this.hass, e)}</div>
@@ -3404,7 +3444,7 @@ var Ke = class extends P {
 		})}
                 </div>
               ` : k}
-          ${h ? D`<div class="dialog-section"><div class="dialog-section-title">Réglages</div><button class="action primary" style="width:100%;" @click=${() => Ge(this, this.config?.climate_entity)}><ha-icon icon="mdi:tune-variant"></ha-icon>Ouvrir ${this.entityLabel(this.config?.climate_entity, "le thermostat Home Assistant")}</button></div>` : k}
+          ${h ? D`<div class="dialog-section"><div class="dialog-section-title">Réglages</div><button class="action primary" style="width:100%;" @click=${() => W(this, this.config?.climate_entity)}><ha-icon icon="mdi:tune-variant"></ha-icon>Ouvrir ${this.entityLabel(this.config?.climate_entity, "le thermostat Home Assistant")}</button></div>` : k}
         </div>
       `);
 	}
@@ -3418,7 +3458,7 @@ var Ke = class extends P {
                 <div class="actions" style="grid-template-columns:repeat(3,1fr);margin-top:0;">
                   <button class="action ${l ? "danger" : "primary"}" @click=${() => this.hass?.callService("media_player", l ? "turn_off" : "turn_on", {}, { entity_id: e })}><ha-icon icon="mdi:power"></ha-icon>${l ? "Éteindre" : "Allumer"}</button>
                   <button class="action" ?disabled=${!l} @click=${() => this.hass?.callService("media_player", "media_play_pause", {}, { entity_id: e })}><ha-icon icon=${c ? "mdi:pause" : "mdi:play"}></ha-icon>${c ? "Pause" : "Lecture"}</button>
-                  <button class="action" @click=${() => Ge(this, e)}><ha-icon icon="mdi:tune-variant"></ha-icon>Détails</button>
+                  <button class="action" @click=${() => W(this, e)}><ha-icon icon="mdi:tune-variant"></ha-icon>Détails</button>
                 </div>
               ` : D`
                 <div class="actions" style="grid-template-columns:repeat(3,1fr);margin-top:0;">
@@ -3431,27 +3471,27 @@ var Ke = class extends P {
         </div>
       `);
 	}
-}, qe = /* @__PURE__ */ new Set([
+}, Ke = /* @__PURE__ */ new Set([
 	"off",
 	"offline",
 	"disconnected",
 	"not_home",
 	"stopped"
 ]);
-function Je(e) {
-	return !e || !I(e) ? "unavailable" : L(e) ? "online" : qe.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
+function qe(e) {
+	return !e || !I(e) ? "unavailable" : L(e) ? "online" : Ke.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
 }
-function W(e) {
+function G(e) {
 	if (!I(e)) return;
 	let t = R(e, NaN);
 	return Number.isFinite(t) ? z(t) : void 0;
 }
-function Ye(e) {
+function Je(e) {
 	if (!e || !I(e)) return;
 	let t = R(e, NaN);
 	return Number.isFinite(t) && t > 0 ? t : void 0;
 }
-function Xe(e, t) {
+function Ye(e, t) {
 	if (!e) return;
 	let n = Object.entries(e.attributes);
 	for (let e of t) {
@@ -3461,31 +3501,31 @@ function Xe(e, t) {
 		if (Number.isFinite(r)) return r;
 	}
 }
-function Ze(e) {
+function Xe(e) {
 	if (!e || !I(e)) return;
-	let t = Xe(e, [
+	let t = Ye(e, [
 		"UsedSpacePercentage",
 		"used_space_percentage",
 		"used_percentage"
 	]);
-	return t === void 0 ? W(e) : z(t);
+	return t === void 0 ? G(e) : z(t);
 }
-function Qe(e) {
+function Ze(e) {
 	return e >= 1024 ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(e / 1024)} Go` : `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(e)} Mo`;
 }
-function $e(e) {
+function Qe(e) {
 	if (!e || !I(e)) return "—";
-	let t = Xe(e, ["UsedSpaceMB", "used_space_mb"]), n = Xe(e, ["TotalSizeMB", "total_size_mb"]);
-	return t === void 0 || n === void 0 || n <= 0 ? K(Ze(e)) : `${Qe(t)} / ${Qe(n)}`;
+	let t = Ye(e, ["UsedSpaceMB", "used_space_mb"]), n = Ye(e, ["TotalSizeMB", "total_size_mb"]);
+	return t === void 0 || n === void 0 || n <= 0 ? q(Xe(e)) : `${Ze(t)} / ${Ze(n)}`;
 }
-function et(e, t = Date.now()) {
+function $e(e, t = Date.now()) {
 	if (!e || !I(e)) return "—";
 	let n = Date.parse(e.state);
 	if (!Number.isFinite(n)) return "—";
 	let r = Math.max(0, Math.floor((t - n) / 6e4)), i = Math.floor(r / 1440), a = Math.floor(r % 1440 / 60), o = r % 60;
 	return `${i > 0 ? `${i} j ` : ""}${a} h ${o} min`;
 }
-function tt(e) {
+function et(e) {
 	return !e || !I(e) ? "—" : {
 		active: "Active",
 		connected: "Connectée",
@@ -3494,13 +3534,13 @@ function tt(e) {
 		unlocked: "Déverrouillée"
 	}[e.state.toLowerCase()] || e.state;
 }
-function G(e, t) {
+function K(e, t) {
 	return !!(t && I(F(e, t)));
 }
-function K(e) {
+function q(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-function nt(e, t = "Muet", n = "Actif") {
+function tt(e, t = "Muet", n = "Actif") {
 	return !e || !I(e) ? "—" : [
 		"true",
 		"on",
@@ -3508,7 +3548,7 @@ function nt(e, t = "Muet", n = "Actif") {
 		"1"
 	].includes(e.state.toLowerCase()) ? t : n;
 }
-function rt(e) {
+function nt(e) {
 	return !e || !I(e) ? "Indisponible" : [
 		"up",
 		"on",
@@ -3517,23 +3557,23 @@ function rt(e) {
 		"active"
 	].includes(e.state.toLowerCase()) ? "Connecté" : "Déconnecté";
 }
-function it(e, t) {
+function rt(e, t) {
 	let n = F(e, t);
 	if (!I(n)) return "—";
 	let r = R(n, NaN);
 	return Number.isFinite(r) && r < 0 ? "—" : B(e, t);
 }
-var at = class extends P {
+var it = class extends P {
 	constructor(...e) {
 		super(...e), this.confirmRestart = () => {
-			G(this.hass, this.config?.restart_entity) && (this.askConfirmation({
+			K(this.hass, this.config?.restart_entity) && (this.askConfirmation({
 				title: "Redémarrer le PC ?",
 				message: "Les applications ouvertes pourront perdre leurs données non enregistrées.",
 				confirmLabel: "Redémarrer",
 				action: () => H(this.hass, this.config?.restart_entity)
 			}), this.dialog = "details");
 		}, this.confirmShutdown = () => {
-			G(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
+			K(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
 				title: "Éteindre le PC ?",
 				message: "Cette action arrêtera la machine et les services qui y sont exécutés.",
 				confirmLabel: "Éteindre",
@@ -3679,32 +3719,25 @@ var at = class extends P {
 	}
 	render() {
 		if (!this.config || !this.hass) return D``;
-		let e = Je(F(this.hass, this.config.online_entity)), t = W(F(this.hass, this.config.cpu_entity)), n = W(F(this.hass, this.config.gpu_entity)), r = W(F(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = F(this.hass, this.config.session_entity), c = F(this.hass, this.config.user_entity), l = I(s) ? tt(s) : void 0, u = I(c) ? B(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = W(F(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", _ = e === "online" ? "healthy" : e === "offline" ? "danger" : "", v = !!(u || l || d), y = [
-			n === void 0 ? void 0 : {
-				label: "GPU",
-				value: n
-			},
-			r === void 0 ? void 0 : {
-				label: "RAM",
-				value: r
-			},
-			...o.map((e) => ({
-				label: e.label,
-				value: e.usage
-			}))
-		].filter((e) => !!e);
+		let e = qe(F(this.hass, this.config.online_entity)), t = G(F(this.hass, this.config.cpu_entity)), n = G(F(this.hass, this.config.gpu_entity)), r = G(F(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = F(this.hass, this.config.session_entity), c = F(this.hass, this.config.user_entity), l = I(s) ? et(s) : void 0, u = I(c) ? B(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = G(F(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", te = e === "online" ? "healthy" : e === "offline" ? "danger" : "", _ = !!(u || l || d), v = [n === void 0 ? void 0 : {
+			label: "GPU",
+			value: n
+		}, ...o.map((e) => ({
+			label: e.label,
+			value: e.usage
+		}))].filter((e) => !!e);
 		return D`
       <ha-card>
         <div class="machine-shell pc-shell ${this.machineGridClass()}" style=${g}>
           <div class="machine-content pc-content">
-            <header class="machine-header pc-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${_}"></span>${ee}</div></div></header>
+            <header class="machine-header pc-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${te}"></span>${ee}</div></div></header>
             ${i || a ? D`<div class="machine-stat-stack">${i ? D`<div class="machine-mini-stat"><small>CPU</small><strong>${i}</strong></div>` : k}${a ? D`<div class="machine-mini-stat"><small>GPU</small><strong>${a}</strong></div>` : k}</div>` : k}
-            ${t === void 0 ? k : D`<div class="machine-gauge" style=${`--value:${t}`}><div class="machine-gauge-content"><strong>${K(t)}</strong><small>CPU</small></div></div>`}
-            ${v ? D`<div class="machine-context"><small>${u ? "Utilisateur" : l ? "Session" : "Uptime"}</small><strong>${u || l || d}</strong>${u && l ? D`<span>Session · ${l}</span>` : k}${d && (u || l) ? D`<span>Uptime · ${d}</span>` : k}</div>` : k}
+            ${this.renderResourceGauges(t, r)}
+            ${_ ? D`<div class="machine-context"><small>${u ? "Utilisateur" : l ? "Session" : "Uptime"}</small><strong>${u || l || d}</strong>${u && l ? D`<span>Session · ${l}</span>` : k}${d && (u || l) ? D`<span>Uptime · ${d}</span>` : k}</div>` : k}
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${e === "online" ? `${this.config.name} fonctionne normalement` : e === "offline" ? `${this.config.name} est hors ligne` : `État de ${this.config.name} indisponible`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>
-              ${y.length ? D`<div class="machine-bars">${y.map((e) => this.renderBar(e.label, e.value))}</div>` : k}
-              ${p || m || h || f !== void 0 ? D`<div class="machine-foot">${p ? D`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : k}${m || h ? D`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : k}${f === void 0 ? k : D`<span class="pc-foot-item">Batterie <strong>${K(f)}</strong></span>`}</div>` : k}
+              ${v.length ? D`<div class="machine-bars">${v.map((e) => this.renderBar(e.label, e.value))}</div>` : k}
+              ${p || m || h || f !== void 0 ? D`<div class="machine-foot">${p ? D`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : k}${m || h ? D`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : k}${f === void 0 ? k : D`<span class="pc-foot-item">Batterie <strong>${q(f)}</strong></span>`}</div>` : k}
             </section>
           </div>
         </div>
@@ -3714,30 +3747,30 @@ var at = class extends P {
 	}
 	uptimeLabel() {
 		if (this.config?.uptime_entity && I(F(this.hass, this.config.uptime_entity))) return B(this.hass, this.config.uptime_entity);
-		let e = et(F(this.hass, this.config?.last_boot_entity));
+		let e = $e(F(this.hass, this.config?.last_boot_entity));
 		return e === "—" ? void 0 : e;
 	}
 	availableDisplay(e) {
 		return I(F(this.hass, e)) ? B(this.hass, e) : void 0;
 	}
 	temperatureLabel(e) {
-		return Ye(F(this.hass, e)) === void 0 ? "" : B(this.hass, e);
+		return Je(F(this.hass, e)) === void 0 ? "" : B(this.hass, e);
 	}
 	renderBar(e, t) {
-		return D`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${K(t)}</strong></div>`;
+		return D`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${q(t)}</strong></div>`;
 	}
 	validDrives() {
 		return (this.config?.drives?.length ? this.config.drives : this.config?.storage_entity ? [{
 			entity: this.config.storage_entity,
 			label: "Disque"
 		}] : []).flatMap((e) => {
-			let t = F(this.hass, e.entity), n = Ze(t);
+			let t = F(this.hass, e.entity), n = Xe(t);
 			return !t || n === void 0 ? [] : [{
 				config: e,
 				state: t,
 				label: this.driveLabel(e, t),
 				usage: n,
-				summary: $e(t)
+				summary: Qe(t)
 			}];
 		});
 	}
@@ -3747,7 +3780,7 @@ var at = class extends P {
 		return typeof n == "string" && n.trim() ? n : t?.state && t.state.length <= 3 ? `Disque ${t.state}` : Pe(t, "Stockage");
 	}
 	renderDetails() {
-		let e = Je(F(this.hass, this.config?.online_entity)), t = e === "online", n = [
+		let e = qe(F(this.hass, this.config?.online_entity)), t = e === "online", n = [
 			[
 				"CPU",
 				this.config?.cpu_entity,
@@ -3788,15 +3821,15 @@ var at = class extends P {
 				this.config?.network_up_entity,
 				"mdi:upload"
 			]
-		].filter(([e, t]) => e.includes("Température") ? Ye(F(this.hass, t)) !== void 0 : I(F(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => I(F(this.hass, e.entity))), a = [
+		].filter(([e, t]) => e.includes("Température") ? Je(F(this.hass, t)) !== void 0 : I(F(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => I(F(this.hass, e.entity))), a = [
 			this.availableDisplay(this.config?.user_entity) ? ["Utilisateur", this.availableDisplay(this.config?.user_entity)] : void 0,
-			I(F(this.hass, this.config?.session_entity)) ? ["Session", tt(F(this.hass, this.config?.session_entity))] : void 0,
+			I(F(this.hass, this.config?.session_entity)) ? ["Session", et(F(this.hass, this.config?.session_entity))] : void 0,
 			this.uptimeLabel() ? ["Uptime", this.uptimeLabel()] : void 0,
 			this.availableDisplay(this.config?.last_boot_entity) ? ["Dernier démarrage", this.availableDisplay(this.config?.last_boot_entity)] : void 0,
 			this.availableDisplay(this.config?.last_activity_entity) ? ["Dernière activité", this.availableDisplay(this.config?.last_activity_entity)] : void 0,
 			this.availableDisplay(this.config?.system_state_entity) ? ["Dernier événement", this.availableDisplay(this.config?.system_state_entity)] : void 0
-		].filter((e) => !!e), o = W(F(this.hass, this.config?.battery_percentage_entity)), s = [
-			o === void 0 ? void 0 : ["Batterie", K(o)],
+		].filter((e) => !!e), o = G(F(this.hass, this.config?.battery_percentage_entity)), s = [
+			o === void 0 ? void 0 : ["Batterie", q(o)],
 			this.availableDisplay(this.config?.battery_status_entity) ? ["État de charge", this.availableDisplay(this.config?.battery_status_entity)] : void 0,
 			this.availableDisplay(this.config?.battery_powerline_entity) ? ["Alimentation", this.availableDisplay(this.config?.battery_powerline_entity)] : void 0,
 			this.nonNegativeDisplay(this.config?.battery_remaining_entity) ? ["Autonomie restante", this.nonNegativeDisplay(this.config?.battery_remaining_entity)] : void 0,
@@ -3812,10 +3845,10 @@ var at = class extends P {
 			this.config?.restart_entity,
 			this.config?.shutdown_entity,
 			this.config?.wake_entity
-		].some((e) => G(this.hass, e)), d = t && G(this.hass, this.config?.lock_entity), f = t && G(this.hass, this.config?.sleep_entity), p = t && G(this.hass, this.config?.restart_entity), m = t && G(this.hass, this.config?.shutdown_entity), h = e === "offline" && G(this.hass, this.config?.wake_entity);
+		].some((e) => K(this.hass, e)), d = t && K(this.hass, this.config?.lock_entity), f = t && K(this.hass, this.config?.sleep_entity), p = t && K(this.hass, this.config?.restart_entity), m = t && K(this.hass, this.config?.shutdown_entity), h = e === "offline" && K(this.hass, this.config?.wake_entity);
 		return this.renderDialog(this.config?.name || "PC", "mdi:laptop", D`
       <div class="dialog-body">
-        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? D`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : k}</div>${o !== void 0 || W(F(this.hass, this.config?.cpu_entity)) !== void 0 ? D`<div class="dialog-stat"><strong>${K(o === void 0 ? W(F(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : k}</div>
+        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? D`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : k}</div>${o !== void 0 || G(F(this.hass, this.config?.cpu_entity)) !== void 0 ? D`<div class="dialog-stat"><strong>${q(o === void 0 ? G(F(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : k}</div>
         ${n.length ? D`<section class="pc-detail-section"><div class="dialog-section-title">Performances principales</div><div class="grid two">${n.map(([e, t, n]) => D`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${n}></ha-icon></span><strong>${e.includes("Température") ? this.temperatureLabel(t) : B(this.hass, t)}</strong></div><div style="margin-top:10px;">${e}</div></div>`)}</div></section>` : k}
         ${r.length ? D`<section class="pc-detail-section"><div class="dialog-section-title">Stockage</div>${r.map((e) => D`<div class="pc-drive-row"><div class="pc-drive-top"><span>${e.label}</span><strong>${e.summary}</strong></div><div class="progress"><span style=${`width:${e.usage}%`}></span></div></div>`)}</section>` : k}
         ${a.length ? D`<section class="pc-detail-section"><div class="dialog-section-title">Session et système</div>${a.map(([e, t]) => this.infoRow(e, t))}</section>` : k}
@@ -3830,51 +3863,51 @@ var at = class extends P {
 		return D`<div class="pc-info-row"><span>${e}</span><strong>${t}</strong></div>`;
 	}
 	nonNegativeDisplay(e) {
-		let t = it(this.hass, e);
+		let t = rt(this.hass, e);
 		return t === "—" ? void 0 : t;
 	}
 	audioDevice(e, t, n, r, i) {
-		return I(F(this.hass, t)) ? D`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${B(this.hass, t)}</strong><div class="pc-audio-meta">${I(F(this.hass, n)) ? D`<span>État · ${B(this.hass, n)}</span>` : k}${I(F(this.hass, r)) ? D`<span>Volume · ${B(this.hass, r)}</span>` : k}${I(F(this.hass, i)) ? D`<span>${nt(F(this.hass, i))}</span>` : k}</div></div>` : k;
+		return I(F(this.hass, t)) ? D`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${B(this.hass, t)}</strong><div class="pc-audio-meta">${I(F(this.hass, n)) ? D`<span>État · ${B(this.hass, n)}</span>` : k}${I(F(this.hass, r)) ? D`<span>Volume · ${B(this.hass, r)}</span>` : k}${I(F(this.hass, i)) ? D`<span>${tt(F(this.hass, i))}</span>` : k}</div></div>` : k;
 	}
 	networkRow(e) {
-		let t = F(this.hass, e.entity), n = rt(t);
+		let t = F(this.hass, e.entity), n = nt(t);
 		return D`<div class="pc-network-row"><span>${e.label || Pe(t, "Interface réseau")}</span><strong class="pc-network-state"><span class="dot ${n === "Connecté" ? "healthy" : ""}"></span>${n}</strong></div>`;
 	}
 };
 //#endregion
 //#region src/cards/auralis-unraid-card.ts
-function ot(e) {
+function at(e) {
 	if (!I(e)) return "unavailable";
 	let t = e.state.toLowerCase();
 	return t === "paused" || t === "suspended" ? "paused" : L(e) ? "active" : "stopped";
 }
-function q(e) {
+function J(e) {
 	if (!I(e)) return;
 	let t = R(e, NaN);
 	return Number.isFinite(t) ? z(t) : void 0;
 }
-function st(e, t = "on") {
+function Y(e, t = "on") {
 	return !!(I(e) && e.state.toLowerCase() === t.trim().toLowerCase());
 }
-function ct(e, t, n) {
+function ot(e, t, n) {
 	return t?.[e || "default"]?.trim() || t?.default?.trim() || e || n;
 }
-function J(e, t) {
+function X(e, t) {
 	return !!(t && I(F(e, t)));
 }
-function lt(e, t) {
+function st(e, t) {
 	return t === "start" ? e.start_entity || (Ve(e.entity) === "switch" ? e.entity : void 0) : t === "stop" ? e.stop_entity || (Ve(e.entity) === "switch" ? e.entity : void 0) : t === "restart" ? e.restart_entity : t === "pause" ? e.pause_entity : e.resume_entity;
 }
-function Y(e) {
+function Z(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-var ut = class extends P {
+var ct = class extends P {
 	constructor(...e) {
 		super(...e), this.serviceTab = "docker", this.serviceFilter = "all", this.query = "", this.selected = /* @__PURE__ */ new Set(), this.startSelected = async () => {
 			let e = (this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || []).filter((e) => this.selected.has(e.entity));
 			await Promise.all(e.map((e) => this.startItem(e))), this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
 		}, this.confirmArrayStop = () => {
-			J(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
+			X(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
 				title: "Arrêter l’array ?",
 				message: "Les partages, conteneurs et machines virtuelles dépendants pourront devenir indisponibles.",
 				confirmLabel: "Arrêter l’array",
@@ -3979,44 +4012,6 @@ var ut = class extends P {
 
       .rail-button.has-active {
         color: var(--auralis-healthy);
-      }
-
-      .resource-gauge-stack {
-        position: absolute;
-        top: 0;
-        right: 58px;
-        display: grid;
-        gap: 7px;
-      }
-
-      .resource-gauge {
-        --value: 0;
-        display: grid;
-        width: 62px;
-        height: 62px;
-        place-items: center;
-        border-radius: 18px;
-        background:
-          linear-gradient(to top, color-mix(in srgb, var(--machine-accent) 72%, transparent) calc(var(--value) * 1%), transparent 0),
-          rgba(10, 14, 20, var(--machine-glass-alpha, 0.84));
-        box-shadow: inset 0 0 0 1px rgba(195, 211, 229, 0.16);
-        text-align: center;
-        backdrop-filter: blur(10px);
-      }
-
-      .resource-gauge small {
-        display: block;
-        color: #91a0b2;
-        font-size: 8px;
-        font-weight: 760;
-        letter-spacing: 0.06em;
-      }
-
-      .resource-gauge strong {
-        display: block;
-        margin-top: 3px;
-        color: #f4f7fb;
-        font-size: 13px;
       }
 
       .disk-summary-empty {
@@ -4171,11 +4166,6 @@ var ut = class extends P {
         }
       }
 
-      @container (max-width: 290px) {
-        .resource-gauge-stack {
-          display: none;
-        }
-      }
     `];
 	}
 	setConfig(e) {
@@ -4416,23 +4406,19 @@ var ut = class extends P {
 	}
 	render() {
 		if (!this.config || !this.hass) return D``;
-		let e = F(this.hass, this.config.status_entity), t = I(e) && L(e), n = I(e), r = q(F(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = q(F(this.hass, this.config.cpu_entity)), l = q(F(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? B(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
+		let e = F(this.hass, this.config.status_entity), t = I(e) && L(e), n = I(e), r = J(F(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = J(F(this.hass, this.config.cpu_entity)), l = J(F(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? B(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
 		return D`
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${p}>
           <div class="machine-content">
             <header class="machine-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${t ? "healthy" : "danger"}"></span>UNRAID · ${f}</div></div></header>
-            <div class="resource-gauge-stack">
-              <div class="resource-gauge" style=${`--value:${c ?? 0}`}><div><small>CPU</small><strong>${Y(c)}</strong></div></div>
-              <div class="resource-gauge" style=${`--value:${l ?? 0}`}><div><small>RAM</small><strong>${Y(l)}</strong></div></div>
-            </div>
             <div class="machine-rail">
               <button class="rail-button" @click=${() => this.openDialog("server")} aria-label="Détails du serveur"><ha-icon icon="mdi:information-outline"></ha-icon></button>
               <button class="rail-button ${i ? "has-active" : ""}" @click=${() => this.openServices("docker")} aria-label="Docker"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
               <button class="rail-button ${a ? "has-active" : ""}" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
             </div>
-            <div class="machine-gauge" style=${`--value:${r ?? 0}`}><div class="machine-gauge-content"><strong>${Y(r)}</strong><small>Array</small></div></div>
-            <div class="machine-context"><small>État de l’array</small><strong>${d}</strong></div>
+            ${this.renderResourceGauges(c, l)}
+            <div class="machine-context"><small>Array${r === void 0 ? "" : ` · ${Z(r)} utilisés`}</small><strong>${d}</strong></div>
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Stockage</small><strong>${u.length ? `${u.length} disque${u.length > 1 ? "s" : ""} affiché${u.length > 1 ? "s" : ""}` : "Aucun disque sélectionné"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("disks")}><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button></div>
               <div class="machine-bars">
@@ -4470,7 +4456,7 @@ var ut = class extends P {
 		return this.itemState(e) === "paused";
 	}
 	itemState(e) {
-		return ot(F(this.hass, e.entity));
+		return at(F(this.hass, e.entity));
 	}
 	serviceItems() {
 		let e = this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || [], t = this.query.trim().toLocaleLowerCase("fr");
@@ -4482,7 +4468,7 @@ var ut = class extends P {
 	groupedItems() {
 		let e = /* @__PURE__ */ new Map(), t = this.serviceTab === "docker" ? this.config?.docker_group_labels : this.config?.vm_group_labels, n = this.serviceTab === "docker" ? "Services" : "Machines virtuelles";
 		for (let r of this.serviceItems()) {
-			let i = ct(r.group, t, n);
+			let i = ot(r.group, t, n);
 			e.set(i, [...e.get(i) || [], r]);
 		}
 		return e;
@@ -4520,7 +4506,7 @@ var ut = class extends P {
 		}}>${t}</button>`;
 	}
 	renderServiceRow(e) {
-		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = J(this.hass, lt(e, "start"));
+		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = X(this.hass, st(e, "start"));
 		return D`
       <div class="list-row">
         <input class="selection" type="checkbox" .checked=${this.selected.has(e.entity)} ?disabled=${t !== "stopped" || !o} @change=${() => this.toggleSelected(e.entity)} />
@@ -4538,9 +4524,9 @@ var ut = class extends P {
 	}
 	renderServiceActions(e, t) {
 		let n = e, r = this.serviceTab === "vm", i = (n, r, i, a = "", o = !1) => {
-			let s = lt(e, n);
+			let s = st(e, n);
 			if (!s) return D``;
-			let c = t !== "unavailable" && J(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
+			let c = t !== "unavailable" && X(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
 			return D`<button class=${`action ${a}`.trim()} ?disabled=${!c} @click=${l}><ha-icon .icon=${i}></ha-icon>${r}</button>`;
 		};
 		return D`
@@ -4559,8 +4545,8 @@ var ut = class extends P {
 		t.has(e) ? t.delete(e) : t.add(e), this.selected = t, this.requestUpdate();
 	}
 	async runItemAction(e, t) {
-		let n = lt(e, t);
-		if (!J(this.hass, n)) return;
+		let n = st(e, t);
+		if (!X(this.hass, n)) return;
 		let r = t === "start" && !e.start_entity && n === e.entity || t === "stop" && !e.stop_entity && n === e.entity;
 		if (t === "stop" && r) {
 			await He(this.hass, n);
@@ -4572,8 +4558,8 @@ var ut = class extends P {
 		await this.runItemAction(e, "start");
 	}
 	confirmItemAction(e, t) {
-		let n = lt(e, t);
-		if (!J(this.hass, n)) return;
+		let n = st(e, t);
+		if (!X(this.hass, n)) return;
 		let r = t === "restart", i = this.serviceTab === "vm", a = r ? "Redémarrer" : i ? "Éteindre" : "Arrêter";
 		this.askConfirmation({
 			title: `${a} ${e.name} ?`,
@@ -4584,7 +4570,7 @@ var ut = class extends P {
 	}
 	confirmServerAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
-		J(this.hass, n) && (this.askConfirmation({
+		X(this.hass, n) && (this.askConfirmation({
 			title: `${t ? "Redémarrer" : "Éteindre"} le serveur ?`,
 			message: "L’array, les conteneurs Docker et les machines virtuelles pourront devenir indisponibles.",
 			confirmLabel: t ? "Redémarrer" : "Éteindre",
@@ -4592,7 +4578,7 @@ var ut = class extends P {
 		}), this.dialog = "server");
 	}
 	renderDiskRow(e) {
-		let t = q(F(this.hass, e.usage_entity)), n = F(this.hass, e.status_entity), r = st(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? I(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
+		let t = J(F(this.hass, e.usage_entity)), n = F(this.hass, e.status_entity), r = Y(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? I(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
 		return D`
       <div class="disk-row">
         <div class="disk-row-head">
@@ -4601,7 +4587,7 @@ var ut = class extends P {
         </div>
         <div class="progress"><span style=${`width:${t ?? 0}%`}></span></div>
         <div class="disk-meta">
-          <span>${e.capacity_entity ? B(this.hass, e.capacity_entity) : `${Y(t)} utilisés`}</span>
+          <span>${e.capacity_entity ? B(this.hass, e.capacity_entity) : `${Z(t)} utilisés`}</span>
           ${e.temperature_entity ? D`<span>${B(this.hass, e.temperature_entity)}</span>` : k}
         </div>
       </div>
@@ -4612,12 +4598,12 @@ var ut = class extends P {
 		return t.length ? t : e.filter((e) => e.show_on_card !== !1);
 	}
 	renderDiskSummary(e) {
-		let t = q(F(this.hass, e.usage_entity));
+		let t = J(F(this.hass, e.usage_entity));
 		return D`
       <div class="machine-bar disk-summary">
         <span title=${e.name}>${e.name}</span>
         <div class="track"><span style=${`width:${t ?? 0}%`}></span></div>
-        <strong>${Y(t)}</strong>
+        <strong>${Z(t)}</strong>
       </div>
     `;
 	}
@@ -4630,7 +4616,7 @@ var ut = class extends P {
 		return t;
 	}
 	renderDisksDialog() {
-		let e = this.config?.disks || [], t = e.filter((e) => I(F(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && st(F(this.hass, e.status_entity), e.healthy_state || "on")).length;
+		let e = this.config?.disks || [], t = e.filter((e) => I(F(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && Y(F(this.hass, e.status_entity), e.healthy_state || "on")).length;
 		return this.renderDialog("Disques", "mdi:harddisk", D`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -4653,10 +4639,10 @@ var ut = class extends P {
 		}
 	}
 	renderServerDialog() {
-		let e = q(F(this.hass, this.config?.array_usage_entity)), t = F(this.hass, this.config?.status_entity), n = I(t) && L(t), r = F(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? st(r, this.config.parity_healthy_state) : I(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? I(r) ? i ? "Valide" : B(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? B(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? B(this.hass, this.config.array_label_entity) : Y(e), h = this.config?.ups_connected_entity ? st(F(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : B(this.hass, this.config?.ups_status_entity);
+		let e = J(F(this.hass, this.config?.array_usage_entity)), t = F(this.hass, this.config?.status_entity), n = I(t) && L(t), r = F(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? Y(r, this.config.parity_healthy_state) : I(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? I(r) ? i ? "Valide" : B(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? B(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? B(this.hass, this.config.array_label_entity) : Z(e), h = this.config?.ups_connected_entity ? Y(F(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : B(this.hass, this.config?.ups_status_entity);
 		return this.renderDialog(this.config?.name || "Serveur UNRAID", "mdi:server", D`
         <div class="dialog-body">
-          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${B(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${Y(e)}</strong><small>utilisé</small></div></div>
+          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${B(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${Z(e)}</strong><small>utilisé</small></div></div>
           <div class="dialog-section-title">Stockage et santé</div>
           <div class="grid two">
             ${this.statusTile("Array", `${p} · ${m}`, "mdi:database-outline")}
@@ -4688,14 +4674,14 @@ var ut = class extends P {
           <div class="dialog-section">
             <div class="dialog-section-title">Services</div>
             <div class="actions">
-              ${this.config?.array_start_entity ? D`<button class="action primary" ?disabled=${!J(this.hass, this.config.array_start_entity)} @click=${() => H(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : k}
+              ${this.config?.array_start_entity ? D`<button class="action primary" ?disabled=${!X(this.hass, this.config.array_start_entity)} @click=${() => H(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : k}
               ${f ? D`<button class="action primary" @click=${() => window.open(f, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:open-in-new"></ha-icon>Ouvrir UNRAID</button>` : k}
             </div>
           </div>
           ${d ? D`<div class="dialog-danger-zone"><div class="dialog-section-title">Zone sensible</div><div class="actions">
-                ${this.config?.array_stop_entity ? D`<button class="action danger" ?disabled=${!J(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : k}
-                ${this.config?.restart_entity ? D`<button class="action danger" ?disabled=${!J(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : k}
-                ${this.config?.shutdown_entity ? D`<button class="action danger" ?disabled=${!J(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : k}
+                ${this.config?.array_stop_entity ? D`<button class="action danger" ?disabled=${!X(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : k}
+                ${this.config?.restart_entity ? D`<button class="action danger" ?disabled=${!X(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : k}
+                ${this.config?.shutdown_entity ? D`<button class="action danger" ?disabled=${!X(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : k}
               </div></div>` : k}
         </div>
       `);
@@ -4703,28 +4689,27 @@ var ut = class extends P {
 };
 //#endregion
 //#region src/cards/auralis-proxmox-card.ts
-function dt(e) {
+function lt(e) {
 	return I(e) ? L(e) ? "online" : "offline" : "unavailable";
 }
-function X(e) {
+function ut(e) {
 	if (!I(e)) return;
-	let t = R(e, NaN);
-	return Number.isFinite(t) ? z(t) : void 0;
+	let t = e?.attributes.unit_of_measurement;
+	if (t && t !== "%") return;
+	let n = R(e, NaN);
+	return Number.isFinite(n) ? z(n) : void 0;
 }
-function Z(e, t) {
+function Q(e, t) {
 	return !!(t && I(F(e, t)));
 }
-function Q(e) {
+function dt(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-function ft(e, t) {
-	return t ? z(e / t * 100) : void 0;
-}
-var pt = class extends P {
+var ft = class extends P {
 	constructor(...e) {
 		super(...e), this.workloadTab = "vm", this.workloadFilter = "all", this.query = "", this.selected = /* @__PURE__ */ new Set(), this.startSelected = async () => {
-			let e = [...this.config?.vms || [], ...this.config?.containers || []];
-			await Promise.all(e.filter((e) => this.selected.has(e.entity)).map((e) => this.startItem(e))), this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
+			let e = this.allWorkloads();
+			await Promise.all(e.filter((e) => this.selected.has(e.entity) && !this.itemActive(e) && !this.itemPaused(e)).map((e) => this.startItem(e))), this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
 		};
 	}
 	static {
@@ -4791,6 +4776,17 @@ var pt = class extends P {
         color: var(--auralis-info);
       }
 
+      .service-icon.healthy { color: var(--auralis-healthy); background: color-mix(in srgb, var(--auralis-healthy) 16%, transparent); }
+      .service-icon.warning { color: var(--auralis-active); }
+      .service-icon.stopped, .service-icon.unavailable { color: var(--auralis-muted); background: var(--auralis-layer); }
+      .service-icon.unavailable { opacity: .5; }
+      .storage-bar { grid-template-columns: minmax(70px, 1fr) minmax(50px, 2fr) 38px; }
+      .storage-bar > span { overflow-wrap: anywhere; }
+      .storage-detail { padding: 16px 0; border-bottom: 1px solid var(--auralis-border); }
+      .storage-detail .muted { margin-top: 8px; font-size: 12px; }
+      .storage-detail .machine-bar, .storage-detail .machine-bar strong { color: var(--auralis-text); }
+      .storage-detail .track span { background: var(--auralis-healthy); }
+      .machine-panel { margin-top: auto; max-height: 285px; overflow: auto; }
       .selection {
         grid-column: 1;
       }
@@ -4810,110 +4806,13 @@ var pt = class extends P {
         font-size: 10px;
       }
 
-      .machine-gauge.metric-unavailable {
-        --value: 0;
-      }
-
-      .machine-gauge.metric-unavailable .machine-gauge-content strong,
-      .machine-bar.metric-unavailable strong {
-        color: #8e9baa;
-      }
-
-      .machine-bar.metric-unavailable .track span {
-        width: 0 !important;
-        background: transparent;
-      }
-
-      .machine-bar.cluster-bar {
-        grid-template-columns: 48px minmax(0, 1fr) minmax(42px, auto);
-      }
-
-      .cluster-signals {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px;
-        margin-top: 16px;
-      }
-
-      .cluster-signals.with-alerts {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .cluster-signal {
-        min-width: 0;
-        padding: 8px 9px;
-        border: 1px solid rgba(195, 211, 229, 0.12);
-        border-radius: 11px;
-        background: rgba(255, 255, 255, 0.035);
-      }
-
-      .cluster-signal small,
-      .cluster-signal strong {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .cluster-signal small {
-        color: #8f9daf;
-        font-size: 8px;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-      }
-
-      .cluster-signal strong {
-        margin-top: 5px;
-        color: #f4f7fb;
-        font-size: 9px;
-      }
-
-      .cluster-signal.warning strong {
-        color: var(--auralis-active);
-      }
-
-      .node-list {
-        display: grid;
-        gap: 8px;
-      }
-
-      .node-row {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
-        border: 1px solid var(--auralis-border);
-        border-radius: 16px;
-        background: var(--auralis-layer);
-      }
-
-      .node-actions {
-        display: flex;
-        gap: 7px;
-      }
-
-      .node-actions .icon-button {
-        width: 36px;
-        height: 36px;
-      }
-
-      @media (max-width: 480px) {
-        .node-row {
-          grid-template-columns: auto minmax(0, 1fr);
-        }
-
-        .node-actions {
-          grid-column: 2;
-        }
-      }
     `];
 	}
 	setConfig(e) {
 		if (!e.status_entity) throw Error("status_entity est obligatoire.");
 		this.config = {
 			...e,
-			name: e.name || "Cluster Proxmox",
+			name: e.name || "Proxmox",
 			theme: e.theme || "auto",
 			nodes: e.nodes || [],
 			vms: e.vms || [],
@@ -4922,7 +4821,7 @@ var pt = class extends P {
 	}
 	static getStubConfig() {
 		return {
-			name: "Cluster Proxmox",
+			name: "Proxmox",
 			theme: "carbon",
 			status_entity: "binary_sensor.proxmox_online",
 			nodes: [],
@@ -4959,6 +4858,34 @@ var pt = class extends P {
 				{
 					name: "quorum_entity",
 					selector: { entity: {} }
+				},
+				{
+					name: "cpu_entity",
+					selector: { entity: {} }
+				},
+				{
+					name: "uptime_entity",
+					selector: { entity: {} }
+				},
+				{
+					name: "temperature_entity",
+					selector: { entity: {} }
+				},
+				{
+					name: "network_down_entity",
+					selector: { entity: {} }
+				},
+				{
+					name: "network_up_entity",
+					selector: { entity: {} }
+				},
+				{
+					name: "storages",
+					selector: { object: {} }
+				},
+				{
+					name: "disks",
+					selector: { object: {} }
 				},
 				{
 					name: "cluster_usage_entity",
@@ -5035,7 +4962,7 @@ var pt = class extends P {
 					} }
 				}
 			],
-			computeHelper: (e) => e.name === "backup_action_entity" ? "Les nœuds, VM et conteneurs se configurent en YAML." : void 0
+			computeHelper: (e) => e.name === "backup_action_entity" ? "Les stockages, disques, VM et conteneurs se configurent en YAML." : void 0
 		};
 	}
 	getCardSize() {
@@ -5051,59 +4978,70 @@ var pt = class extends P {
 	}
 	render() {
 		if (!this.config || !this.hass) return D``;
-		let e = dt(F(this.hass, this.config.status_entity)), t = e === "online", n = X(F(this.hass, this.config.cluster_usage_entity)), r = X(F(this.hass, this.config.memory_entity)), i = X(F(this.hass, this.config.storage_entity)), a = (this.config.nodes || []).filter((e) => this.nodeActive(e)).length, o = this.config.nodes?.length || 0, s = (this.config.vms || []).filter((e) => this.itemActive(e)).length, c = this.config.vms?.length || 0, l = (this.config.containers || []).filter((e) => this.itemActive(e)).length, u = this.config.containers?.length || 0, d = ft(s, c), f = ft(l, u), p = this.config.quorum_entity ? B(this.hass, this.config.quorum_entity) : `${a} / ${o || "—"}`, m = (this.config.nodes || []).map((e) => e.name).join(" · ") || "Aucun nœud configuré", h = this.config.memory_label_entity ? B(this.hass, this.config.memory_label_entity) : Q(r), g = this.config.storage_label_entity ? B(this.hass, this.config.storage_label_entity) : Q(i), ee = F(this.hass, this.config.alerts_entity), _ = I(ee) ? R(ee, NaN) : void 0, v = _ === 0 ? "Aucune" : Number.isFinite(_) ? `${Math.round(_)} active${_ === 1 ? "" : "s"}` : B(this.hass, this.config.alerts_entity), y = o ? a === o ? o === 1 ? "Le nœud est disponible" : `Les ${o} nœuds sont disponibles` : `${a}/${o} nœuds disponibles` : "Aucun nœud configuré", te = e === "online" ? `Proxmox · quorum ${p}` : e === "offline" ? "Proxmox · cluster hors ligne" : "État du cluster indisponible", ne = e === "online" ? "healthy" : e === "offline" ? "danger" : "", b = t && Z(this.hass, this.config.backup_action_entity);
+		let e = lt(F(this.hass, this.config.status_entity)), t = ut(F(this.hass, this.config.cpu_entity || this.config.cluster_usage_entity)), n = ut(F(this.hass, this.config.memory_entity)), r = (this.config.vms || []).some((e) => this.itemActive(e)), i = (this.config.containers || []).some((e) => this.itemActive(e)), a = this.storageItems().filter((e) => e.show_on_card !== !1), o = e === "online" ? "Nœud en ligne et disponible" : e === "offline" ? "Nœud hors ligne" : "État du nœud indisponible";
 		return D`
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${this.machineStyle("#50d59b")}>
           <div class="machine-content">
-            <header class="machine-header">
-              <div>
-                <h2>${this.config.name}</h2>
-                <div class="machine-status">
-                  <span class="dot ${ne}"></span>
-                  ${te}
-                </div>
-              </div>
-            </header>
-            <div class="machine-stat-stack">
-              <div class="machine-mini-stat"><small>Charge</small><strong>${Q(n)}</strong></div>
-              <div class="machine-mini-stat"><small>Mémoire</small><strong>${h}</strong></div>
-            </div>
+            <header class="machine-header"><div><h2>${this.config.name}</h2>
+              <div class="machine-status"><span class="dot ${e === "online" ? "healthy" : e === "offline" ? "danger" : ""}"></span>${o}</div>
+            </div></header>
             <div class="machine-rail">
-              <button class="rail-button" @click=${() => this.openDialog("cluster")} aria-label="Détails du cluster"><ha-icon icon="mdi:lan"></ha-icon></button>
-              <button class="rail-button" @click=${() => this.openWorkloads("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:layers-triple-outline"></ha-icon></button>
-              <button class="rail-button" @click=${() => this.openWorkloads("container")} aria-label="Conteneurs LXC"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
-              <button class="rail-button" ?disabled=${!b} @click=${() => H(this.hass, this.config?.backup_action_entity)} aria-label="Lancer la sauvegarde"><ha-icon icon="mdi:backup-restore"></ha-icon></button>
+              <button class="rail-button" @click=${() => this.openDialog("cluster")} title="Détails du nœud" aria-label="Détails du nœud"><ha-icon icon="mdi:information-outline"></ha-icon></button>
+              <button class="rail-button ${r ? "has-active" : ""}" @click=${() => this.openWorkloads("vm")} title="Machines virtuelles" aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
+              <button class="rail-button ${i ? "has-active" : ""}" @click=${() => this.openWorkloads("container")} title="Conteneurs LXC" aria-label="Conteneurs LXC"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
             </div>
-            <div class="machine-gauge ${n === void 0 ? "metric-unavailable" : ""}" style=${`--value:${n ?? 0}`}>
-              <div class="machine-gauge-content"><strong>${Q(n)}</strong><small>Cluster</small></div>
-            </div>
-            <div class="machine-context"><small>Nœuds</small><strong>${m}</strong></div>
+            ${this.renderResourceGauges(t, n)}
             <section class="machine-panel">
               <div class="machine-panel-head">
-                <div class="machine-panel-title"><small>Cluster</small><strong>${y}</strong></div>
-                <button class="machine-accent-action" @click=${() => this.openDialog("cluster")}><ha-icon icon="mdi:source-branch"></ha-icon>Cluster</button>
+                <div class="machine-panel-title"><small>Stockage</small><strong>Espaces de stockage</strong></div>
+                <button class="machine-accent-action" @click=${() => this.openDialog("storage")} aria-label="Stockages et disques"><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button>
               </div>
-              <div class="machine-bars">
-                <div class="machine-bar cluster-bar ${d === void 0 ? "metric-unavailable" : ""}"><span>VM</span><div class="track"><span style=${`width:${d ?? 0}%`}></span></div><strong>${s}/${c || "—"}</strong></div>
-                <div class="machine-bar cluster-bar ${f === void 0 ? "metric-unavailable" : ""}"><span>LXC</span><div class="track"><span style=${`width:${f ?? 0}%`}></span></div><strong>${l}/${u || "—"}</strong></div>
-                <div class="machine-bar cluster-bar ${i === void 0 ? "metric-unavailable" : ""}"><span>Stockage</span><div class="track"><span style=${`width:${i ?? 0}%`}></span></div><strong title=${g}>${g}</strong></div>
-              </div>
-              <div class="cluster-signals ${this.config.alerts_entity ? "with-alerts" : ""}">
-                <span class="cluster-signal"><small>Ceph</small><strong title=${B(this.hass, this.config.ceph_entity)}>${B(this.hass, this.config.ceph_entity)}</strong></span>
-                <span class="cluster-signal"><small>Backup</small><strong title=${B(this.hass, this.config.backup_entity)}>${B(this.hass, this.config.backup_entity)}</strong></span>
-                ${this.config.alerts_entity ? D`<span class="cluster-signal ${typeof _ == "number" && _ > 0 ? "warning" : ""}"><small>Alertes</small><strong title=${v}>${v}</strong></span>` : k}
-              </div>
+              <div class="machine-bars">${a.map((e) => this.renderStorageBar(e))}</div>
+              ${a.length ? k : D`<div class="empty">Aucun stockage sélectionné.</div>`}
             </section>
           </div>
         </div>
       </ha-card>
       ${this.dialog === "cluster" ? this.renderClusterDialog() : k}
       ${this.dialog === "workloads" ? this.renderWorkloadsDialog() : k}
+      ${this.dialog === "storage" ? this.renderStorageDialog() : k}
     `;
 	}
-	nodeActive(e) {
-		return L(F(this.hass, e.status_entity));
+	storageItems() {
+		return this.config?.storages === void 0 ? this.config?.storage_entity ? [{
+			name: "Stockage",
+			usage_entity: this.config.storage_entity,
+			capacity_entity: this.config.storage_label_entity
+		}] : [] : this.config.storages;
+	}
+	renderStorageBar(e) {
+		let t = ut(F(this.hass, e.usage_entity));
+		return D`<div class="machine-bar storage-bar">
+      <span title=${e.name}>${e.name}</span>
+      <div class="track" role="meter" aria-label=${e.name}
+        aria-valuemin="0" aria-valuemax="100" aria-valuenow=${t ?? k}
+        aria-valuetext=${t === void 0 ? "Indisponible" : dt(t)}>
+        <span style=${`width:${t ?? 0}%`}></span>
+      </div><strong>${dt(t)}</strong>
+    </div>`;
+	}
+	renderStorageDialog() {
+		let e = (e, t) => D`
+      <div class="dialog-section-title">${e}</div>
+      ${t.length ? t.map((e) => D`<div class="storage-detail">
+        ${this.renderStorageBar(e)}
+        <div class="muted">${[
+			e.capacity_entity ? B(this.hass, e.capacity_entity) : "",
+			e.status_entity ? B(this.hass, e.status_entity) : "",
+			e.temperature_entity ? B(this.hass, e.temperature_entity) : ""
+		].filter(Boolean).join(" · ")}</div>
+      </div>`) : D`<div class="empty">Aucun élément configuré.</div>`}`;
+		return this.renderDialog("Stockages et disques", "mdi:harddisk", D`
+      <div class="dialog-body">
+        ${e("Espaces de stockage", this.storageItems())}
+        ${e("Disques physiques", this.config?.disks || [])}
+      </div>`);
 	}
 	itemActive(e) {
 		return L(F(this.hass, e.entity));
@@ -5135,15 +5073,11 @@ var pt = class extends P {
 	}
 	renderWorkloadsDialog() {
 		let e = this.allWorkloads(), t = e.filter((e) => this.itemActive(e)).length, n = e.filter((e) => this.itemPaused(e)).length, r = e.filter((e) => !this.itemActive(e) && !this.itemPaused(e)).length;
-		return this.renderDialog("Charges virtuelles", this.workloadTab === "vm" ? "mdi:layers-triple-outline" : "mdi:cube-outline", D`
+		return this.renderDialog(this.workloadTab === "vm" ? "Machines virtuelles" : "Conteneurs LXC", this.workloadTab === "vm" ? "mdi:layers-triple-outline" : "mdi:cube-outline", D`
         <div class="dialog-body">
           <div class="dialog-overview">
             <div><span class="eyebrow">${this.workloadTab === "vm" ? "Machines virtuelles" : "Conteneurs LXC"}</span><strong>${t} actif${t > 1 ? "s" : ""} sur ${e.length}</strong><span class="muted">Filtrer, démarrer et ouvrir les consoles depuis le dashboard</span></div>
             <div class="dialog-stat"><strong>${r}</strong><small>arrêté${r > 1 ? "s" : ""}</small></div>
-          </div>
-          <div class="tabs">
-            <button class=${this.workloadTab === "vm" ? "active" : ""} @click=${() => this.changeTab("vm")}>VM · ${this.config?.vms?.length || 0}</button>
-            <button class=${this.workloadTab === "container" ? "active" : ""} @click=${() => this.changeTab("container")}>LXC · ${this.config?.containers?.length || 0}</button>
           </div>
           <input class="search" placeholder=${this.workloadTab === "vm" ? "Rechercher une VM" : "Rechercher un conteneur"} .value=${this.query} @input=${(e) => {
 			this.query = e.target.value, this.requestUpdate();
@@ -5169,19 +5103,16 @@ var pt = class extends P {
 			this.workloadFilter = e, this.requestUpdate();
 		}}>${t}</button>`;
 	}
-	changeTab(e) {
-		this.workloadTab = e, this.workloadFilter = "all", this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
-	}
 	renderWorkloadRow(e) {
-		let t = this.itemActive(e), n = this.itemPaused(e), r = Z(this.hass, e.start_entity || e.entity), i = t ? "healthy" : n ? "warning" : "danger", a = t ? "Actif" : n ? "Suspendu" : "Arrêté";
+		let t = this.itemActive(e), n = this.itemPaused(e), r = I(F(this.hass, e.entity)) && Q(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0)), i = I(F(this.hass, e.entity)), a = i ? t ? "healthy" : n ? "warning" : "stopped" : "unavailable", o = i ? t ? "Actif" : n ? "Suspendu" : "Arrêté" : "Indisponible";
 		return D`
       <div class="list-row">
         <input class="selection" type="checkbox" .checked=${this.selected.has(e.entity)} ?disabled=${t || n || !r} @change=${() => this.toggleSelected(e.entity)} />
         <div class="service-main">
-          <span class="service-icon"><ha-icon .icon=${e.icon || (this.workloadTab === "vm" ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
+          <span class="service-icon ${a}"><ha-icon .icon=${e.icon || (this.workloadTab === "vm" ? "mdi:monitor" : "mdi:cube-outline")}></ha-icon></span>
           <div class="meta">
             <div class="name">${e.name}</div>
-            <div class="state"><span class="dot ${i}" style="display:inline-block;margin-right:5px;"></span>${a}${e.node ? ` · ${e.node}` : ""}${e.cpu_entity ? ` · CPU ${B(this.hass, e.cpu_entity)}` : ""}</div>
+            <div class="state"><span class="dot ${a}" style="display:inline-block;margin-right:5px;"></span>${o}${e.node ? ` · ${e.node}` : ""}${e.cpu_entity ? ` · CPU ${B(this.hass, e.cpu_entity)}` : ""}</div>
             <div class="resource-tags">${e.vcpus ? D`<span>${e.vcpus} vCPU</span>` : k}${e.memory ? D`<span>${e.memory}</span>` : k}${e.storage ? D`<span>${e.storage}</span>` : k}${e.ip_entity ? D`<span>${B(this.hass, e.ip_entity)}</span>` : k}</div>
           </div>
         </div>
@@ -5190,70 +5121,110 @@ var pt = class extends P {
     `;
 	}
 	renderWorkloadAction(e, t, n) {
-		return n ? D`<button class="action primary" ?disabled=${!Z(this.hass, e.resume_entity)} @click=${() => H(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? D`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : D`<button class="action" ?disabled=${!Z(this.hass, e.restart_entity)} @click=${() => H(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : D`<button class="action primary" ?disabled=${!Z(this.hass, e.start_entity || e.entity)} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>`;
+		return I(F(this.hass, e.entity)) ? n ? D`<button class="action primary" ?disabled=${!Q(this.hass, e.resume_entity)} @click=${() => H(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? D`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : D`<button class="action" ?disabled=${!Q(this.hass, e.restart_entity)} @click=${() => H(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : D`<button class="action primary" ?disabled=${!Q(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0))} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>` : D`<span class="muted">Indisponible</span>`;
 	}
 	toggleSelected(e) {
 		let t = new Set(this.selected);
 		t.has(e) ? t.delete(e) : t.add(e), this.selected = t, this.requestUpdate();
 	}
 	async startItem(e) {
-		let t = e.start_entity || e.entity;
-		Z(this.hass, t) && await H(this.hass, t);
-	}
-	confirmNodeAction(e, t) {
-		let n = t === "restart", r = n ? e.restart_entity : e.shutdown_entity;
-		this.nodeActive(e) && Z(this.hass, r) && (this.askConfirmation({
-			title: `${n ? "Redémarrer" : "Arrêter"} ${e.name} ?`,
-			message: n ? "Les charges hébergées sur ce nœud pourront être interrompues pendant le redémarrage." : "Le nœud et les charges qui n’ont pas été migrées deviendront indisponibles.",
-			confirmLabel: n ? "Redémarrer" : "Arrêter",
-			action: () => H(this.hass, r)
-		}), this.dialog = "cluster");
+		if (!I(F(this.hass, e.entity)) || this.itemActive(e) || this.itemPaused(e)) return;
+		let t = e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0);
+		Q(this.hass, t) && await H(this.hass, t);
 	}
 	confirmClusterAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
-		dt(F(this.hass, this.config?.status_entity)) === "online" && Z(this.hass, n) && (this.askConfirmation({
-			title: `${t ? "Redémarrer" : "Arrêter"} le cluster ?`,
+		lt(F(this.hass, this.config?.status_entity)) === "online" && Q(this.hass, n) && (this.askConfirmation({
+			title: `${t ? "Redémarrer" : "Arrêter"} ${this.config?.name || "le nœud"} ?`,
 			message: "Cette action peut interrompre plusieurs machines virtuelles et services. Vérifiez les migrations avant de continuer.",
 			confirmLabel: t ? "Redémarrer" : "Arrêter",
 			action: () => H(this.hass, n)
 		}), this.dialog = "cluster");
 	}
 	renderClusterDialog() {
-		let e = (this.config?.nodes || []).filter((e) => this.nodeActive(e)).length, t = this.config?.nodes?.length || 0, n = X(F(this.hass, this.config?.cluster_usage_entity)), r = dt(F(this.hass, this.config?.status_entity)), i = r === "online", a = i && Z(this.hass, this.config?.backup_action_entity), o = i && Z(this.hass, this.config?.restart_entity), s = i && Z(this.hass, this.config?.shutdown_entity), c = F(this.hass, this.config?.alerts_entity), l = I(c) ? R(c, NaN) : void 0, u = l === 0 ? "Aucune" : Number.isFinite(l) ? `${Math.round(l)} active${l === 1 ? "" : "s"}` : B(this.hass, this.config?.alerts_entity);
-		return this.renderDialog(this.config?.name || "Cluster Proxmox", "mdi:server-network", D`
-        <div class="dialog-body">
-          <div class="dialog-overview"><div><span class="eyebrow">État du cluster</span><strong>${i ? `${e}/${t || "—"} nœuds disponibles` : r === "offline" ? "Cluster hors ligne" : "État indisponible"}</strong><span class="muted">${this.config?.version_entity ? `Version ${B(this.hass, this.config.version_entity)}` : "Quorum, ressources et sauvegardes"}</span></div><div class="dialog-stat"><strong>${Q(n)}</strong><small>charge</small></div></div>
-          <div class="dialog-section-title">Nœuds</div>
-          <div class="node-list">
-            ${(this.config?.nodes || []).map((e) => {
-			let t = dt(F(this.hass, e.status_entity)), n = t === "online", r = n ? "healthy" : t === "offline" ? "danger" : "", i = n ? "En ligne" : t === "offline" ? "Hors ligne" : "État indisponible", a = n && Z(this.hass, e.restart_entity), o = n && Z(this.hass, e.shutdown_entity);
-			return D`
-                <div class="node-row">
-                  <span class="tile-icon"><ha-icon .icon=${e.icon || "mdi:server"}></ha-icon></span>
-                  <div class="meta"><div class="name">${e.name}</div><div class="state"><span class="dot ${r}" style="display:inline-block;margin-right:5px;"></span>${i}${e.cpu_entity ? ` · CPU ${B(this.hass, e.cpu_entity)}` : ""}${e.memory_entity ? ` · RAM ${B(this.hass, e.memory_entity)}` : ""}${e.temperature_entity ? ` · ${B(this.hass, e.temperature_entity)}` : ""}</div></div>
-                  <div class="node-actions"><button class="icon-button" ?disabled=${!a} @click=${() => this.confirmNodeAction(e, "restart")} aria-label=${`Redémarrer ${e.name}`}><ha-icon icon="mdi:restart"></ha-icon></button><button class="icon-button" ?disabled=${!o} @click=${() => this.confirmNodeAction(e, "shutdown")} aria-label=${`Arrêter ${e.name}`}><ha-icon icon="mdi:power"></ha-icon></button></div>
-                </div>
-              `;
-		})}
-            ${t ? k : D`<div class="empty">Ajoutez les nœuds dans la configuration YAML.</div>`}
-          </div>
-          <div class="dialog-section"><div class="dialog-section-title">Services du cluster</div><div class="actions"><button class="action" @click=${() => this.openWorkloads("vm")}><ha-icon icon="mdi:layers-triple-outline"></ha-icon>VM · ${this.config?.vms?.length || 0}</button><button class="action" @click=${() => this.openWorkloads("container")}><ha-icon icon="mdi:cube-outline"></ha-icon>LXC · ${this.config?.containers?.length || 0}</button><button class="action primary" ?disabled=${!a} @click=${() => H(this.hass, this.config?.backup_action_entity)}><ha-icon icon="mdi:backup-restore"></ha-icon>Lancer le backup</button></div></div>
-          <div class="grid two" style="margin-top:18px;">
-            <div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:harddisk"></ha-icon></span><strong>${this.config?.storage_label_entity ? B(this.hass, this.config.storage_label_entity) : Q(X(F(this.hass, this.config?.storage_entity)))}</strong></div><div style="margin-top:10px;">Stockage</div></div>
-            <div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:database-check-outline"></ha-icon></span><strong>${B(this.hass, this.config?.ceph_entity)}</strong></div><div style="margin-top:10px;">Ceph</div></div>
-            <div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:calendar-clock"></ha-icon></span><strong>${B(this.hass, this.config?.backup_entity)}</strong></div><div style="margin-top:10px;">Sauvegarde</div></div>
-            ${this.config?.alerts_entity ? D`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:alert-circle-outline"></ha-icon></span><strong>${u}</strong></div><div style="margin-top:10px;">Alertes</div></div>` : k}
-          </div>
-          <div class="dialog-danger-zone"><div class="dialog-section-title">Zone sensible</div><div class="actions"><button class="action danger" ?disabled=${!o} @click=${() => this.confirmClusterAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button><button class="action danger" ?disabled=${!s} @click=${() => this.confirmClusterAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Arrêter</button></div></div>
-        </div>
-      `);
+		let e = this.config, t = lt(F(this.hass, e.status_entity)), n = t === "online", r = [
+			[
+				"CPU",
+				e.cpu_entity || e.cluster_usage_entity,
+				"mdi:cpu-64-bit"
+			],
+			[
+				"RAM",
+				e.memory_label_entity || e.memory_entity,
+				"mdi:memory"
+			],
+			[
+				"Durée de fonctionnement",
+				e.uptime_entity,
+				"mdi:clock-outline"
+			],
+			[
+				"Température",
+				e.temperature_entity,
+				"mdi:thermometer"
+			],
+			[
+				"Réception réseau",
+				e.network_down_entity,
+				"mdi:download-network"
+			],
+			[
+				"Émission réseau",
+				e.network_up_entity,
+				"mdi:upload-network"
+			],
+			[
+				"Version",
+				e.version_entity,
+				"mdi:server"
+			],
+			[
+				"Quorum",
+				e.quorum_entity,
+				"mdi:lan"
+			],
+			[
+				"Ceph",
+				e.ceph_entity,
+				"mdi:database-check-outline"
+			],
+			[
+				"Dernière sauvegarde",
+				e.backup_entity,
+				"mdi:calendar-clock"
+			],
+			[
+				"Alertes",
+				e.alerts_entity,
+				"mdi:alert-circle-outline"
+			]
+		].filter(([, e]) => I(F(this.hass, e)));
+		return this.renderDialog(e.name || "Détails du nœud", "mdi:information-outline", D`
+      <div class="dialog-body">
+        <div class="dialog-overview"><div><span class="eyebrow">État du nœud</span>
+          <strong>${n ? "En ligne et disponible" : t === "offline" ? "Hors ligne" : "État indisponible"}</strong>
+        </div></div>
+        <div class="grid two">${r.map(([e, t, n]) => D`<div class="tile">
+          <div class="tile-head"><span class="tile-icon"><ha-icon .icon=${n}></ha-icon></span><strong>${B(this.hass, t)}</strong></div>
+          <div style="margin-top:10px">${e}</div>
+        </div>`)}</div>
+        ${e.backup_action_entity ? D`<div class="dialog-section"><button class="action"
+          ?disabled=${!n || !Q(this.hass, e.backup_action_entity)}
+          @click=${() => H(this.hass, e.backup_action_entity)}>
+          <ha-icon icon="mdi:backup-restore"></ha-icon>Lancer la sauvegarde</button></div>` : k}
+        ${e.restart_entity || e.shutdown_entity ? D`
+          <div class="dialog-danger-zone"><div class="dialog-section-title">Actions du nœud</div><div class="actions">
+            ${e.restart_entity ? D`<button class="action danger" ?disabled=${!n || !Q(this.hass, e.restart_entity)} @click=${() => this.confirmClusterAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : k}
+            ${e.shutdown_entity ? D`<button class="action danger" ?disabled=${!n || !Q(this.hass, e.shutdown_entity)} @click=${() => this.confirmClusterAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Arrêter</button>` : k}
+          </div></div>` : k}
+      </div>`);
 	}
-}, mt = /* @__PURE__ */ new Set([
+}, pt = /* @__PURE__ */ new Set([
 	"unknown",
 	"unavailable",
 	""
 ]);
-function ht(e) {
+function mt(e) {
 	try {
 		return new URL(e, "https://home-assistant.local").pathname.replace(/\/$/, "") || "/";
 	} catch {
@@ -5264,11 +5235,11 @@ function $(e) {
 	let t = (e.path || e.navigation_path || "").trim();
 	if (!(!t || t.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(t))) return t.startsWith("/") || t.startsWith("#") ? t : `/${t}`;
 }
-function gt(e, t) {
-	let n = [$(e), ...e.active_paths || []].filter((e) => !!e).map(ht), r = ht(t);
+function ht(e, t) {
+	let n = [$(e), ...e.active_paths || []].filter((e) => !!e).map(mt), r = mt(t);
 	return n.some((t) => e.exact ? r === t : r === t || t !== "/" && r.startsWith(`${t}/`));
 }
-var _t = class extends P {
+var gt = class extends P {
 	constructor(...e) {
 		super(...e), this.routeChanged = () => this.requestUpdate();
 	}
@@ -5462,7 +5433,7 @@ var _t = class extends P {
 	badge(e) {
 		if (!e.badge_entity) return;
 		let t = this.hass?.states[e.badge_entity];
-		if (t && !mt.has(t.state.toLowerCase())) return this.hass?.formatEntityState?.(t) || t.state;
+		if (t && !pt.has(t.state.toLowerCase())) return this.hass?.formatEntityState?.(t) || t.state;
 	}
 	navigate(e, t) {
 		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -5477,7 +5448,7 @@ var _t = class extends P {
         <div class="navbar-shell ${n}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((n) => {
-			let r = $(n), i = gt(n, e), a = this.badge(n);
+			let r = $(n), i = ht(n, e), a = this.badge(n);
 			return D`<a class="nav-item ${i ? "active" : ""}" href=${r} aria-current=${i ? "page" : k} title=${n.label} @click=${(e) => this.navigate(e, n)}>
                 <span class="icon-wrap"><ha-icon .icon=${n.icon || "mdi:circle-outline"}></ha-icon>${a ? D`<span class="badge">${a}</span>` : k}</span>
                 ${t ? D`<span class="label">${n.label}</span>` : k}
@@ -5498,9 +5469,9 @@ var _t = class extends P {
 			min_columns: 4
 		};
 	}
-}, vt = "0.11.0";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", pt), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", _t), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ke {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends pt {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends _t {}), window.customCards = window.customCards || [];
-var yt = [
+}, _t = "0.12.0";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", it), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ct), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", ft), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", gt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends it {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ct {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends ft {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends gt {}), window.customCards = window.customCards || [];
+var vt = [
 	{
 		type: "auralis-navbar-card",
 		name: "Auralis · Navigation",
@@ -5542,8 +5513,8 @@ var yt = [
 		preview: !1
 	}
 ];
-for (let e of yt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
-console.info(`%c AURALIS CARDS %c v${vt} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
+for (let e of vt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
+console.info(`%c AURALIS CARDS %c v${_t} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
 //#endregion
 
 //# sourceMappingURL=auralis-cards.js.map

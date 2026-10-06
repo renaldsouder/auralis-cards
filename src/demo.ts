@@ -10,6 +10,9 @@ import type {
 
 class MockHaCard extends HTMLElement {}
 class MockHaIcon extends HTMLElement {
+  static observedAttributes = ["icon"];
+  connectedCallback(): void { this.icon = this.getAttribute("icon") || ""; }
+  attributeChangedCallback(_name: string, _old: string | null, value: string): void { this.icon = value; }
   set icon(value: string) {
     const symbol = value.includes("light") ? "●" : value.includes("server") ? "▤" : value.includes("monitor") ? "▣" : "◇";
     this.textContent = symbol;
@@ -317,7 +320,7 @@ const navbar: NavbarCardConfig = {
 
 const proxmox: ProxmoxCardConfig = {
   type: "custom:auralis-proxmox-card",
-  name: "Nova",
+  name: "Proxmox Jarvis",
   theme: "carbon",
   background_image: "/unraid.png",
   background_position: "47% center",
@@ -330,6 +333,12 @@ const proxmox: ProxmoxCardConfig = {
   memory_label_entity: "sensor.proxmox_memory_label",
   storage_entity: "sensor.proxmox_storage",
   storage_label_entity: "sensor.proxmox_storage_label",
+  storages: [
+    { name: "Local système", usage_entity: "sensor.proxmox_storage", capacity_entity: "sensor.proxmox_storage_label" },
+    { name: "Volumes des VM", usage_entity: "sensor.proxmox_storage" },
+    { name: "Sauvegardes", usage_entity: "sensor.proxmox_storage", show_on_card: false },
+  ],
+  disks: [{ name: "NVMe physique", capacity_entity: "sensor.proxmox_storage_label" }],
   ceph_entity: "sensor.proxmox_ceph",
   backup_entity: "sensor.proxmox_backup",
   alerts_entity: "sensor.proxmox_alerts",
