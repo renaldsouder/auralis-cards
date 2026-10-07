@@ -9,6 +9,9 @@ import { displayState, entity, friendlyName, isAvailable } from "../utils/entiti
 interface GroupStats {
   total: number;
   open: number;
+  closed: number;
+  opening: number;
+  closing: number;
   available: number;
   moving: number;
   availableIds: string[];
@@ -84,29 +87,44 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         position: relative;
         display: flex;
         min-width: 0;
-        min-height: 172px;
+        min-height: 234px;
         overflow: hidden;
         flex-direction: column;
         align-items: stretch;
         justify-content: space-between;
-        padding: 14px;
+        padding: 0;
         isolation: isolate;
         border: 1px solid rgba(169, 190, 214, 0.22);
         border-radius: 18px;
         background: #172430;
         color: white;
         text-align: left;
-        cursor: pointer;
       }
 
       .group-tile:hover,
-      .group-tile:focus-visible {
+      .group-tile:focus-within {
         border-color: #79d6f2;
       }
 
-      .group-tile:focus-visible {
+      .group-open:focus-visible,
+      .group-control:focus-visible {
         outline: 2px solid #79d6f2;
-        outline-offset: 2px;
+        outline-offset: -2px;
+      }
+
+      .group-open {
+        display: flex;
+        flex: 1;
+        min-height: 154px;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: space-between;
+        padding: 14px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
       }
 
       .group-tile::after {
@@ -179,15 +197,70 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
       }
 
-      .group-availability {
-        display: inline-block;
-        margin-top: 10px;
+      .group-state {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 9px;
         padding: 5px 8px;
-        border: 1px solid rgba(255, 255, 255, 0.17);
+        border: 1px solid rgba(121, 214, 242, 0.38);
         border-radius: 9px;
-        background: rgba(8, 16, 25, 0.7);
+        background: rgba(8, 30, 43, 0.82);
+        color: #b6edfb;
         font-size: 11px;
-        font-weight: 650;
+        font-weight: 750;
+      }
+
+      .group-state.moving {
+        border-color: rgba(255, 204, 113, 0.48);
+        background: rgba(54, 37, 13, 0.82);
+        color: #ffdc9f;
+      }
+
+      .group-state.unavailable {
+        border-color: rgba(185, 195, 207, 0.32);
+        background: rgba(26, 32, 39, 0.82);
+        color: #c1cbd5;
+      }
+
+      .group-controls {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding: 0 10px 10px;
+      }
+
+      .group-control {
+        display: flex;
+        min-width: 0;
+        min-height: 48px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 5px 2px;
+        border: 1px solid rgba(192, 216, 235, 0.28);
+        border-radius: 10px;
+        background: rgba(9, 20, 30, 0.88);
+        color: #f4f8fc;
+        font: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .group-control ha-icon {
+        --mdc-icon-size: 18px;
+        color: #9cdef6;
+      }
+
+      .group-control:hover:not(:disabled) {
+        background: rgba(24, 55, 75, 0.96);
+      }
+
+      .group-control:disabled {
+        opacity: 0.45;
+        cursor: default;
       }
 
       .group-bar,
@@ -230,7 +303,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         }
 
         .group-tile {
-          min-height: 160px;
+          min-height: 222px;
         }
       }
 
@@ -292,10 +365,23 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
     return {
       total: ids.length,
       open: states.filter((state) => state?.state === "open" || state?.state === "opening").length,
+      closed: states.filter((state) => state?.state === "closed").length,
+      opening: states.filter((state) => state?.state === "opening").length,
+      closing: states.filter((state) => state?.state === "closing").length,
       available: states.filter((state) => isAvailable(state)).length,
       moving: states.filter((state) => state?.state === "opening" || state?.state === "closing").length,
       availableIds: ids.filter((id) => isAvailable(entity(this.hass, id))),
     };
+  }
+
+  private groupStatus(stats: GroupStats): { label: string; tone: string } {
+    if (!stats.available) return { label: "Indisponible", tone: "unavailable" };
+    if (stats.opening && stats.closing) return { label: "En mouvement", tone: "moving" };
+    if (stats.opening) return { label: "Ouverture en cours", tone: "moving" };
+    if (stats.closing) return { label: "Fermeture en cours", tone: "moving" };
+    if (stats.open === stats.total) return { label: stats.total === 1 ? "Ouvert" : "Tous ouverts", tone: "" };
+    if (stats.closed === stats.total) return { label: stats.total === 1 ? "Fermé" : "Tous fermés", tone: "" };
+    return { label: `${stats.open}/${stats.total} ouverts`, tone: "" };
   }
 
   private stateLabel(id: string, state?: HassEntity): string {
@@ -309,30 +395,32 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
   private renderGroup(group: CoversGroupConfig, index: number): TemplateResult {
     const stats = this.groupStats(group);
+    const status = this.groupStatus(stats);
     const customImage = group.background_image?.trim() || this.config?.background_image?.trim();
     const imagePosition = group.background_position?.trim();
     const safePosition = imagePosition && /^[\w\s.%+-]+$/.test(imagePosition) ? imagePosition : "center";
     const imageClass = customImage ? "group-photo" : `group-photo mosaic quadrant-${index % 4}`;
     const name = group.name.trim();
     return html`
-      <button
-        class="group-tile"
-        type="button"
-        aria-haspopup="dialog"
-        aria-label=${`Ouvrir les volets du groupe ${name}`}
-        @click=${() => this.openDialog(`group:${index}`)}
-      >
+      <div class="group-tile">
         <img class=${imageClass} src=${customImage || defaultGroupImages} alt="" style=${customImage ? `object-position:${safePosition}` : ""} loading="lazy" />
-        <span class="group-head">
-          <span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:blinds-horizontal"}></ha-icon></span>
-          <ha-icon class="group-arrow" icon="mdi:chevron-right"></ha-icon>
-        </span>
-        <span>
-          <span class="group-name">${name}</span>
-          <span class="group-subtitle">${stats.total} volet${stats.total === 1 ? "" : "s"} · ${stats.open} ouvert${stats.open === 1 ? "" : "s"}</span>
-          <span class="group-availability">${stats.available}/${stats.total} disponibles</span>
-        </span>
-      </button>
+        <button class="group-open" type="button" aria-haspopup="dialog" aria-label=${`Afficher les volets du groupe ${name}`} @click=${() => this.openDialog(`group:${index}`)}>
+          <span class="group-head">
+            <span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:blinds-horizontal"}></ha-icon></span>
+            <ha-icon class="group-arrow" icon="mdi:chevron-right"></ha-icon>
+          </span>
+          <span>
+            <span class="group-name">${name}</span>
+            <span class="group-subtitle">${stats.total} volet${stats.total === 1 ? "" : "s"} · ${stats.available}/${stats.total} disponibles</span>
+            <span class=${`group-state ${status.tone}`}>${status.label}</span>
+          </span>
+        </button>
+        <div class="group-controls" aria-label=${`Commandes du groupe ${name}`}>
+          <button class="group-control" type="button" aria-label=${`Monter les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Monter</button>
+          <button class="group-control" type="button" aria-label=${`Arrêter les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+          <button class="group-control" type="button" aria-label=${`Descendre les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Descendre</button>
+        </div>
+      </div>
     `;
   }
 
@@ -414,10 +502,10 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   }
 
   public getCardSize(): number {
-    return 6;
+    return 4 + Math.ceil((this.config?.groups.length ?? 4) / 2) * 4;
   }
 
   public getGridOptions(): Record<string, number> {
-    return { rows: 6, min_rows: 4, columns: 6, min_columns: 3 };
+    return { columns: 6, min_columns: 3 };
   }
 }

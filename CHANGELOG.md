@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+- Affiche l'état de chaque groupe de volets directement sur sa tuile.
+- Ajoute les commandes **Monter**, **Stop** et **Descendre** sur les tuiles, sans ouvrir la pop-up.
+- Adapte la hauteur de la carte au nombre de groupes dans les vues Sections.
+
 ## 0.13.0
 
 - Ajoute `custom:auralis-covers-card` avec quatre groupes photographiques configurables et une pop-up de commandes groupées et individuelles.
