@@ -1,4 +1,7 @@
 import "./types/home-assistant";
+import "./lights-entry";
+import "./thermostat-entry";
+import "./fridge-entry";
 import { AuralisRoomCard } from "./cards/auralis-room-card";
 import { AuralisCoversCard } from "./cards/auralis-covers-card";
 import { AuralisPcCard } from "./cards/auralis-pc-card";

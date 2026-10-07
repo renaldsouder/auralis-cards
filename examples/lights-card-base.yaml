@@ -1,0 +1,24 @@
+# Carte Lumières Auralis — configuration de base.
+# Charger /local/auralis-cards/auralis-cards.js comme ressource JavaScript module.
+# Remplacer les entités light.* ci-dessous par celles de votre Home Assistant.
+type: custom:auralis-lights-card
+name: Lumières
+theme: carbon
+groups:
+  - name: Salon
+    icon: mdi:sofa-outline
+    show_lights: true
+    lights:
+      - light.plafonnier_salon
+      - light.lampadaire_salon
+
+# Facultatif : après copie de l'image dans config/www/auralis-cards/images/.
+#    image: /local/auralis-cards/images/lumieres-salon.jpg
+
+# Facultatif : scènes Home Assistant affichées dans le menu Ambiances du groupe.
+#    scenes:
+#      - entity: scene.soiree_salon
+#        label: Soirée
+#        icon: mdi:weather-night
+
+# Sans preset_colors, sept couleurs rapides sont proposées automatiquement.

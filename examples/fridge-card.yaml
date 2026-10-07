@@ -1,0 +1,26 @@
+# Copier images/frigo-connecte.jpg dans config/www/auralis-cards/images/.
+# Charger une seule ressource : /local/auralis-cards/auralis-cards.js
+# Remplacer les entités d'exemple par celles exposées par votre frigo.
+type: custom:auralis-fridge-card
+name: Frigo connecté
+theme: carbon
+background_image: /local/auralis-cards/images/frigo-connecte.jpg
+background_position: 62% center
+image_brightness: 72
+glass_opacity: 0.84
+connected_entity: binary_sensor.frigo_connecte
+fridge_temperature_entity: sensor.frigo_temperature
+freezer_temperature_entity: sensor.congelateur_temperature
+fridge_target_entity: number.frigo_consigne
+freezer_target_entity: number.congelateur_consigne
+door_entity: binary_sensor.frigo_porte
+freezer_door_entity: binary_sensor.congelateur_porte
+alert_entity: binary_sensor.frigo_alerte
+filter_entity: sensor.frigo_filtre
+energy_entity: sensor.frigo_energie
+mode_entity: select.frigo_mode
+quick_cool_entity: switch.frigo_refroidissement_rapide
+quick_freeze_entity: switch.frigo_congelation_rapide
+lock_entity: switch.frigo_verrouillage
+# extra_entities:
+#   - sensor.frigo_diagnostic

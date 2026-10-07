@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auralis · Frigo connecté</title>
+  <style>
+    :root { font-family:Inter,system-ui,sans-serif; background:#dfe7ed; }
+    body { margin:0; padding:28px; }
+    main { max-width:440px; margin:auto; }
+    p { color:#526172; font-size:13px; }
+    ha-card { display:block; }
+  </style>
+</head>
+<body>
+  <main><h1>Frigo connecté</h1><p>Prévisualisation avec des données simulées. Ouvrez « Détails » pour voir les commandes.</p><auralis-fridge-card></auralis-fridge-card></main>
+  <script type="module">
+    class MockHaCard extends HTMLElement {}
+    class MockHaIcon extends HTMLElement {
+      set icon(value) {
+        const symbols = { fridge:"▣", snowflake:"❄", thermometer:"◉", door:"◧", check:"●", arrow:"→", plus:"+", minus:"−" };
+        this.textContent = Object.entries(symbols).find(([key]) => value.includes(key))?.[1] || "◇";
+        this.style.display = "inline-grid";
+        this.style.placeItems = "center";
+      }
+    }
+    customElements.define("ha-card", MockHaCard);
+    customElements.define("ha-icon", MockHaIcon);
+    await import("/auralis-cards.js");
+    const e = (entity_id, state, attributes = {}) => ({ entity_id, state, attributes: { friendly_name: entity_id.split(".")[1], ...attributes } });
+    const values = [
+      e("binary_sensor.frigo_connecte", "on"), e("sensor.frigo_temperature", "3.8", { unit_of_measurement:"°C" }),
+      e("sensor.congelateur_temperature", "-18.4", { unit_of_measurement:"°C" }),
+      e("number.frigo_consigne", "4", { min:2, max:8, step:0.5 }),
+      e("number.congelateur_consigne", "-18", { min:-24, max:-14, step:1 }),
+      e("binary_sensor.frigo_porte", "off"), e("binary_sensor.congelateur_porte", "off"),
+      e("binary_sensor.frigo_alerte", "off"), e("sensor.frigo_filtre", "85", { unit_of_measurement:"%" }),
+      e("sensor.frigo_energie", "0.7", { unit_of_measurement:"kWh" }),
+      e("select.frigo_mode", "Normal", { options:["Normal","Éco","Vacances"] }),
+      e("switch.frigo_refroidissement_rapide", "off"), e("switch.frigo_congelation_rapide", "off"),
+      e("switch.frigo_verrouillage", "off"),
+    ];
+    const card = document.querySelector("auralis-fridge-card");
+    card.setConfig({
+      type:"custom:auralis-fridge-card", name:"Frigo connecté", theme:"carbon",
+      background_image:"/images/frigo-connecte.jpg", background_position:"62% center",
+      connected_entity:"binary_sensor.frigo_connecte", fridge_temperature_entity:"sensor.frigo_temperature",
+      freezer_temperature_entity:"sensor.congelateur_temperature", fridge_target_entity:"number.frigo_consigne",
+      freezer_target_entity:"number.congelateur_consigne", door_entity:"binary_sensor.frigo_porte",
+      freezer_door_entity:"binary_sensor.congelateur_porte", alert_entity:"binary_sensor.frigo_alerte",
+      filter_entity:"sensor.frigo_filtre", energy_entity:"sensor.frigo_energie", mode_entity:"select.frigo_mode",
+      quick_cool_entity:"switch.frigo_refroidissement_rapide", quick_freeze_entity:"switch.frigo_congelation_rapide",
+      lock_entity:"switch.frigo_verrouillage",
+    });
+    card.hass = { states:Object.fromEntries(values.map((item) => [item.entity_id,item])), callService:async () => undefined };
+  </script>
+</body>
+</html>

@@ -51,6 +51,9 @@ declare global {
     "auralis-unraid-card": HTMLElement;
     "auralis-proxmox-card": HTMLElement;
     "auralis-navbar-card": HTMLElement;
+    "auralis-lights-card": HTMLElement;
+    "auralis-thermostat-card": HTMLElement;
+    "auralis-fridge-card": HTMLElement;
     "orbit-room-card": HTMLElement;
     "orbit-pc-card": HTMLElement;
     "orbit-unraid-card": HTMLElement;

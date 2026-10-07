@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, éclairage, thermostats, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -12,6 +12,9 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-pc-card`
 - `custom:auralis-unraid-card`
 - `custom:auralis-proxmox-card`
+- `custom:auralis-lights-card`
+- `custom:auralis-thermostat-card`
+- `custom:auralis-fridge-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -73,6 +76,8 @@ Les anciens types `custom:orbit-*` restent temporairement reconnus par le bundle
 Chaque GitHub Release contenant `auralis-cards.js` devient une version sélectionnable et met à disposition les mises à jour dans HACS.
 
 Le fichier `examples/dashboard.yaml` est une configuration complète à coller dans l'éditeur de configuration brute du dashboard. Les blocs commençant directement par `type: custom:...` sont, eux, destinés à l'éditeur YAML d'une carte individuelle.
+
+Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les autres cartes. Leurs configurations sont dans [Lumières](examples/lights-card.yaml), [Thermostats](examples/thermostat-card.yaml) et [Frigo connecté](examples/fridge-card.yaml). Pour le fond du frigo, copiez [frigo-connecte.jpg](images/frigo-connecte.jpg) dans `config/www/auralis-cards/images/`, puis remplacez les identifiants d'entités par ceux de votre appareil. Voir les guides [Lumières](docs/LIGHTS_CARD.md), [Thermostats](docs/THERMOSTAT_CARD.md) et [Frigo](docs/FRIDGE_CARD.md).
 
 ## Exemple minimal — Navigation
 
