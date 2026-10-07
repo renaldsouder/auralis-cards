@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.3
+
+- Retire le texte visible des trois commandes directes des groupes de volets, en conservant leurs libellés accessibles.
+- Ajoute `group_columns` (1 à 4) et affiche automatiquement un groupe unique sur toute la largeur.
+
 ## 0.13.2
 
 - Supprime l'en-tête global et le compteur de disponibilité sous chaque groupe de la carte Volets.

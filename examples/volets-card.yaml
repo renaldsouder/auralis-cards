@@ -1,5 +1,6 @@
 type: custom:auralis-covers-card
 theme: carbon
+# group_columns: 1  # Facultatif : 1 à 4 colonnes ; un seul groupe utilise 1 par défaut.
 # Les quatre photos de la proposition sont intégrées par défaut.
 # background_image: /local/auralis-cards/images/volets.jpg
 groups:

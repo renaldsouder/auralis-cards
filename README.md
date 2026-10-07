@@ -207,7 +207,7 @@ La pop-up Lumières contient une commande générale compacte, une luminosité g
 
 ## Carte Volets
 
-La carte `custom:auralis-covers-card` affiche directement les groupes sous forme de grandes tuiles photographiques. Le nom est placé en haut à côté de l'icône ; l'état et le chevron apparaissent au-dessus des commandes **Monter**, **Stop** et **Descendre**. Un clic sur la zone photographique ouvre la pop-up du groupe avec les commandes groupées et individuelles. Les quatre photographies de la proposition sont intégrées au bundle ; `background_image` dans un groupe permet de remplacer sa photo par une URL `/local/...`. `background_position` règle son cadrage. Le `background_image` de la carte sert d'image commune aux groupes qui n'ont pas leur propre photo.
+La carte `custom:auralis-covers-card` affiche directement les groupes sous forme de grandes tuiles photographiques. Le nom est placé en haut à côté de l'icône ; l'état et le chevron apparaissent au-dessus de trois commandes par icône : monter, arrêter et descendre. Les libellés restent accessibles aux lecteurs d'écran et au survol. Un clic sur la zone photographique ouvre la pop-up du groupe avec les commandes groupées et individuelles. Les quatre photographies de la proposition sont intégrées au bundle ; `background_image` dans un groupe permet de remplacer sa photo par une URL `/local/...`. `background_position` règle son cadrage. Le `background_image` de la carte sert d'image commune aux groupes qui n'ont pas leur propre photo.
 
 Une configuration prête à adapter se trouve dans [`examples/volets-card.yaml`](examples/volets-card.yaml) :
 
@@ -226,6 +226,8 @@ groups:
 ```
 
 Les quatre photos intégrées se répètent si davantage de groupes sont configurés. Les entités absentes ou indisponibles restent visibles, et leurs commandes individuelles sont désactivées.
+
+`group_columns` règle le nombre de colonnes des groupes, de 1 à 4. Sans cette option, un seul groupe occupe toute la largeur et plusieurs groupes utilisent deux colonnes. Pour forcer une seule colonne, ajoutez `group_columns: 1` au niveau de la carte, à côté de `theme`. Sur une carte étroite, la grille réduit automatiquement le nombre de colonnes pour garder les commandes utilisables. Cette option est distincte de `grid_options.columns`, qui règle la largeur de la carte dans Home Assistant.
 
 ## Exemple minimal — PC
 

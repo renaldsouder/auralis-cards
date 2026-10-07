@@ -3488,7 +3488,7 @@ var We = class extends P {
 
       .groups-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--group-columns, 2), minmax(0, 1fr));
         gap: 11px;
       }
 
@@ -3496,7 +3496,7 @@ var We = class extends P {
         position: relative;
         display: flex;
         min-width: 0;
-        min-height: 194px;
+        min-height: 184px;
         overflow: hidden;
         flex-direction: column;
         align-items: stretch;
@@ -3641,24 +3641,20 @@ var We = class extends P {
       .group-control {
         display: flex;
         min-width: 0;
-        min-height: 48px;
-        flex-direction: column;
+        min-height: 40px;
         align-items: center;
         justify-content: center;
-        gap: 2px;
-        padding: 5px 2px;
+        padding: 6px;
         border: 1px solid rgba(192, 216, 235, 0.28);
         border-radius: 10px;
         background: rgba(9, 20, 30, 0.88);
         color: #f4f8fc;
         font: inherit;
-        font-size: 10px;
-        font-weight: 700;
         cursor: pointer;
       }
 
       .group-control ha-icon {
-        --mdc-icon-size: 18px;
+        --mdc-icon-size: 21px;
         color: #9cdef6;
       }
 
@@ -3701,19 +3697,27 @@ var We = class extends P {
         }
       }
 
+      @container (max-width: 720px) {
+        .groups-grid:not(.single-column) {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
       @container (max-width: 310px) {
-        .groups-grid {
+        .groups-grid:not(.single-column),
+        .groups-grid.single-column {
           grid-template-columns: 1fr;
         }
 
         .group-tile {
-          min-height: 190px;
+          min-height: 180px;
         }
       }
     `];
 	}
 	setConfig(e) {
 		if (!Array.isArray(e.groups) || e.groups.length === 0) throw Error("Configurez au moins un groupe de volets.");
+		if (e.group_columns !== void 0 && (!Number.isInteger(e.group_columns) || e.group_columns < 1 || e.group_columns > 4)) throw Error("group_columns doit être un nombre entier entre 1 et 4.");
 		for (let t of e.groups) {
 			if (!t || typeof t.name != "string" || !t.name.trim() || !Array.isArray(t.covers)) throw Error("Chaque groupe doit avoir un nom et une liste de volets.");
 			if (!t.covers.every((e) => typeof e == "string" && e.startsWith("cover."))) throw Error("Les groupes acceptent uniquement des entités cover.");
@@ -3759,6 +3763,15 @@ var We = class extends P {
 						"aurora"
 					],
 					mode: "dropdown"
+				} }
+			},
+			{
+				name: "group_columns",
+				selector: { number: {
+					min: 1,
+					max: 4,
+					step: 1,
+					mode: "box"
 				} }
 			},
 			{
@@ -3831,23 +3844,25 @@ var We = class extends P {
           </span>
         </button>
         <div class="group-controls" aria-label=${`Commandes du groupe ${c}`}>
-          <button class="group-control" type="button" aria-label=${`Monter les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Monter</button>
-          <button class="group-control" type="button" aria-label=${`Arrêter les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-          <button class="group-control" type="button" aria-label=${`Descendre les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Descendre</button>
+          <button class="group-control" type="button" title="Monter" aria-label=${`Monter les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+          <button class="group-control" type="button" title="Stop" aria-label=${`Arrêter les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon></button>
+          <button class="group-control" type="button" title="Descendre" aria-label=${`Descendre les volets du groupe ${c}`} ?disabled=${!n.available} @click=${() => W(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
         </div>
       </div>
     `;
 	}
 	render() {
 		if (!this.config || !this.hass) return D``;
-		let e = this.config.groups, t = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1, n = Number.isInteger(t) ? e[t] : void 0;
+		let e = this.config.groups, t = this.config.group_columns ?? Math.min(2, e.length), n = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1, r = Number.isInteger(n) ? e[n] : void 0;
 		return D`
       <ha-card>
         <div class="covers-shell">
-          <div class="groups-grid">${e.map((e, t) => this.renderGroup(e, t))}</div>
+          <div class=${t === 1 ? "groups-grid single-column" : "groups-grid"} style=${`--group-columns:${t}`}>
+            ${e.map((e, t) => this.renderGroup(e, t))}
+          </div>
         </div>
       </ha-card>
-      ${n ? this.renderGroupDialog(n) : k}
+      ${r ? this.renderGroupDialog(r) : k}
     `;
 	}
 	renderGroupDialog(e) {
@@ -3892,7 +3907,8 @@ var We = class extends P {
       `);
 	}
 	getCardSize() {
-		return 2 + Math.ceil((this.config?.groups.length ?? 4) / 2) * 4;
+		let e = this.config?.groups.length ?? 4, t = this.config?.group_columns ?? Math.min(2, e);
+		return 2 + Math.ceil(e / Math.min(t, 2)) * 3;
 	}
 	getGridOptions() {
 		return {

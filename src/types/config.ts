@@ -141,6 +141,7 @@ export interface CoversGroupConfig {
 export interface CoversCardConfig extends BaseCardConfig {
   type: "custom:auralis-covers-card";
   groups: CoversGroupConfig[];
+  group_columns?: number;
   entity_labels?: Record<string, string>;
 }
 

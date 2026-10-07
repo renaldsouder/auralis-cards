@@ -79,9 +79,12 @@ describe("Auralis covers groups", () => {
     };
     const template = internals.renderGroup(config.groups[0], 0);
     const markup = template.strings.join("");
-    expect(markup).toContain("Monter");
-    expect(markup).toContain("Stop");
-    expect(markup).toContain("Descendre");
+    expect(markup).toContain('title="Monter"');
+    expect(markup).toContain('title="Stop"');
+    expect(markup).toContain('title="Descendre"');
+    expect(markup).not.toContain(">Monter</button>");
+    expect(markup).not.toContain(">Stop</button>");
+    expect(markup).not.toContain(">Descendre</button>");
     expect(markup).toContain("group-topline");
     expect(markup).toContain("group-bottomline");
     expect(markup).not.toContain("group-subtitle");
@@ -134,5 +137,24 @@ describe("Auralis covers groups", () => {
       ...config,
       groups: [{ name: "Salon", covers: ["light.salon"] }],
     })).toThrow("uniquement des entités cover");
+    expect(() => card.setConfig({ ...config, group_columns: 0 })).toThrow("entre 1 et 4");
+    expect(() => card.setConfig({ ...config, group_columns: 5 })).toThrow("entre 1 et 4");
+    expect(() => card.setConfig({ ...config, group_columns: 1.5 })).toThrow("entre 1 et 4");
+  });
+
+  it("uses one column for one group unless another count is configured", () => {
+    const card = new module.AuralisCoversCard();
+    card.setConfig(config);
+    card.hass = {
+      states: { "cover.baie": state("cover.baie", "open") },
+      callService: vi.fn(async () => undefined),
+    } satisfies HomeAssistant;
+    const render = () => (card as unknown as { render(): { values: unknown[] } }).render().values;
+    expect(render()).toContain("groups-grid single-column");
+    expect(render()).toContain("--group-columns:1");
+
+    card.setConfig({ ...config, group_columns: 2 });
+    expect(render()).toContain("groups-grid");
+    expect(render()).toContain("--group-columns:2");
   });
 });
