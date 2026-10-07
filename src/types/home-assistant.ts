@@ -46,6 +46,7 @@ declare global {
 
   interface HTMLElementTagNameMap {
     "auralis-room-card": HTMLElement;
+    "auralis-covers-card": HTMLElement;
     "auralis-pc-card": HTMLElement;
     "auralis-unraid-card": HTMLElement;
     "auralis-proxmox-card": HTMLElement;

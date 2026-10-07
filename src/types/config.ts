@@ -130,6 +130,20 @@ export interface RoomCardConfig extends BaseCardConfig {
   scene_entity?: string;
 }
 
+export interface CoversGroupConfig {
+  name: string;
+  covers: string[];
+  icon?: string;
+  background_image?: string;
+  background_position?: string;
+}
+
+export interface CoversCardConfig extends BaseCardConfig {
+  type: "custom:auralis-covers-card";
+  groups: CoversGroupConfig[];
+  entity_labels?: Record<string, string>;
+}
+
 export interface PcDriveConfig {
   entity: string;
   label?: string;

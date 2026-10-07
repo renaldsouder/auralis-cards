@@ -1,6 +1,7 @@
 import "./index";
 import type { HassEntity, HomeAssistant } from "./types/home-assistant";
 import type {
+  CoversCardConfig,
   NavbarCardConfig,
   PcCardConfig,
   ProxmoxCardConfig,
@@ -41,6 +42,12 @@ const states = [
   e("light.ambiance_tv", "off", { friendly_name: "Ambiance TV", brightness: 0 }),
   e("cover.baie", "open", { friendly_name: "Baie vitrée", current_position: 75 }),
   e("cover.fenetre", "open", { friendly_name: "Fenêtre", current_position: 35 }),
+  e("cover.bureau_fenetre", "closed", { friendly_name: "Fenêtre du bureau" }),
+  e("cover.bureau_velux", "open", { friendly_name: "Velux du bureau" }),
+  e("cover.chambre_principale", "open", { friendly_name: "Chambre principale" }),
+  e("cover.chambre_enfant", "closed", { friendly_name: "Chambre enfant" }),
+  e("cover.salle_manger", "open", { friendly_name: "Salle à manger" }),
+  e("cover.cuisine", "open", { friendly_name: "Cuisine" }),
   e("binary_sensor.pc_online", "on"),
   e("sensor.pc_session", "Unlocked"),
   e("sensor.pc_user", "rso"),
@@ -200,6 +207,18 @@ const room: RoomCardConfig = {
   },
   lights: ["light.plafonnier", "light.lampadaire", "light.bibliotheque", "light.ambiance_tv"],
   covers: ["cover.baie", "cover.fenetre"],
+};
+
+const covers: CoversCardConfig = {
+  type: "custom:auralis-covers-card",
+  name: "Volets",
+  theme: "carbon",
+  groups: [
+    { name: "Salon", covers: ["cover.baie", "cover.fenetre"] },
+    { name: "Bureau", covers: ["cover.bureau_fenetre", "cover.bureau_velux"] },
+    { name: "Chambres", covers: ["cover.chambre_principale", "cover.chambre_enfant"] },
+    { name: "Salle à manger", covers: ["cover.salle_manger", "cover.cuisine"] },
+  ],
 };
 
 const pc: PcCardConfig = {
@@ -379,6 +398,7 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
 
 mount("auralis-navbar-card", navbar);
 mount("auralis-room-card", room);
+mount("auralis-covers-card", covers);
 mount("auralis-pc-card", pc);
 mount("auralis-unraid-card", unraid);
 mount("auralis-proxmox-card", proxmox);

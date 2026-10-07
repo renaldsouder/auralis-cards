@@ -1,13 +1,15 @@
 import "./types/home-assistant";
 import { AuralisRoomCard } from "./cards/auralis-room-card";
+import { AuralisCoversCard } from "./cards/auralis-covers-card";
 import { AuralisPcCard } from "./cards/auralis-pc-card";
 import { AuralisUnraidCard } from "./cards/auralis-unraid-card";
 import { AuralisProxmoxCard } from "./cards/auralis-proxmox-card";
 import { AuralisNavbarCard } from "./cards/auralis-navbar-card";
 
-const VERSION = "0.12.3";
+const VERSION = "0.13.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
+if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
 if (!customElements.get("auralis-pc-card")) customElements.define("auralis-pc-card", AuralisPcCard);
 if (!customElements.get("auralis-unraid-card")) customElements.define("auralis-unraid-card", AuralisUnraidCard);
 if (!customElements.get("auralis-proxmox-card")) customElements.define("auralis-proxmox-card", AuralisProxmoxCard);
@@ -41,6 +43,15 @@ const cards = [
       if (domain === "cover") return { config: { type: "custom:auralis-room-card", covers: [entityId] } };
       return null;
     },
+  },
+  {
+    type: "auralis-covers-card",
+    name: "Auralis · Volets",
+    description: "Groupes de volets illustrés et commandes individuelles.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("cover.")
+      ? { config: { type: "custom:auralis-covers-card", groups: [{ name: "Volets", covers: [entityId] }] } }
+      : null,
   },
   {
     type: "auralis-pc-card",

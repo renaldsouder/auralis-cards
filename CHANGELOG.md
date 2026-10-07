@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0
+
+- Ajoute `custom:auralis-covers-card` avec quatre groupes photographiques configurables et une pop-up de commandes groupées et individuelles.
+- Intègre les images de démonstration au bundle et permet de remplacer le fond de chaque groupe.
+
 ## 0.12.3
 
 - Corrige la hauteur par défaut de Proxmox dans les vues Sections : la grille suit le contenu au lieu de réserver 11 lignes et de laisser un espace vide sous la carte.

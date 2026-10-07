@@ -1,12 +1,13 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
 ## Cartes disponibles
 
 - `custom:auralis-room-card`
+- `custom:auralis-covers-card`
 - `custom:auralis-navbar-card`
 - `custom:auralis-pc-card`
 - `custom:auralis-unraid-card`
@@ -203,6 +204,29 @@ La pop-up Lumières contient une commande générale compacte, une luminosité g
 `ambiance` configure l'unique bouton affiché sur la photographie : son `label`, son `icon` et sa `position` (`top-left`, `top-right`, `bottom-left` ou `bottom-right`). Un clic ouvre une petite pop-up. La liste `scenes` fournit les modes proposés dans cette pop-up ; chaque entrée possède sa propre `entity`, son `label` et son `icon`. L'ancien `scene_entity` reste accepté et produit un bouton « Ambiance » contenant le mode « Mode soirée ». Le fichier [`examples/salon-card-complete.yaml`](examples/salon-card-complete.yaml) reprend les identifiants réels fournis pour la carte Salon ; seule l'entité de télévision doit être remplacée par son identifiant réel.
 
 `popup_titles` personnalise le titre de chaque pop-up. La section `climate_popup` choisit les capteurs représentés, génère un graphe séparé par capteur et règle la période avec `graph_period_unit: hours`, `days` ou `months`. Un mois correspond à 30 jours dans le graphe d'historique Home Assistant. Une liste `graph_entities: []` désactive les graphes ; les options `show_overview`, `show_current_values` et `show_thermostat` permettent de composer librement le contenu. Les cartes de valeurs actuelles sont masquées par défaut, car le résumé « Confort de la pièce » contient déjà ces mesures.
+
+## Carte Volets
+
+La carte `custom:auralis-covers-card` affiche les groupes sous forme de grandes tuiles photographiques. Un clic sur une tuile ouvre la pop-up du groupe avec les commandes **Ouvrir**, **Stop** et **Fermer** pour tous les volets disponibles, puis pour chaque volet. Les quatre photographies de la proposition sont intégrées au bundle ; `background_image` dans un groupe permet de remplacer sa photo par une URL `/local/...`. `background_position` règle son cadrage. Le `background_image` de la carte sert d'image commune aux groupes qui n'ont pas leur propre photo.
+
+Une configuration prête à adapter se trouve dans [`examples/volets-card.yaml`](examples/volets-card.yaml) :
+
+```yaml
+type: custom:auralis-covers-card
+name: Volets
+theme: carbon
+groups:
+  - name: Salon
+    covers:
+      - cover.baie_salon
+      - cover.fenetre_salon
+  - name: Bureau
+    covers:
+      - cover.fenetre_bureau
+      - cover.velux_bureau
+```
+
+Les quatre photos intégrées se répètent si davantage de groupes sont configurés. Les entités absentes ou indisponibles restent visibles, et leurs commandes individuelles sont désactivées.
 
 ## Exemple minimal — PC
 

@@ -1,7 +1,7 @@
 {
   "name": "auralis-cards",
-  "version": "0.12.3",
-  "description": "Auralis Frame navigation, room, PC, UNRAID and Proxmox cards for Home Assistant.",
+  "version": "0.13.0",
+  "description": "Auralis Frame navigation, room, covers, PC, UNRAID and Proxmox cards for Home Assistant.",
   "type": "module",
   "main": "dist/auralis-cards.js",
   "files": [

@@ -1,0 +1,27 @@
+type: custom:auralis-covers-card
+name: Volets
+theme: carbon
+# Les quatre photos de la proposition sont intégrées par défaut.
+# background_image: /local/auralis-cards/images/volets.jpg
+groups:
+  - name: Salon
+    covers:
+      - cover.baie_salon
+      - cover.fenetre_salon
+    # background_image: /local/auralis-cards/images/salon.jpg
+    # background_position: center
+  - name: Bureau
+    covers:
+      - cover.fenetre_bureau
+      - cover.velux_bureau
+  - name: Chambres
+    covers:
+      - cover.chambre_principale
+      - cover.chambre_enfant
+  - name: Salle à manger
+    covers:
+      - cover.salle_a_manger
+      - cover.cuisine
+entity_labels:
+  cover.baie_salon: Volet baie vitrée
+  cover.fenetre_salon: Volet salon côté allée
