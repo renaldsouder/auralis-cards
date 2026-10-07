@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.2
+
+- Supprime l'en-tête global et le compteur de disponibilité sous chaque groupe de la carte Volets.
+- Place le nom à côté de l'icône et le chevron au niveau de l'état, tout en conservant les commandes directes.
+
 ## 0.13.1
 
 - Affiche l'état de chaque groupe de volets directement sur sa tuile.

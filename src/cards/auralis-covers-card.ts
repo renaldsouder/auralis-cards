@@ -33,50 +33,6 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         container-type: inline-size;
       }
 
-      .covers-header {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        margin-bottom: 18px;
-      }
-
-      .covers-header .tile-icon {
-        width: 40px;
-        height: 40px;
-        flex: 0 0 auto;
-        background: rgba(121, 214, 242, 0.16);
-        color: #79d6f2;
-      }
-
-      .covers-header .title-wrap h2 {
-        font-size: 21px;
-      }
-
-      .covers-header .title-wrap p {
-        margin-top: 3px;
-        color: #93a2b5;
-        font-size: 11px;
-      }
-
-      .covers-total {
-        flex: 0 0 auto;
-        padding: 12px 14px;
-        border-radius: 16px;
-        background: #172430;
-        font-size: 13px;
-        font-weight: 750;
-        white-space: nowrap;
-      }
-
-      .section-label {
-        margin: 0 1px 11px;
-        color: #93a2b5;
-        font-size: 10px;
-        font-weight: 760;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-
       .groups-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -87,7 +43,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         position: relative;
         display: flex;
         min-width: 0;
-        min-height: 234px;
+        min-height: 194px;
         overflow: hidden;
         flex-direction: column;
         align-items: stretch;
@@ -115,7 +71,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
       .group-open {
         display: flex;
         flex: 1;
-        min-height: 154px;
+        min-height: 126px;
         flex-direction: column;
         align-items: stretch;
         justify-content: space-between;
@@ -163,44 +119,43 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         top: -100%;
       }
 
-      .group-head {
+      .group-topline,
+      .group-bottomline {
         display: flex;
-        align-items: start;
+        align-items: center;
         justify-content: space-between;
+        gap: 9px;
       }
 
-      .group-head .tile-icon {
+      .group-topline {
+        justify-content: flex-start;
+      }
+
+      .group-topline .tile-icon {
         width: 38px;
         height: 38px;
+        flex: 0 0 auto;
         background: rgba(20, 52, 74, 0.91);
         color: #83cafa;
       }
 
       .group-arrow {
+        flex: 0 0 auto;
+        --mdc-icon-size: 22px;
         color: white;
         filter: drop-shadow(0 1px 2px #000);
       }
 
       .group-name {
-        display: block;
         font-size: 20px;
         font-weight: 780;
         line-height: 1.1;
         text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
       }
 
-      .group-subtitle {
-        display: block;
-        margin-top: 5px;
-        font-size: 12px;
-        font-weight: 650;
-        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
-      }
-
       .group-state {
         display: inline-flex;
         align-items: center;
-        margin-top: 9px;
         padding: 5px 8px;
         border: 1px solid rgba(121, 214, 242, 0.38);
         border-radius: 9px;
@@ -291,10 +246,6 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         .group-name {
           font-size: 18px;
         }
-
-        .group-subtitle {
-          font-size: 11px;
-        }
       }
 
       @container (max-width: 310px) {
@@ -303,17 +254,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         }
 
         .group-tile {
-          min-height: 222px;
-        }
-      }
-
-      @container (max-width: 330px) {
-        .covers-header {
-          flex-wrap: wrap;
-        }
-
-        .covers-total {
-          margin-left: 51px;
+          min-height: 190px;
         }
       }
     `,
@@ -336,7 +277,6 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
   static getStubConfig(): Partial<CoversCardConfig> {
     return {
-      name: "Volets",
       theme: "carbon",
       groups: [
         { name: "Salon", covers: [] },
@@ -350,7 +290,6 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     return {
       schema: [
-        { name: "name", selector: { text: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
         { name: "groups", selector: { object: {} } },
         { name: "entity_labels", selector: { object: {} } },
@@ -405,14 +344,13 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
       <div class="group-tile">
         <img class=${imageClass} src=${customImage || defaultGroupImages} alt="" style=${customImage ? `object-position:${safePosition}` : ""} loading="lazy" />
         <button class="group-open" type="button" aria-haspopup="dialog" aria-label=${`Afficher les volets du groupe ${name}`} @click=${() => this.openDialog(`group:${index}`)}>
-          <span class="group-head">
+          <span class="group-topline">
             <span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:blinds-horizontal"}></ha-icon></span>
-            <ha-icon class="group-arrow" icon="mdi:chevron-right"></ha-icon>
-          </span>
-          <span>
             <span class="group-name">${name}</span>
-            <span class="group-subtitle">${stats.total} volet${stats.total === 1 ? "" : "s"} · ${stats.available}/${stats.total} disponibles</span>
+          </span>
+          <span class="group-bottomline">
             <span class=${`group-state ${status.tone}`}>${status.label}</span>
+            <ha-icon class="group-arrow" icon="mdi:chevron-right"></ha-icon>
           </span>
         </button>
         <div class="group-controls" aria-label=${`Commandes du groupe ${name}`}>
@@ -427,26 +365,12 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   protected render(): TemplateResult {
     if (!this.config || !this.hass) return html``;
     const groups = this.config.groups;
-    const allIds = [...new Set(groups.flatMap((group) => group.covers))];
-    const open = allIds.filter((id) => {
-      const state = entity(this.hass, id)?.state;
-      return state === "open" || state === "opening";
-    }).length;
     const selectedIndex = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1;
     const selectedGroup = Number.isInteger(selectedIndex) ? groups[selectedIndex] : undefined;
 
     return html`
       <ha-card>
         <div class="covers-shell">
-          <header class="covers-header">
-            <span class="tile-icon"><ha-icon .icon=${this.config.icon || "mdi:blinds-horizontal"}></ha-icon></span>
-            <div class="title-wrap">
-              <h2>${this.config.name || "Volets"}</h2>
-              <p>${groups.length} groupe${groups.length === 1 ? "" : "s"} · ${allIds.length} volet${allIds.length === 1 ? "" : "s"}</p>
-            </div>
-            <span class="covers-total">${open}/${allIds.length} ouverts</span>
-          </header>
-          <div class="section-label">Groupes de volets</div>
           <div class="groups-grid">${groups.map((group, index) => this.renderGroup(group, index))}</div>
         </div>
       </ha-card>
@@ -502,7 +426,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   }
 
   public getCardSize(): number {
-    return 4 + Math.ceil((this.config?.groups.length ?? 4) / 2) * 4;
+    return 2 + Math.ceil((this.config?.groups.length ?? 4) / 2) * 4;
   }
 
   public getGridOptions(): Record<string, number> {

@@ -211,7 +211,6 @@ const room: RoomCardConfig = {
 
 const covers: CoversCardConfig = {
   type: "custom:auralis-covers-card",
-  name: "Volets",
   theme: "carbon",
   groups: [
     { name: "Salon", covers: ["cover.baie", "cover.fenetre"] },

@@ -82,6 +82,9 @@ describe("Auralis covers groups", () => {
     expect(markup).toContain("Monter");
     expect(markup).toContain("Stop");
     expect(markup).toContain("Descendre");
+    expect(markup).toContain("group-topline");
+    expect(markup).toContain("group-bottomline");
+    expect(markup).not.toContain("group-subtitle");
     expect(template.values).toContain("1/3 ouverts");
 
     const handlers = template.values.filter((value): value is () => Promise<void> => typeof value === "function");

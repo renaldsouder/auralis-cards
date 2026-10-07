@@ -207,13 +207,12 @@ La pop-up Lumières contient une commande générale compacte, une luminosité g
 
 ## Carte Volets
 
-La carte `custom:auralis-covers-card` affiche les groupes sous forme de grandes tuiles photographiques. Chaque tuile indique l'état actuel du groupe et propose directement **Monter**, **Stop** et **Descendre** pour les volets disponibles. Un clic sur le nom ou la photographie ouvre la pop-up du groupe avec les commandes groupées et individuelles. Les quatre photographies de la proposition sont intégrées au bundle ; `background_image` dans un groupe permet de remplacer sa photo par une URL `/local/...`. `background_position` règle son cadrage. Le `background_image` de la carte sert d'image commune aux groupes qui n'ont pas leur propre photo.
+La carte `custom:auralis-covers-card` affiche directement les groupes sous forme de grandes tuiles photographiques. Le nom est placé en haut à côté de l'icône ; l'état et le chevron apparaissent au-dessus des commandes **Monter**, **Stop** et **Descendre**. Un clic sur la zone photographique ouvre la pop-up du groupe avec les commandes groupées et individuelles. Les quatre photographies de la proposition sont intégrées au bundle ; `background_image` dans un groupe permet de remplacer sa photo par une URL `/local/...`. `background_position` règle son cadrage. Le `background_image` de la carte sert d'image commune aux groupes qui n'ont pas leur propre photo.
 
 Une configuration prête à adapter se trouve dans [`examples/volets-card.yaml`](examples/volets-card.yaml) :
 
 ```yaml
 type: custom:auralis-covers-card
-name: Volets
 theme: carbon
 groups:
   - name: Salon

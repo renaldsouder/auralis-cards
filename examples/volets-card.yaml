@@ -1,5 +1,4 @@
 type: custom:auralis-covers-card
-name: Volets
 theme: carbon
 # Les quatre photos de la proposition sont intégrées par défaut.
 # background_image: /local/auralis-cards/images/volets.jpg
