@@ -100,7 +100,7 @@ items:
     badge_entity: sensor.systemes_en_alerte
 ```
 
-`position` place la barre au bord de l'écran : `top`, `bottom`, `left` ou `right`. La valeur par défaut `inline` conserve la carte dans le flux du dashboard. Les positions latérales empilent les boutons verticalement. `path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
+`position` place la barre au bord visible de l'écran : `top`, `bottom`, `left` ou `right`. Les placements horizontaux sont centrés dans la zone du tableau de bord, même avec la barre latérale Home Assistant ouverte. La valeur par défaut `inline` conserve la carte dans le flux du dashboard. Les positions latérales empilent les boutons verticalement. `path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
 
 ## Exemple minimal — Pièce
 

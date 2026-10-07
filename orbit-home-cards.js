@@ -5800,38 +5800,61 @@ function yt(e, t) {
 	let n = [$(e), ...e.active_paths || []].filter((e) => !!e).map(vt), r = vt(t);
 	return n.some((t) => e.exact ? r === t : r === t || t !== "/" && r.startsWith(`${t}/`));
 }
-var bt = class extends P {
+function bt(e, t, n) {
+	let r = e ? Math.max(t.offsetLeft, e.left) : t.offsetLeft, i = e ? Math.min(t.offsetLeft + t.width, e.right) : t.offsetLeft + t.width, a = i > r ? r : t.offsetLeft, o = i > r ? i - r : t.width;
+	return {
+		centerX: a + o / 2,
+		availableWidth: o,
+		top: t.offsetTop,
+		bottom: Math.max(0, n - t.offsetTop - t.height),
+		centerY: t.offsetTop + t.height / 2
+	};
+}
+var xt = class extends P {
 	constructor(...e) {
-		super(...e), this.routeChanged = () => this.requestUpdate();
+		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.updateOverlayGeometry = () => {
+			if (!this.overlay) return;
+			let e = window.visualViewport, t = bt(this.dashboardElement?.getBoundingClientRect(), {
+				offsetLeft: e?.offsetLeft ?? 0,
+				offsetTop: e?.offsetTop ?? 0,
+				width: e?.width ?? window.innerWidth,
+				height: e?.height ?? window.innerHeight
+			}, window.innerHeight);
+			this.overlay.style.setProperty("--auralis-navbar-center-x", `${t.centerX}px`), this.overlay.style.setProperty("--auralis-navbar-available-width", `${t.availableWidth}px`), this.overlay.style.setProperty("--auralis-navbar-visual-top", `${t.top}px`), this.overlay.style.setProperty("--auralis-navbar-visual-bottom", `${t.bottom}px`), this.overlay.style.setProperty("--auralis-navbar-visual-center-y", `${t.centerY}px`);
+		};
 	}
 	static {
 		this.styles = [Me, o`
       :host { container-type: inline-size; }
-      :host([data-position="top"]),
-      :host([data-position="bottom"]),
-      :host([data-position="left"]),
-      :host([data-position="right"]) {
+      :host([data-position]:not([data-position="inline"]):not([data-portal])) {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      :host([data-portal]) {
         position: fixed;
-        z-index: 100;
+        z-index: 1000;
         box-sizing: border-box;
       }
-      :host([data-position="top"]),
-      :host([data-position="bottom"]) {
-        left: 50%;
-        width: min(720px, 100vw);
+      :host([data-portal][data-position="top"]),
+      :host([data-portal][data-position="bottom"]) {
+        left: var(--auralis-navbar-center-x, 50vw);
+        width: min(720px, var(--auralis-navbar-available-width, 100vw));
         transform: translateX(-50%);
       }
-      :host([data-position="top"]) { top: 0; }
-      :host([data-position="bottom"]) { bottom: 0; }
-      :host([data-position="left"]),
-      :host([data-position="right"]) {
-        top: 50%;
+      :host([data-portal][data-position="top"]) { top: var(--auralis-navbar-visual-top, 0px); }
+      :host([data-portal][data-position="bottom"]) { bottom: var(--auralis-navbar-visual-bottom, 0px); }
+      :host([data-portal][data-position="left"]),
+      :host([data-portal][data-position="right"]) {
+        top: var(--auralis-navbar-visual-center-y, 50%);
         width: min(160px, 100vw);
         max-height: 100dvh;
         transform: translateY(-50%);
       }
-      :host([data-position="left"]) { left: 0; }
-      :host([data-position="right"]) { right: 0; }
+      :host([data-portal][data-position="left"]) { left: 0; }
+      :host([data-portal][data-position="right"]) { right: 0; }
       ha-card { overflow: visible; background: var(--machine-base-background, var(--auralis-bg)); }
       .navbar-shell {
         position: relative;
@@ -5960,11 +5983,39 @@ var bt = class extends P {
       }
     `];
 	}
+	findDashboardElement() {
+		let e = this, t;
+		for (; e;) {
+			if (e instanceof Element) {
+				let n = e.tagName.toLowerCase();
+				if (n === "ha-panel-lovelace" || n === "hui-root") return e;
+				n === "main" && (t = e);
+			}
+			e = e.parentNode || (e instanceof ShadowRoot ? e.host : null);
+		}
+		return t;
+	}
+	syncOverlay() {
+		if (this.isPortal) return;
+		if (!this.config || this.config.position === "inline") {
+			this.removeOverlay();
+			return;
+		}
+		this.overlay || (this.overlay = document.createElement("auralis-navbar-card"), this.overlay.isPortal = !0, this.overlay.setAttribute("data-portal", ""), document.body.append(this.overlay)), this.overlayConfig !== this.config && (this.overlay.setConfig(this.config), this.overlayConfig = this.config), this.overlay.hass = this.hass;
+		let e = this.findDashboardElement();
+		e !== this.dashboardElement && (this.dashboardObserver?.disconnect(), this.dashboardElement = e, e && typeof ResizeObserver < "u" && (this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry), this.dashboardObserver.observe(e))), this.updateOverlayGeometry();
+	}
+	removeOverlay() {
+		this.dashboardObserver?.disconnect(), this.dashboardObserver = void 0, this.dashboardElement = void 0, this.overlay?.remove(), this.overlay = void 0, this.overlayConfig = void 0;
+	}
 	connectedCallback() {
-		super.connectedCallback(), window.addEventListener("location-changed", this.routeChanged), window.addEventListener("popstate", this.routeChanged);
+		super.connectedCallback(), window.addEventListener("location-changed", this.routeChanged), window.addEventListener("popstate", this.routeChanged), this.isPortal || (window.addEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.addEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry));
 	}
 	disconnectedCallback() {
-		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), super.disconnectedCallback();
+		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), this.removeOverlay()), super.disconnectedCallback();
+	}
+	updated() {
+		super.updated(), this.syncOverlay();
 	}
 	setConfig(e) {
 		if (!Array.isArray(e.items) || e.items.length === 0) throw Error("items doit contenir au moins une destination.");
@@ -6066,7 +6117,7 @@ var bt = class extends P {
 		n && (e.preventDefault(), `${window.location.pathname}${window.location.search}${window.location.hash}` !== n && (window.history.pushState(null, "", n), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }))));
 	}
 	render() {
-		if (!this.config) return D``;
+		if (!this.config || this.config.position !== "inline" && !this.isPortal) return D``;
 		let e = typeof window > "u" ? "/" : window.location.pathname, t = this.config.show_labels !== !1, n = [this.config.compact ? "compact" : "", t ? "" : "labels-hidden"].filter(Boolean).join(" ");
 		return D`
       <ha-card style=${this.machineStyle("#79d6f2")}>
@@ -6097,9 +6148,9 @@ var bt = class extends P {
 			min_columns: 1
 		};
 	}
-}, xt = "0.13.0";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", We), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ge), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", it), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", lt), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", gt), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", bt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends We {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends it {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends lt {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends gt {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends bt {}), window.customCards = window.customCards || [];
-var St = [
+}, St = "0.13.0";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", We), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ge), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", it), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", lt), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", gt), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", xt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends We {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends it {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends lt {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends gt {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends xt {}), window.customCards = window.customCards || [];
+var Ct = [
 	{
 		type: "auralis-navbar-card",
 		name: "Auralis · Navigation",
@@ -6154,8 +6205,8 @@ var St = [
 		preview: !1
 	}
 ];
-for (let e of St) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
-console.info(`%c AURALIS CARDS %c v${xt} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
+for (let e of Ct) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
+console.info(`%c AURALIS CARDS %c v${St} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
 //#endregion
 
 //# sourceMappingURL=auralis-cards.js.map

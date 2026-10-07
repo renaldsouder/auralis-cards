@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.5
+
+- Centre la navigation fixe dans la zone du tableau de bord, même lorsque la barre latérale Home Assistant est ouverte.
+- Affiche la navigation fixe hors des conteneurs du dashboard afin qu'elle reste attachée au bord visible sur Android.
+
 ## 0.13.4
 
 - Permet de fixer la barre de navigation en haut, en bas, à gauche ou à droite de l'écran avec `position`.

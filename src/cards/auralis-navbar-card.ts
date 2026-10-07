@@ -30,36 +30,60 @@ export function navbarItemActive(item: NavbarItemConfig, currentPath: string): b
     : current === candidate || (candidate !== "/" && current.startsWith(`${candidate}/`)));
 }
 
+export function navbarOverlayPlacement(
+  dashboard: Pick<DOMRect, "left" | "right"> | undefined,
+  viewport: Pick<VisualViewport, "offsetLeft" | "offsetTop" | "width" | "height">,
+  layoutHeight: number,
+): { centerX: number; availableWidth: number; top: number; bottom: number; centerY: number } {
+  const left = dashboard ? Math.max(viewport.offsetLeft, dashboard.left) : viewport.offsetLeft;
+  const right = dashboard
+    ? Math.min(viewport.offsetLeft + viewport.width, dashboard.right)
+    : viewport.offsetLeft + viewport.width;
+  const contentLeft = right > left ? left : viewport.offsetLeft;
+  const availableWidth = right > left ? right - left : viewport.width;
+  return {
+    centerX: contentLeft + availableWidth / 2,
+    availableWidth,
+    top: viewport.offsetTop,
+    bottom: Math.max(0, layoutHeight - viewport.offsetTop - viewport.height),
+    centerY: viewport.offsetTop + viewport.height / 2,
+  };
+}
+
 export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   static styles: CSSResultGroup = [
     sharedStyles,
     css`
       :host { container-type: inline-size; }
-      :host([data-position="top"]),
-      :host([data-position="bottom"]),
-      :host([data-position="left"]),
-      :host([data-position="right"]) {
+      :host([data-position]:not([data-position="inline"]):not([data-portal])) {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      :host([data-portal]) {
         position: fixed;
-        z-index: 100;
+        z-index: 1000;
         box-sizing: border-box;
       }
-      :host([data-position="top"]),
-      :host([data-position="bottom"]) {
-        left: 50%;
-        width: min(720px, 100vw);
+      :host([data-portal][data-position="top"]),
+      :host([data-portal][data-position="bottom"]) {
+        left: var(--auralis-navbar-center-x, 50vw);
+        width: min(720px, var(--auralis-navbar-available-width, 100vw));
         transform: translateX(-50%);
       }
-      :host([data-position="top"]) { top: 0; }
-      :host([data-position="bottom"]) { bottom: 0; }
-      :host([data-position="left"]),
-      :host([data-position="right"]) {
-        top: 50%;
+      :host([data-portal][data-position="top"]) { top: var(--auralis-navbar-visual-top, 0px); }
+      :host([data-portal][data-position="bottom"]) { bottom: var(--auralis-navbar-visual-bottom, 0px); }
+      :host([data-portal][data-position="left"]),
+      :host([data-portal][data-position="right"]) {
+        top: var(--auralis-navbar-visual-center-y, 50%);
         width: min(160px, 100vw);
         max-height: 100dvh;
         transform: translateY(-50%);
       }
-      :host([data-position="left"]) { left: 0; }
-      :host([data-position="right"]) { right: 0; }
+      :host([data-portal][data-position="left"]) { left: 0; }
+      :host([data-portal][data-position="right"]) { right: 0; }
       ha-card { overflow: visible; background: var(--machine-base-background, var(--auralis-bg)); }
       .navbar-shell {
         position: relative;
@@ -190,17 +214,107 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   ];
 
   private readonly routeChanged = (): void => this.requestUpdate();
+  private isPortal = false;
+  private overlay?: AuralisNavbarCard;
+  private overlayConfig?: NavbarCardConfig;
+  private dashboardElement?: Element;
+  private dashboardObserver?: ResizeObserver;
+  private readonly updateOverlayGeometry = (): void => {
+    if (!this.overlay) return;
+    const viewport = window.visualViewport;
+    const placement = navbarOverlayPlacement(this.dashboardElement?.getBoundingClientRect(), {
+      offsetLeft: viewport?.offsetLeft ?? 0,
+      offsetTop: viewport?.offsetTop ?? 0,
+      width: viewport?.width ?? window.innerWidth,
+      height: viewport?.height ?? window.innerHeight,
+    }, window.innerHeight);
+
+    this.overlay.style.setProperty("--auralis-navbar-center-x", `${placement.centerX}px`);
+    this.overlay.style.setProperty("--auralis-navbar-available-width", `${placement.availableWidth}px`);
+    this.overlay.style.setProperty("--auralis-navbar-visual-top", `${placement.top}px`);
+    this.overlay.style.setProperty("--auralis-navbar-visual-bottom", `${placement.bottom}px`);
+    this.overlay.style.setProperty("--auralis-navbar-visual-center-y", `${placement.centerY}px`);
+  };
+
+  private findDashboardElement(): Element | undefined {
+    let node: Node | null = this;
+    let main: Element | undefined;
+    while (node) {
+      if (node instanceof Element) {
+        const tag = node.tagName.toLowerCase();
+        if (tag === "ha-panel-lovelace" || tag === "hui-root") return node;
+        if (tag === "main") main = node;
+      }
+      node = node.parentNode || (node instanceof ShadowRoot ? node.host : null);
+    }
+    return main;
+  }
+
+  private syncOverlay(): void {
+    if (this.isPortal) return;
+    if (!this.config || this.config.position === "inline") {
+      this.removeOverlay();
+      return;
+    }
+    if (!this.overlay) {
+      this.overlay = document.createElement("auralis-navbar-card") as AuralisNavbarCard;
+      this.overlay.isPortal = true;
+      this.overlay.setAttribute("data-portal", "");
+      document.body.append(this.overlay);
+    }
+    if (this.overlayConfig !== this.config) {
+      this.overlay.setConfig(this.config);
+      this.overlayConfig = this.config;
+    }
+    this.overlay.hass = this.hass;
+
+    const dashboard = this.findDashboardElement();
+    if (dashboard !== this.dashboardElement) {
+      this.dashboardObserver?.disconnect();
+      this.dashboardElement = dashboard;
+      if (dashboard && typeof ResizeObserver !== "undefined") {
+        this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry);
+        this.dashboardObserver.observe(dashboard);
+      }
+    }
+    this.updateOverlayGeometry();
+  }
+
+  private removeOverlay(): void {
+    this.dashboardObserver?.disconnect();
+    this.dashboardObserver = undefined;
+    this.dashboardElement = undefined;
+    this.overlay?.remove();
+    this.overlay = undefined;
+    this.overlayConfig = undefined;
+  }
 
   public connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("location-changed", this.routeChanged);
     window.addEventListener("popstate", this.routeChanged);
+    if (!this.isPortal) {
+      window.addEventListener("resize", this.updateOverlayGeometry);
+      window.visualViewport?.addEventListener("resize", this.updateOverlayGeometry);
+      window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry);
+    }
   }
 
   public disconnectedCallback(): void {
     window.removeEventListener("location-changed", this.routeChanged);
     window.removeEventListener("popstate", this.routeChanged);
+    if (!this.isPortal) {
+      window.removeEventListener("resize", this.updateOverlayGeometry);
+      window.visualViewport?.removeEventListener("resize", this.updateOverlayGeometry);
+      window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry);
+      this.removeOverlay();
+    }
     super.disconnectedCallback();
+  }
+
+  protected updated(): void {
+    super.updated();
+    this.syncOverlay();
   }
 
   public setConfig(config: NavbarCardConfig): void {
@@ -261,6 +375,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   protected render(): TemplateResult {
     if (!this.config) return html``;
+    if (this.config.position !== "inline" && !this.isPortal) return html``;
     const currentPath = typeof window === "undefined" ? "/" : window.location.pathname;
     const showLabels = this.config.show_labels !== false;
     const classes = [this.config.compact ? "compact" : "", showLabels ? "" : "labels-hidden"].filter(Boolean).join(" ");

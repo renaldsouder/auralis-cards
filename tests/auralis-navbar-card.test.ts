@@ -41,6 +41,22 @@ describe("Auralis navbar routes", () => {
 });
 
 describe("Auralis navbar configuration", () => {
+  it("centers the overlay in the dashboard area and follows the visible mobile viewport", () => {
+    const desktop = navbar.navbarOverlayPlacement(
+      { left: 240, right: 1200 },
+      { offsetLeft: 0, offsetTop: 0, width: 1200, height: 800 },
+      800,
+    );
+    expect(desktop).toMatchObject({ centerX: 720, availableWidth: 960, bottom: 0 });
+
+    const mobile = navbar.navbarOverlayPlacement(
+      { left: 0, right: 390 },
+      { offsetLeft: 0, offsetTop: 0, width: 390, height: 760 },
+      844,
+    );
+    expect(mobile).toMatchObject({ centerX: 195, availableWidth: 390, bottom: 84 });
+  });
+
   it("requires at least one complete internal destination", () => {
     const card = new navbar.AuralisNavbarCard();
     expect(() => card.setConfig(config({ items: [] }))).toThrow("items doit contenir au moins une destination.");
