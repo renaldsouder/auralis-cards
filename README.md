@@ -81,6 +81,7 @@ Une configuration autonome est disponible dans [`examples/navbar-card.yaml`](exa
 ```yaml
 type: custom:auralis-navbar-card
 theme: carbon
+position: bottom
 accent_color: "#79D6F2"
 show_labels: true
 items:
@@ -99,7 +100,7 @@ items:
     badge_entity: sensor.systemes_en_alerte
 ```
 
-`path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
+`position` place la barre au bord de l'écran : `top`, `bottom`, `left` ou `right`. La valeur par défaut `inline` conserve la carte dans le flux du dashboard. Les positions latérales empilent les boutons verticalement. `path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
 
 ## Exemple minimal — Pièce
 

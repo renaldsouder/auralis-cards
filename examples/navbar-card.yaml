@@ -1,5 +1,6 @@
 type: custom:auralis-navbar-card
 theme: carbon
+position: bottom  # inline, top, bottom, left ou right
 accent_color: "#79D6F2"
 show_labels: true
 compact: false

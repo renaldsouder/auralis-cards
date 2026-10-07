@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.4
+
+- Permet de fixer la barre de navigation en haut, en bas, à gauche ou à droite de l'écran avec `position`.
+- Conserve le placement dans la grille avec `position: inline` et réduit l'empreinte de la carte lorsqu'elle est fixée.
+
 ## 0.13.3
 
 - Retire le texte visible des trois commandes directes des groupes de volets, en conservant leurs libellés accessibles.

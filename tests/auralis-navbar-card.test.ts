@@ -54,7 +54,20 @@ describe("Auralis navbar configuration", () => {
     const internals = card as unknown as { config: NavbarCardConfig };
     expect(internals.config.theme).toBe("auto");
     expect(internals.config.show_labels).toBe(true);
+    expect(internals.config.position).toBe("inline");
     expect(card.getCardSize()).toBe(1);
     expect(card.getGridOptions()).toEqual({ rows: 2, min_rows: 1, columns: 12, min_columns: 4 });
+  });
+
+  it("accepts four fixed screen edges and frees its dashboard grid footprint", () => {
+    const card = new navbar.AuralisNavbarCard();
+    const setAttribute = vi.fn();
+    (card as unknown as { setAttribute: typeof setAttribute }).setAttribute = setAttribute;
+    for (const position of ["top", "bottom", "left", "right"] as const) {
+      card.setConfig(config({ position }));
+      expect(setAttribute).toHaveBeenLastCalledWith("data-position", position);
+      expect(card.getGridOptions()).toEqual({ columns: 1, min_columns: 1 });
+    }
+    expect(() => card.setConfig(config({ position: "corner" as NavbarCardConfig["position"] }))).toThrow("position doit être");
   });
 });

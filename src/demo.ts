@@ -332,6 +332,7 @@ const navbar: NavbarCardConfig = {
   type: "custom:auralis-navbar-card",
   name: "Navigation principale",
   theme: "carbon",
+  position: "bottom",
   items: [
     { label: "Accueil", icon: "mdi:home-outline", path: "/" },
     { label: "Pièces", icon: "mdi:floor-plan", path: "/pieces" },

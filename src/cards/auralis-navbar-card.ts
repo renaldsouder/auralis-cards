@@ -35,6 +35,31 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     sharedStyles,
     css`
       :host { container-type: inline-size; }
+      :host([data-position="top"]),
+      :host([data-position="bottom"]),
+      :host([data-position="left"]),
+      :host([data-position="right"]) {
+        position: fixed;
+        z-index: 100;
+        box-sizing: border-box;
+      }
+      :host([data-position="top"]),
+      :host([data-position="bottom"]) {
+        left: 50%;
+        width: min(720px, 100vw);
+        transform: translateX(-50%);
+      }
+      :host([data-position="top"]) { top: 0; }
+      :host([data-position="bottom"]) { bottom: 0; }
+      :host([data-position="left"]),
+      :host([data-position="right"]) {
+        top: 50%;
+        width: min(160px, 100vw);
+        max-height: 100dvh;
+        transform: translateY(-50%);
+      }
+      :host([data-position="left"]) { left: 0; }
+      :host([data-position="right"]) { right: 0; }
       ha-card { overflow: visible; background: var(--machine-base-background, var(--auralis-bg)); }
       .navbar-shell {
         position: relative;
@@ -66,6 +91,23 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         scroll-snap-type: x proximity;
       }
       nav::-webkit-scrollbar { display: none; }
+      :host([data-position="top"]) nav { padding-top: env(safe-area-inset-top, 0); }
+      :host([data-position="left"]) nav,
+      :host([data-position="right"]) nav {
+        max-height: calc(100dvh - 16px);
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-bottom: 0;
+        scroll-snap-type: y proximity;
+      }
+      :host([data-position="left"]) .nav-item,
+      :host([data-position="right"]) .nav-item {
+        flex: 0 0 auto;
+        min-height: 48px;
+        flex-direction: row;
+        justify-content: flex-start;
+      }
       .nav-item {
         position: relative;
         display: flex;
@@ -165,17 +207,23 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (!Array.isArray(config.items) || config.items.length === 0) {
       throw new Error("items doit contenir au moins une destination.");
     }
+    const position = config.position || "inline";
+    if (!["inline", "top", "bottom", "left", "right"].includes(position)) {
+      throw new Error("position doit être inline, top, bottom, left ou right.");
+    }
     const items = config.items.map((item) => ({ ...item, label: item.label?.trim() }));
     if (items.some((item) => !item.label || !navbarTarget(item))) {
       throw new Error("Chaque entrée de navigation doit avoir un label et un path valides.");
     }
-    this.config = { theme: "auto", accent_color: "#79d6f2", show_labels: true, ...config, items };
+    this.config = { theme: "auto", accent_color: "#79d6f2", show_labels: true, ...config, position, items };
+    this.setAttribute?.("data-position", position);
   }
 
   public static getConfigForm(): Record<string, unknown> {
     return { schema: [
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
       { name: "accent_color", selector: { text: {} } },
+      { name: "position", selector: { select: { options: ["inline", "top", "bottom", "left", "right"], mode: "dropdown" } } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "compact", selector: { boolean: {} } },
       { name: "items", selector: { object: {} } },
@@ -235,5 +283,9 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   }
 
   public getCardSize(): number { return 1; }
-  public getGridOptions(): Record<string, number> { return { rows: 2, min_rows: 1, columns: 12, min_columns: 4 }; }
+  public getGridOptions(): Record<string, number> {
+    return this.config?.position === "inline"
+      ? { rows: 2, min_rows: 1, columns: 12, min_columns: 4 }
+      : { columns: 1, min_columns: 1 };
+  }
 }

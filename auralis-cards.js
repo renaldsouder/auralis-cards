@@ -5807,6 +5807,31 @@ var bt = class extends P {
 	static {
 		this.styles = [Me, o`
       :host { container-type: inline-size; }
+      :host([data-position="top"]),
+      :host([data-position="bottom"]),
+      :host([data-position="left"]),
+      :host([data-position="right"]) {
+        position: fixed;
+        z-index: 100;
+        box-sizing: border-box;
+      }
+      :host([data-position="top"]),
+      :host([data-position="bottom"]) {
+        left: 50%;
+        width: min(720px, 100vw);
+        transform: translateX(-50%);
+      }
+      :host([data-position="top"]) { top: 0; }
+      :host([data-position="bottom"]) { bottom: 0; }
+      :host([data-position="left"]),
+      :host([data-position="right"]) {
+        top: 50%;
+        width: min(160px, 100vw);
+        max-height: 100dvh;
+        transform: translateY(-50%);
+      }
+      :host([data-position="left"]) { left: 0; }
+      :host([data-position="right"]) { right: 0; }
       ha-card { overflow: visible; background: var(--machine-base-background, var(--auralis-bg)); }
       .navbar-shell {
         position: relative;
@@ -5838,6 +5863,23 @@ var bt = class extends P {
         scroll-snap-type: x proximity;
       }
       nav::-webkit-scrollbar { display: none; }
+      :host([data-position="top"]) nav { padding-top: env(safe-area-inset-top, 0); }
+      :host([data-position="left"]) nav,
+      :host([data-position="right"]) nav {
+        max-height: calc(100dvh - 16px);
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-bottom: 0;
+        scroll-snap-type: y proximity;
+      }
+      :host([data-position="left"]) .nav-item,
+      :host([data-position="right"]) .nav-item {
+        flex: 0 0 auto;
+        min-height: 48px;
+        flex-direction: row;
+        justify-content: flex-start;
+      }
       .nav-item {
         position: relative;
         display: flex;
@@ -5926,18 +5968,27 @@ var bt = class extends P {
 	}
 	setConfig(e) {
 		if (!Array.isArray(e.items) || e.items.length === 0) throw Error("items doit contenir au moins une destination.");
-		let t = e.items.map((e) => ({
+		let t = e.position || "inline";
+		if (![
+			"inline",
+			"top",
+			"bottom",
+			"left",
+			"right"
+		].includes(t)) throw Error("position doit être inline, top, bottom, left ou right.");
+		let n = e.items.map((e) => ({
 			...e,
 			label: e.label?.trim()
 		}));
-		if (t.some((e) => !e.label || !$(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
+		if (n.some((e) => !e.label || !$(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
 		this.config = {
 			theme: "auto",
 			accent_color: "#79d6f2",
 			show_labels: !0,
 			...e,
-			items: t
-		};
+			position: t,
+			items: n
+		}, this.setAttribute?.("data-position", t);
 	}
 	static getConfigForm() {
 		return { schema: [
@@ -5954,6 +6005,19 @@ var bt = class extends P {
 			{
 				name: "accent_color",
 				selector: { text: {} }
+			},
+			{
+				name: "position",
+				selector: { select: {
+					options: [
+						"inline",
+						"top",
+						"bottom",
+						"left",
+						"right"
+					],
+					mode: "dropdown"
+				} }
 			},
 			{
 				name: "show_labels",
@@ -6023,11 +6087,14 @@ var bt = class extends P {
 		return 1;
 	}
 	getGridOptions() {
-		return {
+		return this.config?.position === "inline" ? {
 			rows: 2,
 			min_rows: 1,
 			columns: 12,
 			min_columns: 4
+		} : {
+			columns: 1,
+			min_columns: 1
 		};
 	}
 }, xt = "0.13.0";
