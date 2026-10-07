@@ -3074,8 +3074,6 @@ var Ge = class extends N {
 	}
 	getGridOptions() {
 		return {
-			rows: 7,
-			min_rows: 6,
 			columns: 12,
 			min_columns: 6
 		};
@@ -5819,7 +5817,7 @@ function bt(e, t, n) {
 }
 var xt = class extends N {
 	constructor(...e) {
-		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.updateOverlayGeometry = () => {
+		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.preview = !1, this.editMode = !1, this.updateOverlayGeometry = () => {
 			if (!this.overlay) return;
 			let e = window.visualViewport, t = bt(this.dashboardElement?.getBoundingClientRect(), {
 				offsetLeft: e?.offsetLeft ?? 0,
@@ -5831,9 +5829,16 @@ var xt = class extends N {
 		};
 	}
 	static {
+		this.properties = {
+			...N.properties,
+			preview: { attribute: !1 },
+			editMode: { attribute: !1 }
+		};
+	}
+	static {
 		this.styles = [Ne, o`
       :host { container-type: inline-size; }
-      :host([data-position]:not([data-position="inline"]):not([data-portal])) {
+      :host([data-position]:not([data-position="inline"]):not([data-portal]):not([data-edit-mode])) {
         position: absolute;
         width: 0;
         height: 0;
@@ -6022,6 +6027,9 @@ var xt = class extends N {
       }
     `];
 	}
+	get editing() {
+		return this.preview || this.editMode;
+	}
 	findDashboardElement() {
 		let e = this, t;
 		for (; e;) {
@@ -6036,7 +6044,7 @@ var xt = class extends N {
 	}
 	syncOverlay() {
 		if (this.isPortal) return;
-		if (!this.config || this.config.position === "inline") {
+		if (!this.config || this.config.position === "inline" || this.editing) {
 			this.removeOverlay();
 			return;
 		}
@@ -6053,8 +6061,11 @@ var xt = class extends N {
 	disconnectedCallback() {
 		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), this.removeOverlay()), super.disconnectedCallback();
 	}
+	willUpdate() {
+		this.toggleAttribute("data-edit-mode", this.editing);
+	}
 	updated() {
-		super.updated(), this.syncOverlay();
+		super.updated(), this.isPortal || this.syncOverlay();
 	}
 	setConfig(e) {
 		if (!Array.isArray(e.items) || e.items.length === 0) throw Error("items doit contenir au moins une destination.");
@@ -6184,12 +6195,16 @@ var xt = class extends N {
 		if (t && !_t.has(t.state.toLowerCase())) return this.hass?.formatEntityState?.(t) || t.state;
 	}
 	navigate(e, t) {
+		if (this.editing) {
+			e.preventDefault();
+			return;
+		}
 		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 		let n = $(t);
 		n && (e.preventDefault(), `${window.location.pathname}${window.location.search}${window.location.hash}` !== n && (window.history.pushState(null, "", n), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }))));
 	}
 	render() {
-		if (!this.config || this.config.position !== "inline" && !this.isPortal) return E``;
+		if (!this.config || this.config.position !== "inline" && !this.isPortal && !this.editing) return E``;
 		let e = typeof window > "u" ? "/" : window.location.pathname, t = this.config.show_labels !== !1, n = [this.config.compact ? "compact" : "", t ? "" : "labels-hidden"].filter(Boolean).join(" "), r = [
 			"desktop",
 			"tablet",
@@ -6217,7 +6232,7 @@ var xt = class extends N {
 		return 1;
 	}
 	getGridOptions() {
-		return this.config?.position === "inline" ? {
+		return this.config?.position === "inline" || this.editing ? {
 			rows: 2,
 			min_rows: 1,
 			columns: 12,

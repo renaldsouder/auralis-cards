@@ -1383,7 +1383,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   public getGridOptions(): Record<string, number> {
-    return { rows: 7, min_rows: 6, columns: 12, min_columns: 6 };
+    return { columns: 12, min_columns: 6 };
   }
 
   private readonly historyGraphConfigs = new Map<string, Record<string, unknown>>();

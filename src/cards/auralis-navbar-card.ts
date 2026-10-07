@@ -51,11 +51,17 @@ export function navbarOverlayPlacement(
 }
 
 export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
+  static properties = {
+    ...AuralisBaseCard.properties,
+    preview: { attribute: false },
+    editMode: { attribute: false },
+  };
+
   static styles: CSSResultGroup = [
     sharedStyles,
     css`
       :host { container-type: inline-size; }
-      :host([data-position]:not([data-position="inline"]):not([data-portal])) {
+      :host([data-position]:not([data-position="inline"]):not([data-portal]):not([data-edit-mode])) {
         position: absolute;
         width: 0;
         height: 0;
@@ -251,6 +257,12 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   private overlayConfig?: NavbarCardConfig;
   private dashboardElement?: Element;
   private dashboardObserver?: ResizeObserver;
+  public preview = false;
+  public editMode = false;
+
+  private get editing(): boolean {
+    return this.preview || this.editMode;
+  }
   private readonly updateOverlayGeometry = (): void => {
     if (!this.overlay) return;
     const viewport = window.visualViewport;
@@ -284,7 +296,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   private syncOverlay(): void {
     if (this.isPortal) return;
-    if (!this.config || this.config.position === "inline") {
+    if (!this.config || this.config.position === "inline" || this.editing) {
       this.removeOverlay();
       return;
     }
@@ -344,9 +356,13 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     super.disconnectedCallback();
   }
 
+  protected willUpdate(): void {
+    this.toggleAttribute("data-edit-mode", this.editing);
+  }
+
   protected updated(): void {
     super.updated();
-    this.syncOverlay();
+    if (!this.isPortal) this.syncOverlay();
   }
 
   public setConfig(config: NavbarCardConfig): void {
@@ -405,6 +421,10 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   }
 
   private navigate(event: MouseEvent, item: NavbarItemConfig): void {
+    if (this.editing) {
+      event.preventDefault();
+      return;
+    }
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const target = navbarTarget(item);
     if (!target) return;
@@ -417,7 +437,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   protected render(): TemplateResult {
     if (!this.config) return html``;
-    if (this.config.position !== "inline" && !this.isPortal) return html``;
+    if (this.config.position !== "inline" && !this.isPortal && !this.editing) return html``;
     const currentPath = typeof window === "undefined" ? "/" : window.location.pathname;
     const showLabels = this.config.show_labels !== false;
     const classes = [this.config.compact ? "compact" : "", showLabels ? "" : "labels-hidden"].filter(Boolean).join(" ");
@@ -448,7 +468,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   public getCardSize(): number { return 1; }
   public getGridOptions(): Record<string, number> {
-    return this.config?.position === "inline"
+    return this.config?.position === "inline" || this.editing
       ? { rows: 2, min_rows: 1, columns: 12, min_columns: 4 }
       : { columns: 1, min_columns: 1 };
   }

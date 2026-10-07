@@ -81,6 +81,11 @@ describe("Auralis room ambiance", () => {
 });
 
 describe("Auralis room background", () => {
+  it("lets Sections size the room card from its actual content height", () => {
+    const card = new roomCard.AuralisRoomCard();
+    expect(card.getGridOptions()).toEqual({ columns: 12, min_columns: 6 });
+  });
+
   it("supports solid and gradient backgrounds without CSS declaration injection", () => {
     const card = new roomCard.AuralisRoomCard();
     const internals = card as unknown as {

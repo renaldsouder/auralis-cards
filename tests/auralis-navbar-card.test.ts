@@ -98,4 +98,16 @@ describe("Auralis navbar configuration", () => {
     }
     expect(() => card.setConfig(config({ position: "corner" as NavbarCardConfig["position"] }))).toThrow("position doit être");
   });
+
+  it("returns to an editable card footprint while dashboard editing is active", () => {
+    const card = new navbar.AuralisNavbarCard();
+    card.setConfig(config({ position: "bottom" }));
+    card.preview = true;
+    expect(card.getGridOptions()).toEqual({ rows: 2, min_rows: 1, columns: 12, min_columns: 4 });
+    card.preview = false;
+    card.editMode = true;
+    expect(card.getGridOptions()).toEqual({ rows: 2, min_rows: 1, columns: 12, min_columns: 4 });
+    card.editMode = false;
+    expect(card.getGridOptions()).toEqual({ columns: 1, min_columns: 1 });
+  });
 });

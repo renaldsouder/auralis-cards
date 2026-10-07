@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.7
+
+- Adapte la hauteur de la carte Pièce à son contenu dans les vues Sections au lieu de réserver sept lignes.
+- Garde la navbar dans la grille pendant l'édition du tableau de bord et ne l'épingle qu'en affichage normal.
+
 ## 0.13.6
 
 - Place la navbar en bas par défaut lorsque `position` est absent ; `position: inline` reste disponible.
