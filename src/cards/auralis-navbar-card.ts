@@ -84,9 +84,18 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       :host([data-portal][data-position="left"]) { left: 0; }
       :host([data-portal][data-position="right"]) { right: 0; }
-      ha-card { overflow: visible; background: var(--machine-base-background, var(--auralis-bg)); }
+      ha-card {
+        height: var(--navbar-height-desktop, 76px);
+        box-sizing: border-box;
+        overflow: visible;
+        background: var(--machine-base-background, var(--auralis-bg));
+      }
+      :host([data-position="left"]) ha-card,
+      :host([data-position="right"]) ha-card { height: auto; }
       .navbar-shell {
         position: relative;
+        height: 100%;
+        box-sizing: border-box;
         overflow: hidden;
         padding: 8px;
         border-radius: inherit;
@@ -106,16 +115,24 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       nav {
         display: flex;
+        height: 100%;
+        box-sizing: border-box;
         align-items: stretch;
         gap: 6px;
         overflow-x: auto;
-        padding-bottom: env(safe-area-inset-bottom, 0);
         scrollbar-width: none;
         overscroll-behavior-x: contain;
         scroll-snap-type: x proximity;
       }
       nav::-webkit-scrollbar { display: none; }
+      :host([data-position="bottom"]) nav { padding-bottom: env(safe-area-inset-bottom, 0); }
       :host([data-position="top"]) nav { padding-top: env(safe-area-inset-top, 0); }
+      :host([data-position="left"]) .navbar-shell,
+      :host([data-position="right"]) .navbar-shell,
+      :host([data-position="left"]) nav,
+      :host([data-position="right"]) nav {
+        height: auto;
+      }
       :host([data-position="left"]) nav,
       :host([data-position="right"]) nav {
         max-height: calc(100dvh - 16px);
@@ -137,7 +154,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         display: flex;
         flex: 1 0 76px;
         min-width: 0;
-        min-height: 58px;
+        min-height: 0;
         align-items: center;
         justify-content: center;
         gap: 7px;
@@ -207,8 +224,23 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       .compact .nav-item { min-height: 48px; padding: 8px 10px; }
       .labels-hidden .nav-item { flex-basis: 54px; }
       @container (max-width: 520px) {
-        .nav-item { flex: 1 0 64px; flex-direction: column; gap: 4px; padding-inline: 8px; }
+        .nav-item { flex: 1 0 64px; flex-direction: column; gap: 4px; padding: 5px 8px; }
         .label { max-width: 74px; font-size: 10px; }
+      }
+      @media (max-width: 1024px) {
+        ha-card { height: var(--navbar-height-tablet, 72px); }
+      }
+      @media (max-width: 600px) {
+        ha-card { height: var(--navbar-height-mobile, 72px); }
+        :host([data-position="bottom"]) ha-card {
+          height: calc(var(--navbar-height-mobile, 72px) + env(safe-area-inset-bottom, 0px));
+        }
+        :host([data-position="top"]) ha-card {
+          height: calc(var(--navbar-height-mobile, 72px) + env(safe-area-inset-top, 0px));
+        }
+        .navbar-shell { padding: 6px; }
+        .nav-item { padding: 2px 6px; gap: 2px; }
+        ha-icon { --mdc-icon-size: 20px; }
       }
     `,
   ];
@@ -321,13 +353,19 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (!Array.isArray(config.items) || config.items.length === 0) {
       throw new Error("items doit contenir au moins une destination.");
     }
-    const position = config.position || "inline";
+    const position = config.position || "bottom";
     if (!["inline", "top", "bottom", "left", "right"].includes(position)) {
       throw new Error("position doit être inline, top, bottom, left ou right.");
     }
     const items = config.items.map((item) => ({ ...item, label: item.label?.trim() }));
     if (items.some((item) => !item.label || !navbarTarget(item))) {
       throw new Error("Chaque entrée de navigation doit avoir un label et un path valides.");
+    }
+    for (const key of ["height_desktop", "height_tablet", "height_mobile"] as const) {
+      const height = config[key];
+      if (height !== undefined && (!Number.isInteger(height) || height < 56 || height > 160)) {
+        throw new Error(`${key} doit être un nombre entier entre 56 et 160 pixels.`);
+      }
     }
     this.config = { theme: "auto", accent_color: "#79d6f2", show_labels: true, ...config, position, items };
     this.setAttribute?.("data-position", position);
@@ -338,6 +376,9 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
       { name: "accent_color", selector: { text: {} } },
       { name: "position", selector: { select: { options: ["inline", "top", "bottom", "left", "right"], mode: "dropdown" } } },
+      { name: "height_desktop", selector: { number: { min: 56, max: 160, mode: "box" } } },
+      { name: "height_tablet", selector: { number: { min: 56, max: 160, mode: "box" } } },
+      { name: "height_mobile", selector: { number: { min: 56, max: 160, mode: "box" } } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "compact", selector: { boolean: {} } },
       { name: "items", selector: { object: {} } },
@@ -347,6 +388,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   public static getStubConfig(): NavbarCardConfig {
     return {
       type: "custom:auralis-navbar-card",
+      position: "bottom",
       items: [
         { label: "Accueil", icon: "mdi:home-outline", path: "/dashboard-auralis/accueil" },
         { label: "Pièces", icon: "mdi:floor-plan", path: "/dashboard-auralis/pieces" },
@@ -379,8 +421,15 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     const currentPath = typeof window === "undefined" ? "/" : window.location.pathname;
     const showLabels = this.config.show_labels !== false;
     const classes = [this.config.compact ? "compact" : "", showLabels ? "" : "labels-hidden"].filter(Boolean).join(" ");
+    const heightStyle = (["desktop", "tablet", "mobile"] as const)
+      .map((device) => {
+        const height = this.config?.[`height_${device}`];
+        return height === undefined ? "" : `--navbar-height-${device}:${height}px`;
+      })
+      .filter(Boolean)
+      .join(";");
     return html`
-      <ha-card style=${this.machineStyle("#79d6f2")}>
+      <ha-card style=${`${this.machineStyle("#79d6f2")};${heightStyle}`}>
         <div class="navbar-shell ${classes}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((item) => {

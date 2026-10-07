@@ -733,6 +733,13 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         align-items: flex-end;
       }
 
+      @container (max-width: 420px) {
+        .room-photo.split-bottom-controls .photo-overlay-slot.bottom-right {
+          top: 8px;
+          bottom: auto;
+        }
+      }
+
       .thermostat-control {
         display: grid;
         min-width: 132px;
@@ -1657,6 +1664,11 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const leftControls = this.sideControls("left");
     const rightControls = this.sideControls("right");
     const sceneModes = this.sceneModes();
+    const splitBottomControls = this.config.thermostat?.show !== false
+      && Boolean(this.thermostatEntityId())
+      && this.overlayPosition(this.config.thermostat?.position, "bottom-left") === "bottom-left"
+      && sceneModes.length > 0
+      && this.ambiancePosition(sceneModes) === "bottom-right";
     const cardBackground = this.roomCardBackground();
     const defaultSubtitle = unavailable
       ? `${unavailable} appareil${unavailable > 1 ? "s" : ""} indisponible${unavailable > 1 ? "s" : ""}`
@@ -1687,7 +1699,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
           </header>
           <div class="cinema-body">
             ${this.renderSideColumn("left", leftControls)}
-            <div class="room-photo" style=${roomImageStyle}>
+            <div class="room-photo ${splitBottomControls ? "split-bottom-controls" : ""}" style=${roomImageStyle}>
               ${this.renderOverlaySlot("top-left", sceneModes)}
               ${this.renderOverlaySlot("top-right", sceneModes)}
               ${this.renderOverlaySlot("bottom-left", sceneModes)}

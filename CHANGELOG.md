@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.6
+
+- Place la navbar en bas par défaut lorsque `position` est absent ; `position: inline` reste disponible.
+- Ajoute `height_desktop`, `height_tablet` et `height_mobile` pour régler séparément sa hauteur.
+- Éloigne le bouton Ambiance du thermostat sur les cartes Pièce étroites.
+
 ## 0.13.5
 
 - Centre la navigation fixe dans la zone du tableau de bord, même lorsque la barre latérale Home Assistant est ouverte.

@@ -38,6 +38,9 @@ export interface NavbarCardConfig extends BaseCardConfig {
   type: "custom:auralis-navbar-card";
   items: NavbarItemConfig[];
   position?: "inline" | "top" | "bottom" | "left" | "right";
+  height_desktop?: number;
+  height_tablet?: number;
+  height_mobile?: number;
   show_labels?: boolean;
   compact?: boolean;
   aria_label?: string;

@@ -70,9 +70,21 @@ describe("Auralis navbar configuration", () => {
     const internals = card as unknown as { config: NavbarCardConfig };
     expect(internals.config.theme).toBe("auto");
     expect(internals.config.show_labels).toBe(true);
-    expect(internals.config.position).toBe("inline");
+    expect(internals.config.position).toBe("bottom");
     expect(card.getCardSize()).toBe(1);
+    expect(card.getGridOptions()).toEqual({ columns: 1, min_columns: 1 });
+    card.setConfig(config({ position: "inline" }));
     expect(card.getGridOptions()).toEqual({ rows: 2, min_rows: 1, columns: 12, min_columns: 4 });
+  });
+
+  it("accepts separate navigation heights for desktop, tablet and mobile", () => {
+    const card = new navbar.AuralisNavbarCard();
+    card.setConfig(config({ height_desktop: 88, height_tablet: 76, height_mobile: 64 }));
+    const internals = card as unknown as { config: NavbarCardConfig };
+    expect(internals.config.height_desktop).toBe(88);
+    expect(internals.config.height_tablet).toBe(76);
+    expect(internals.config.height_mobile).toBe(64);
+    expect(() => card.setConfig(config({ height_mobile: 48 }))).toThrow("height_mobile doit être");
   });
 
   it("accepts four fixed screen edges and frees its dashboard grid footprint", () => {
