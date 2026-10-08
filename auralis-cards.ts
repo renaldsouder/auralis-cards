@@ -1,15 +1,15 @@
-import "./types/home-assistant";
-import "./lights-entry";
-import "./thermostat-entry";
-import "./fridge-entry";
-import { AuralisRoomCard } from "./cards/auralis-room-card";
-import { AuralisCoversCard } from "./cards/auralis-covers-card";
-import { AuralisPcCard } from "./cards/auralis-pc-card";
-import { AuralisUnraidCard } from "./cards/auralis-unraid-card";
-import { AuralisProxmoxCard } from "./cards/auralis-proxmox-card";
-import { AuralisNavbarCard } from "./cards/auralis-navbar-card";
+import "./src/types/home-assistant";
+import { AuralisRoomCard } from "./src/cards/auralis-room-card";
+import { AuralisCoversCard } from "./src/cards/auralis-covers-card";
+import { AuralisPcCard } from "./src/cards/auralis-pc-card";
+import { AuralisUnraidCard } from "./src/cards/auralis-unraid-card";
+import { AuralisProxmoxCard } from "./src/cards/auralis-proxmox-card";
+import { AuralisNavbarCard } from "./src/cards/auralis-navbar-card";
+import { AuralisLightsCard } from "./src/cards/auralis-lights-card";
+import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
+import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 
-const VERSION = "0.13.0";
+const VERSION = "0.13.7";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -17,6 +17,9 @@ if (!customElements.get("auralis-pc-card")) customElements.define("auralis-pc-ca
 if (!customElements.get("auralis-unraid-card")) customElements.define("auralis-unraid-card", AuralisUnraidCard);
 if (!customElements.get("auralis-proxmox-card")) customElements.define("auralis-proxmox-card", AuralisProxmoxCard);
 if (!customElements.get("auralis-navbar-card")) customElements.define("auralis-navbar-card", AuralisNavbarCard);
+if (!customElements.get("auralis-lights-card")) customElements.define("auralis-lights-card", AuralisLightsCard);
+if (!customElements.get("auralis-thermostat-card")) customElements.define("auralis-thermostat-card", AuralisThermostatCard);
+if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-fridge-card", AuralisFridgeCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -73,6 +76,30 @@ const cards = [
     name: "Auralis · Proxmox",
     description: "Supervision d’un cluster Proxmox, de ses nœuds, VM et conteneurs LXC.",
     preview: false,
+  },
+  {
+    type: "auralis-lights-card",
+    name: "Auralis · Lumières",
+    description: "Éclairage par groupes, couleurs et ambiances.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("light.")
+      ? { config: { type: "custom:auralis-lights-card", lights: [entityId] } }
+      : null,
+  },
+  {
+    type: "auralis-thermostat-card",
+    name: "Auralis · Thermostats",
+    description: "Températures, consignes et modes de plusieurs thermostats.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("climate.")
+      ? { config: { type: "custom:auralis-thermostat-card", entity: entityId } }
+      : null,
+  },
+  {
+    type: "auralis-fridge-card",
+    name: "Auralis · Frigo connecté",
+    description: "Températures, portes, alertes et commandes du réfrigérateur.",
+    preview: true,
   },
 ];
 

@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/index.ts",
+      entry: "auralis-cards.ts",
       formats: ["es"],
       fileName: () => "auralis-cards.js",
     },

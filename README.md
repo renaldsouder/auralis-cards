@@ -51,7 +51,7 @@ npm run dev
 npm run verify
 ```
 
-Le bundle final est généré dans `dist/auralis-cards.js`.
+Toutes les cartes sont enregistrées dans le point d'entrée TypeScript [`auralis-cards.ts`](auralis-cards.ts). Le bundle unique est généré dans `dist/auralis-cards.js`.
 
 ## Installation avec HACS
 

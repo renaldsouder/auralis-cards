@@ -12,7 +12,7 @@ fs.mkdirSync(output, { recursive: true });
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     // Exercise the distributable bundle inside the demo, not just Vite's source modules.
-    await page.route("**/src/index.ts", route => route.fulfill({
+    await page.route("**/auralis-cards.ts", route => route.fulfill({
       path: path.join(process.cwd(), "dist", "auralis-cards.js"),
       contentType: "text/javascript",
     }));

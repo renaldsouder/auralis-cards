@@ -24,7 +24,7 @@ Un tag seul ne suffit pas : HACS utilise la GitHub Release publiée pour propose
 
 ## Publier une mise à jour
 
-1. Mettre à jour la version dans `package.json`, `package-lock.json` et `src/index.ts`.
+1. Mettre à jour la version dans `package.json`, `package-lock.json` et `auralis-cards.ts`.
 2. Compléter `CHANGELOG.md`.
 3. Exécuter `npm run verify` et valider le bundle généré.
 4. Fusionner les changements dans `main`.

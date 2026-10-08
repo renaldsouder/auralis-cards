@@ -1629,889 +1629,8 @@ function W(e, t) {
 	}));
 }
 //#endregion
-//#region src/cards/auralis-lights-card.ts
-var Ge = [
-	{
-		name: "Blanc chaud",
-		color: "#ffd4a3"
-	},
-	{
-		name: "Blanc neutre",
-		color: "#ffffff"
-	},
-	{
-		name: "Ambre",
-		color: "#ff9d42"
-	},
-	{
-		name: "Rose",
-		color: "#ff7eb8"
-	},
-	{
-		name: "Violet",
-		color: "#9d79ff"
-	},
-	{
-		name: "Bleu",
-		color: "#5caaff"
-	},
-	{
-		name: "Vert",
-		color: "#67d7a2"
-	}
-], Ke = (e) => /^#[0-9a-f]{6}$/i.test(e), qe = class extends M {
-	static {
-		this.styles = [M.styles, o`
-    .lights-shell { padding: 18px; container-type: inline-size; }
-    .lights-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-    .lights-header .tile-icon { width:44px; height:44px; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
-    .lights-header .tile-icon ha-icon { --mdc-icon-size:25px; }
-    .lights-summary { margin-top:4px; color:var(--auralis-muted); font-size:12px; }
-    .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:12px; }
-    .group { overflow:hidden; border:1px solid var(--auralis-border); border-radius:20px; background:var(--auralis-layer); }
-    .group-photo { position:relative; height:90px; overflow:hidden; background:radial-gradient(circle at 22% 35%,color-mix(in srgb,var(--auralis-active) 32%,transparent),transparent 45%),linear-gradient(125deg,#1a2633,#0c1520); background-size:cover; background-position:center; }
-    .group-photo::after { position:absolute; inset:0; background:linear-gradient(0deg,rgba(7,13,20,.28),transparent 70%); content:""; pointer-events:none; }
-    .group-body { padding:14px; }
-    .group-top { display:flex; align-items:center; gap:9px; }
-    .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
-    .group-title { min-width:0; flex:1; }
-    .group-title strong, .group-title small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .group-title small { margin-top:3px; color:var(--auralis-muted); font-size:11px; }
-    .group-top .icon-button { flex:0 0 auto; }
-    .group-actions { display:flex; gap:7px; margin-top:13px; }
-    .control { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
-    .control ha-icon { --mdc-icon-size:21px; }
-    .control.on { color:var(--auralis-active); }
-    .control[disabled], .swatch[disabled], input[disabled] { opacity:.38; cursor:not-allowed; }
-    .group-actions .spacer { flex:1; }
-    .dimmer { display:flex; align-items:center; gap:10px; margin-top:14px; }
-    .dimmer ha-icon { --mdc-icon-size:18px; color:var(--auralis-active); }
-    .dimmer input { min-width:0; flex:1; accent-color:var(--auralis-active); cursor:pointer; }
-    .dimmer output { min-width:35px; color:var(--auralis-muted); font-size:12px; text-align:right; }
-    .color-input { width:42px; height:42px; padding:3px; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); cursor:pointer; }
-    .color-input::-webkit-color-swatch-wrapper { padding:0; }
-    .color-input::-webkit-color-swatch { border:0; border-radius:8px; }
-    .color-input::-moz-color-swatch { border:0; border-radius:8px; }
-    .swatches { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
-    .swatch { width:28px; height:28px; padding:3px; border:1px solid var(--auralis-border); border-radius:50%; background:var(--auralis-card); cursor:pointer; }
-    .swatch::after { display:block; width:100%; height:100%; border-radius:50%; background:var(--swatch-color); content:""; }
-    .inline-lights { display:grid; gap:3px; padding-top:10px; margin-top:12px; border-top:1px solid var(--auralis-border); }
-    .inline-light { display:flex; min-height:34px; align-items:center; gap:8px; font-size:12px; }
-    .inline-light span { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .inline-light .control { width:32px; height:32px; border-radius:9px; }
-    .inline-light .control ha-icon { --mdc-icon-size:18px; }
-    .light-row { padding:14px; border:1px solid var(--auralis-border); border-radius:16px; background:var(--auralis-layer); }
-    .light-row + .light-row { margin-top:9px; }
-    .light-head { display:flex; align-items:center; gap:10px; }
-    .light-head .tile-icon { color:var(--auralis-active); }
-    .light-head .name { min-width:0; flex:1; overflow:hidden; font-size:13px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
-    .light-head .control { width:38px; height:38px; }
-    .light-row .dimmer { margin-top:10px; }
-    .light-row .swatches { margin-top:10px; }
-    .scene-grid { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
-    .scene-item { display:grid; width:56px; gap:4px; justify-items:center; }
-    .scene-item .control { width:46px; height:46px; color:var(--auralis-active); }
-    .scene-item small { width:70px; overflow:hidden; color:var(--auralis-muted); font-size:10px; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
-    .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
-    @container (max-width:330px) { .lights-shell { padding:13px; } .group-body { padding:12px; } }
-  `];
-	}
-	setConfig(e) {
-		let t = e.groups ?? (e.lights?.length ? [{
-			name: e.name || "Lumières",
-			lights: e.lights
-		}] : []);
-		if (!t.length || t.some((e) => !e.name || !Array.isArray(e.lights) || !e.lights.length || e.lights.some((e) => !e.startsWith("light.")))) throw Error("Configurez au moins un groupe avec des entités light.*.");
-		if (e.preset_colors?.some((e) => !Ke(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
-		this.config = {
-			...e,
-			theme: e.theme || "carbon",
-			groups: t
-		};
-	}
-	static getStubConfig() {
-		return {
-			name: "Lumières",
-			theme: "carbon",
-			lights: []
-		};
-	}
-	static getConfigForm() {
-		return { schema: [
-			{
-				name: "name",
-				selector: { text: {} }
-			},
-			{
-				name: "theme",
-				selector: { select: {
-					options: [
-						"auto",
-						"halo",
-						"carbon",
-						"mono",
-						"aurora"
-					],
-					mode: "dropdown"
-				} }
-			},
-			{
-				name: "lights",
-				selector: { entity: {
-					multiple: !0,
-					filter: { domain: "light" }
-				} }
-			},
-			{
-				name: "groups",
-				selector: { object: {} }
-			},
-			{
-				name: "scenes",
-				selector: { object: {} }
-			},
-			{
-				name: "preset_colors",
-				selector: { object: {} }
-			},
-			{
-				name: "entity_labels",
-				selector: { object: {} }
-			}
-		] };
-	}
-	groups() {
-		return this.config?.groups || [];
-	}
-	available(e) {
-		return e.lights.filter((e) => P(N(this.hass, e)));
-	}
-	colorIds(e) {
-		return this.available(e).filter((e) => Re(N(this.hass, e)));
-	}
-	supportsBrightness(e) {
-		let t = N(this.hass, e), n = t?.attributes.supported_color_modes;
-		return typeof t?.attributes.brightness == "number" || Array.isArray(n) && n.some((e) => e !== "onoff");
-	}
-	dimmableIds(e) {
-		return this.available(e).filter((e) => this.supportsBrightness(e));
-	}
-	presets() {
-		return this.config?.preset_colors ?? Ge;
-	}
-	scenes(e) {
-		return e.scenes ?? this.config?.scenes ?? [];
-	}
-	label(e) {
-		return this.config?.entity_labels?.[e] || I(N(this.hass, e), e);
-	}
-	average(e) {
-		let t = e.lights.map((e) => N(this.hass, e)).filter(F).map(Le);
-		return t.length ? Math.round(t.reduce((e, t) => e + t, 0) / t.length) : 0;
-	}
-	color(e) {
-		let t = this.colorIds(e).map((e) => N(this.hass, e));
-		return V(B(t.find((e) => F(e) && B(e)) ?? t[0]));
-	}
-	imageStyle(e) {
-		let t = e.image?.trim();
-		return !t || !/^(https:\/\/|\/local\/|\/hacsfiles\/)/.test(t) || /["'\\;{}]/.test(t) ? "" : `background-image:linear-gradient(0deg,rgba(7,13,20,.3),rgba(7,13,20,.05)),url("${t}")`;
-	}
-	async power(e, t) {
-		this.hass && e.length && await this.hass.callService("light", t ? "turn_on" : "turn_off", {}, { entity_id: e });
-	}
-	async brightness(e, t) {
-		this.hass && e.length && await this.hass.callService("light", "turn_on", { brightness_pct: Math.round(t) }, { entity_id: e });
-	}
-	async colorize(e, t) {
-		this.hass && e.length && Ke(t) && await We(this.hass, e, t);
-	}
-	renderSwatches(e, t) {
-		return e.length ? E`<div class="swatches" aria-label=${`Couleurs prédéfinies pour ${t}`}>
-      ${this.presets().map((n) => E`<button class="swatch" type="button" style=${`--swatch-color:${n.color}`}
-        title=${`${n.name} · ${t}`} aria-label=${`${n.name} · ${t}`} ?disabled=${!e.length}
-        @click=${() => this.colorize(e, n.color)}></button>`)}
-    </div>` : E``;
-	}
-	renderGroup(e, t) {
-		let n = this.available(e), r = this.dimmableIds(e), i = this.colorIds(e), a = n.filter((e) => F(N(this.hass, e))).length, o = this.average(e), s = this.scenes(e);
-		return E`<section class="group">
-      <div class="group-photo" style=${this.imageStyle(e)}></div>
-      <div class="group-body">
-        <div class="group-top">
-          <span class="tile-icon"><ha-icon .icon=${e.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
-          <span class="group-title"><strong>${e.name}</strong><small>${a}/${e.lights.length} allumée${e.lights.length > 1 ? "s" : ""}</small></span>
-          <button class="icon-button" type="button" title=${`Détails de ${e.name}`} aria-label=${`Détails de ${e.name}`}
-            aria-haspopup="dialog" @click=${() => this.openDialog(`group:${t}`)}><ha-icon icon="mdi:chevron-right"></ha-icon></button>
-        </div>
-        <div class="group-actions">
-          <button class="control on" type="button" title=${`Allumer ${e.name}`} aria-label=${`Allumer ${e.name}`}
-            ?disabled=${!n.length} @click=${() => this.power(n, !0)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
-          <button class="control" type="button" title=${`Éteindre ${e.name}`} aria-label=${`Éteindre ${e.name}`}
-            ?disabled=${!n.length} @click=${() => this.power(n, !1)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
-          ${s.length ? E`<button class="control" type="button" title=${`Ambiances de ${e.name}`} aria-label=${`Ambiances de ${e.name}`}
-            aria-haspopup="dialog" @click=${() => this.openDialog(`scenes:${t}`)}><ha-icon icon="mdi:creation-outline"></ha-icon></button>` : O}
-          <span class="spacer"></span>
-          <input class="color-input" type="color" .value=${this.color(e)} title=${`Couleur de ${e.name}`}
-            aria-label=${`Couleur de ${e.name}`} ?disabled=${!i.length}
-            @change=${(e) => this.colorize(i, e.target.value)} />
-        </div>
-        <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
-          <input type="range" min="1" max="100" .value=${String(Math.max(o, 1))}
-            aria-label=${`Intensité de ${e.name}`} ?disabled=${!r.length}
-            @change=${(e) => this.brightness(r, Number(e.target.value))} />
-          <output>${o}%</output>
-        </label>
-        ${this.renderSwatches(i, e.name)}
-        ${e.show_lights ? E`<div class="inline-lights">${e.lights.map((e) => {
-			let t = N(this.hass, e), n = F(t);
-			return E`<div class="inline-light"><ha-icon .icon=${n ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon><span>${this.label(e)}</span>
-            <button class="control" type="button" title=${`${n ? "Éteindre" : "Allumer"} ${this.label(e)}`} aria-label=${`${n ? "Éteindre" : "Allumer"} ${this.label(e)}`}
-              ?disabled=${!P(t)} @click=${() => this.power([e], !n)}><ha-icon .icon=${n ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button></div>`;
-		})}</div>` : O}
-      </div>
-    </section>`;
-	}
-	renderLight(e) {
-		let t = N(this.hass, e), n = P(t), r = F(t), i = Re(t), a = Le(t), o = this.label(e);
-		return E`<div class="light-row">
-      <div class="light-head">
-        <span class="tile-icon" style=${`color:${r ? V(B(t)) : "var(--auralis-muted)"}`}><ha-icon .icon=${r ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
-        <span class="name">${o}</span>
-        <button class="control" type="button" title=${`Plus d’informations sur ${o}`} aria-label=${`Plus d’informations sur ${o}`}
-          @click=${() => W(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
-        <button class="control ${r ? "on" : ""}" type="button" title=${`${r ? "Éteindre" : "Allumer"} ${o}`} aria-label=${`${r ? "Éteindre" : "Allumer"} ${o}`}
-          ?disabled=${!n} @click=${() => this.power([e], !r)}><ha-icon .icon=${r ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
-      </div>
-      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
-        <input type="range" min="1" max="100" .value=${String(Math.max(a, 1))} aria-label=${`Intensité de ${o}`}
-          ?disabled=${!n || !this.supportsBrightness(e)} @change=${(t) => this.brightness([e], Number(t.target.value))} />
-        <output>${a}%</output>
-        ${i ? E`<input class="color-input" type="color" .value=${V(B(t))}
-          title=${`Couleur de ${o}`} aria-label=${`Couleur de ${o}`} ?disabled=${!n}
-          @change=${(t) => this.colorize([e], t.target.value)} />` : O}
-      </label>
-      ${i ? this.renderSwatches(n ? [e] : [], o) : O}
-    </div>`;
-	}
-	renderScenes(e) {
-		return E`<div class="scene-grid">${this.scenes(e).map((e) => E`<div class="scene-item">
-      <button class="control" type="button" title=${e.label || e.entity} aria-label=${`Activer ${e.label || e.entity}`}
-        @click=${async () => {
-			this.hass && await H(this.hass, e.entity), this.closeDialog();
-		}}>
-        <ha-icon .icon=${e.icon || "mdi:creation-outline"}></ha-icon></button>
-      <small>${e.label || e.entity}</small>
-    </div>`)}</div>`;
-	}
-	renderGroupDialog(e) {
-		let t = this.available(e), n = this.dimmableIds(e), r = this.colorIds(e), i = t.filter((e) => F(N(this.hass, e))).length;
-		return this.renderDialog(e.name, e.icon || "mdi:lightbulb-group-outline", E`<div class="dialog-body">
-      <div class="dialog-overview"><div><span class="eyebrow">Éclairage</span><strong>${i} / ${e.lights.length} allumées</strong></div>
-        <div class="dialog-stat"><strong>${this.average(e)}%</strong><small>intensité</small></div></div>
-      <div class="dialog-section-title">Groupe</div>
-      <div class="group-actions">
-        <button class="control on" type="button" title="Tout allumer" aria-label="Tout allumer" ?disabled=${!t.length} @click=${() => this.power(t, !0)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
-        <button class="control" type="button" title="Tout éteindre" aria-label="Tout éteindre" ?disabled=${!t.length} @click=${() => this.power(t, !1)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
-        <input class="color-input" type="color" .value=${this.color(e)} title="Couleur du groupe" aria-label="Couleur du groupe"
-          ?disabled=${!r.length} @change=${(e) => this.colorize(r, e.target.value)} />
-      </div>
-      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon><input type="range" min="1" max="100"
-        .value=${String(Math.max(this.average(e), 1))} aria-label="Intensité du groupe" ?disabled=${!n.length}
-        @change=${(e) => this.brightness(n, Number(e.target.value))} /><output>${this.average(e)}%</output></label>
-      ${this.renderSwatches(r, e.name)}
-      ${this.scenes(e).length ? E`<div class="section-caption">Ambiances</div>${this.renderScenes(e)}` : O}
-      <div class="section-caption">Lumières</div>
-      ${e.lights.map((e) => this.renderLight(e))}
-    </div>`);
-	}
-	render() {
-		let e = this.groups(), t = e.reduce((e, t) => e + t.lights.length, 0), n = e.reduce((e, t) => e + t.lights.filter((e) => F(N(this.hass, e))).length, 0), [r, i] = (this.dialog || "").split(":"), a = e[Number(i)];
-		return E`<ha-card><div class="shell lights-shell">
-      <header class="lights-header"><span class="tile-icon"><ha-icon .icon=${this.config?.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
-        <div class="title-wrap"><h2>${this.config?.name || "Lumières"}</h2><div class="lights-summary">${n} sur ${t} allumées · ${e.length} groupe${e.length > 1 ? "s" : ""}</div></div></header>
-      <div class="groups">${e.map((e, t) => this.renderGroup(e, t))}</div>
-    </div></ha-card>
-    ${a && r === "group" ? this.renderGroupDialog(a) : O}
-    ${a && r === "scenes" ? this.renderDialog(`Ambiances · ${a.name}`, "mdi:creation-outline", E`<div class="dialog-body">${this.renderScenes(a)}</div>`) : O}`;
-	}
-	getCardSize() {
-		return Math.max(4, this.groups().length * 4);
-	}
-	getGridOptions() {
-		return {
-			rows: 7,
-			min_rows: 4,
-			columns: 6,
-			min_columns: 3
-		};
-	}
-};
-customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", qe), window.customCards = window.customCards || [], window.customCards.some((e) => e.type === "auralis-lights-card") || window.customCards.push({
-	type: "auralis-lights-card",
-	name: "Auralis · Lumières",
-	description: "Éclairage par groupes, couleurs et ambiances.",
-	preview: !0,
-	getEntitySuggestion: (e, t) => t.startsWith("light.") ? { config: {
-		type: "custom:auralis-lights-card",
-		lights: [t]
-	} } : null
-});
-//#endregion
-//#region src/cards/auralis-thermostat-card.ts
-var Je = {
-	off: "Arrêt",
-	heat: "Chauffage",
-	cool: "Climatisation",
-	heat_cool: "Auto",
-	auto: "Automatique",
-	dry: "Déshumidifier",
-	fan_only: "Ventilation"
-}, Ye = {
-	off: "mdi:power",
-	heat: "mdi:fire",
-	cool: "mdi:snowflake",
-	heat_cool: "mdi:autorenew",
-	auto: "mdi:autorenew",
-	dry: "mdi:water-off",
-	fan_only: "mdi:fan"
-}, Xe = {
-	heating: "Chauffage en cours",
-	cooling: "Refroidissement en cours",
-	drying: "Déshumidification en cours",
-	fan: "Ventilation en cours",
-	idle: "En attente",
-	off: "Arrêt"
-};
-function G(e, t) {
-	let n = e?.attributes[t];
-	return typeof n == "number" && Number.isFinite(n) ? n : void 0;
-}
-function Ze(e) {
-	return G(e, "temperature");
-}
-function Qe(e, t) {
-	if (!P(e)) return;
-	let n = Ze(e);
-	if (n === void 0) return;
-	let r = G(e, "target_temp_step"), i = r && r > 0 ? r : .5, a = G(e, "min_temp") ?? 5, o = G(e, "max_temp") ?? 35;
-	if (a > o) return;
-	let s = Math.min(o, Math.max(a, Math.round((n + t * i) * 1e3) / 1e3));
-	return s === n ? void 0 : s;
-}
-function $e(e, t) {
-	return e === void 0 ? "—" : `${e.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}${t}`;
-}
-var et = class extends M {
-	static {
-		this.properties = {
-			...M.properties,
-			selectedEntity: { state: !0 },
-			pendingEntity: { state: !0 },
-			errorMessage: { state: !0 }
-		};
-	}
-	static {
-		this.styles = [M.styles, o`
-    .thermostat-shell, .thermostat-content { min-height:488px; }
-    .thermostat-shell { --machine-accent:#ffbd78; }
-    .thermostat-header { padding-right:44px; }
-    .thermostat-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
-    .thermostat-header .badge ha-icon { --mdc-icon-size:23px; }
-    .thermostat-header h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .thermostat-header .machine-status { margin-top:5px; }
-    .info-button { position:absolute; top:0; right:0; display:grid; width:40px; height:40px; place-items:center; border:1px solid rgba(195,211,229,.2); border-radius:13px; background:rgba(9,14,20,.78); color:#d9e4f0; cursor:pointer; }
-    .info-button ha-icon { --mdc-icon-size:20px; }
-    .selector { display:flex; gap:7px; overflow-x:auto; padding:2px 1px 8px; margin-top:18px; scrollbar-width:thin; }
-    .selector button { flex:0 0 auto; min-height:37px; max-width:170px; padding:7px 11px; overflow:hidden; border:1px solid rgba(195,211,229,.19); border-radius:12px; background:rgba(9,14,20,.7); color:#bbc8d6; cursor:pointer; text-overflow:ellipsis; white-space:nowrap; }
-    .selector button[aria-pressed="true"] { border-color:color-mix(in srgb,var(--machine-accent) 60%,transparent); background:color-mix(in srgb,var(--machine-accent) 17%,rgba(9,14,20,.9)); color:#fff; }
-    .selector .unavailable { opacity:.5; }
-    .dial-wrap { display:grid; flex:1; min-height:204px; place-items:center; padding:18px 0 10px; }
-    .dial { --dial-position:0%; display:grid; width:190px; height:190px; place-items:center; border-radius:50%; background:conic-gradient(from 220deg,var(--machine-accent) var(--dial-position),rgba(255,255,255,.12) var(--dial-position) 78%,transparent 78%); box-shadow:0 0 0 7px rgba(8,12,18,.72),0 0 0 8px rgba(195,211,229,.16); }
-    .dial-inner { display:grid; width:164px; height:164px; place-content:center; border-radius:50%; background:rgba(11,17,24,.93); text-align:center; }
-    .dial-inner small { color:#9caabb; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
-    .dial-inner strong { margin-top:3px; color:#fff; font-size:43px; letter-spacing:-.06em; line-height:1.05; }
-    .dial-inner span { margin-top:6px; color:#c2ceda; font-size:12px; }
-    .thermostat-panel { padding:15px; }
-    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .panel-title { min-width:0; }
-    .panel-title small { display:block; color:#9baabd; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
-    .panel-title strong { display:block; overflow:hidden; margin-top:4px; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
-    .stepper { display:flex; align-items:center; gap:8px; }
-    .stepper button { display:grid; width:41px; height:41px; flex:0 0 auto; place-items:center; border:1px solid rgba(195,211,229,.22); border-radius:13px; background:rgba(255,255,255,.07); color:#fff; cursor:pointer; font-size:24px; line-height:1; }
-    .stepper button:hover, .mode-button:hover, .info-button:hover { border-color:var(--machine-accent); }
-    .stepper button:disabled, .mode-button:disabled, .info-button:disabled { cursor:not-allowed; opacity:.42; }
-    .stepper output { min-width:58px; color:var(--machine-accent); font-size:21px; font-weight:750; text-align:center; white-space:nowrap; }
-    .metrics { display:flex; flex-wrap:wrap; gap:7px 18px; padding-top:13px; margin-top:13px; border-top:1px solid rgba(195,211,229,.13); }
-    .metrics span { color:#9baabd; font-size:11px; }
-    .metrics strong { margin-left:5px; color:#edf3f9; }
-    .modes { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
-    .mode-button { display:flex; min-height:37px; align-items:center; gap:6px; padding:7px 10px; border:1px solid rgba(195,211,229,.2); border-radius:11px; background:rgba(255,255,255,.05); color:#c5d0dc; cursor:pointer; font-size:11px; font-weight:700; }
-    .mode-button ha-icon { --mdc-icon-size:17px; }
-    .mode-button[aria-pressed="true"] { border-color:color-mix(in srgb,var(--machine-accent) 65%,transparent); background:color-mix(in srgb,var(--machine-accent) 17%,rgba(9,14,20,.7)); color:#fff; }
-    .error { margin-top:10px; color:#ff979d; font-size:11px; }
-    @container (max-width:350px) {
-      .thermostat-shell { padding:14px; }
-      .thermostat-header h2 { font-size:20px; }
-      .dial { width:168px; height:168px; }
-      .dial-inner { width:144px; height:144px; }
-      .panel-head { align-items:flex-start; flex-direction:column; }
-      .stepper { width:100%; justify-content:space-between; }
-    }
-  `];
-	}
-	setConfig(e) {
-		let t = Array.isArray(e.entities) ? e.entities : [], n = [e.entity, ...t].filter((e) => typeof e == "string" && e.length > 0);
-		if (!n.length || n.some((e) => !/^climate\.[a-z0-9_]+$/.test(e))) throw Error("Configurez une ou plusieurs entités climate.*.");
-		let r = [...new Set(n)];
-		this.config = {
-			...e,
-			name: e.name || "Thermostats",
-			theme: e.theme || "carbon",
-			entities: r
-		}, r.includes(this.selectedEntity || "") || (this.selectedEntity = r[0]);
-	}
-	static getStubConfig() {
-		return {
-			name: "Thermostats",
-			theme: "carbon",
-			entity: "climate.salon"
-		};
-	}
-	static getConfigForm() {
-		return { schema: [
-			{
-				name: "name",
-				selector: { text: {} }
-			},
-			{
-				name: "entity",
-				selector: { entity: { filter: { domain: "climate" } } }
-			},
-			{
-				name: "entities",
-				selector: { entity: {
-					multiple: !0,
-					filter: { domain: "climate" }
-				} }
-			},
-			{
-				name: "entity_labels",
-				selector: { object: {} }
-			},
-			{
-				name: "theme",
-				selector: { select: { options: [
-					"auto",
-					"halo",
-					"carbon",
-					"mono",
-					"aurora"
-				] } }
-			},
-			{
-				name: "background_image",
-				selector: { text: {} }
-			},
-			{
-				name: "background_position",
-				selector: { text: {} }
-			},
-			{
-				name: "image_opacity",
-				selector: { number: {
-					min: 0,
-					max: 100,
-					step: 1,
-					mode: "slider"
-				} }
-			},
-			{
-				name: "accent_color",
-				selector: { text: {} }
-			},
-			{
-				name: "card_background",
-				selector: { object: {} }
-			},
-			{
-				name: "show_grid",
-				selector: { boolean: {} }
-			}
-		] };
-	}
-	ids() {
-		return this.config?.entities ?? [];
-	}
-	label(e) {
-		return this.config?.entity_labels?.[e] || I(N(this.hass, e), e);
-	}
-	unit(e) {
-		let t = this.hass?.config?.unit_system?.temperature, n = e?.attributes.temperature_unit ?? e?.attributes.unit_of_measurement ?? t;
-		return typeof n == "string" && n.trim() ? n : "°C";
-	}
-	async adjustTemperature(e, t) {
-		let n = Qe(N(this.hass, e), t);
-		if (this.hass && n !== void 0 && !this.pendingEntity) {
-			this.pendingEntity = e, this.errorMessage = void 0;
-			try {
-				await this.hass.callService("climate", "set_temperature", { temperature: n }, { entity_id: e });
-			} catch {
-				this.errorMessage = "La consigne n’a pas pu être modifiée.";
-			} finally {
-				this.pendingEntity = void 0;
-			}
-		}
-	}
-	async setMode(e, t) {
-		let n = N(this.hass, e), r = n?.attributes.hvac_modes;
-		if (this.hass && P(n) && Array.isArray(r) && r.includes(t) && !this.pendingEntity && n?.state !== t) {
-			this.pendingEntity = e, this.errorMessage = void 0;
-			try {
-				await this.hass.callService("climate", "set_hvac_mode", { hvac_mode: t }, { entity_id: e });
-			} catch {
-				this.errorMessage = "Le mode n’a pas pu être modifié.";
-			} finally {
-				this.pendingEntity = void 0;
-			}
-		}
-	}
-	render() {
-		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? Ze(n) : void 0, a = r ? G(n, "current_temperature") : void 0, o = r ? G(n, "target_temp_low") : void 0, s = r ? G(n, "target_temp_high") : void 0, c = r ? G(n, "current_humidity") : void 0, l = this.unit(n), u = G(n, "min_temp") ?? 5, d = G(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? Xe[String(n?.attributes.hvac_action)] || Je[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${$e(o, l)} – ${$e(s, l)}` : "—" : $e(i, l), g = Qe(n, -1) !== void 0 && !this.pendingEntity, ee = Qe(n, 1) !== void 0 && !this.pendingEntity;
-		return E`<ha-card><div class="machine-shell thermostat-shell ${this.machineGridClass()}" style=${this.machineStyle("#ffbd78")}>
-      <div class="machine-content thermostat-content">
-        <header class="machine-header thermostat-header">
-          <span class="badge"><ha-icon .icon=${this.config?.icon || "mdi:thermostat"}></ha-icon></span>
-          <div class="title-wrap"><h2>${this.config?.name || "Thermostats"}</h2>
-            <div class="machine-status"><span class="dot ${r ? n?.state === "off" ? "" : "healthy" : "danger"}"></span>${this.label(t)} · ${m}</div>
-          </div>
-        </header>
-        <button class="info-button" type="button" title=${`Détails de ${this.label(t)}`} aria-label=${`Détails de ${this.label(t)}`}
-          ?disabled=${!r} @click=${() => W(this, t)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
-        ${e.length > 1 ? E`<nav class="selector" aria-label="Choisir un thermostat">
-          ${e.map((e) => E`<button type="button" class=${P(N(this.hass, e)) ? "" : "unavailable"}
-            aria-pressed=${e === t} @click=${() => {
-			this.selectedEntity = e, this.errorMessage = void 0;
-		}}>${this.label(e)}</button>`)}
-        </nav>` : O}
-        <div class="dial-wrap"><div class="dial" style=${`--dial-position:${f}%`}>
-          <div class="dial-inner"><small>Température actuelle</small><strong>${$e(a, l)}</strong><span>${m}</span></div>
-        </div></div>
-        <section class="machine-panel thermostat-panel">
-          <div class="panel-head"><div class="panel-title"><small>Consigne</small><strong>${i === void 0 ? o !== void 0 && s !== void 0 ? "Plage de température" : "Réglage indisponible" : "Température souhaitée"}</strong></div>
-            <div class="stepper">
-              <button type="button" aria-label=${`Baisser la consigne de ${this.label(t)}`} ?disabled=${!g} @click=${() => this.adjustTemperature(t, -1)}>−</button>
-              <output aria-live="polite">${h}</output>
-              <button type="button" aria-label=${`Augmenter la consigne de ${this.label(t)}`} ?disabled=${!ee} @click=${() => this.adjustTemperature(t, 1)}>+</button>
-            </div>
-          </div>
-          <div class="metrics"><span>Mode <strong>${Je[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
-            ${c === void 0 ? O : E`<span>Humidité <strong>${c.toLocaleString("fr-FR")}%</strong></span>`}</div>
-          ${p.length ? E`<div class="modes" role="group" aria-label=${`Modes de ${this.label(t)}`}>
-            ${p.map((e) => E`<button class="mode-button" type="button" aria-pressed=${e === n?.state}
-              ?disabled=${!!this.pendingEntity} @click=${() => this.setMode(t, e)}>
-              <ha-icon .icon=${Ye[e] || "mdi:tune"}></ha-icon>${Je[e] || e}</button>`)}
-          </div>` : O}
-          ${this.errorMessage ? E`<p class="error" role="alert">${this.errorMessage}</p>` : O}
-        </section>
-      </div>
-    </div></ha-card>`;
-	}
-	getCardSize() {
-		return 6;
-	}
-	getGridOptions() {
-		return {
-			rows: 7,
-			min_rows: 5,
-			columns: 6,
-			min_columns: 3
-		};
-	}
-};
-customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", et), window.customCards = window.customCards || [], window.customCards.some((e) => e.type === "auralis-thermostat-card") || window.customCards.push({
-	type: "auralis-thermostat-card",
-	name: "Auralis · Thermostats",
-	description: "Températures, consignes et modes de plusieurs thermostats.",
-	preview: !0,
-	getEntitySuggestion: (e, t) => t.startsWith("climate.") ? { config: {
-		type: "custom:auralis-thermostat-card",
-		entity: t
-	} } : null
-});
-//#endregion
-//#region src/cards/auralis-fridge-card.ts
-var K = (e) => P(e) && F(e);
-function tt(e, t) {
-	if (K(N(e, t.alert_entity))) return "alert";
-	if (K(N(e, t.door_entity)) || K(N(e, t.freezer_door_entity))) return "open";
-	let n = N(e, t.connected_entity);
-	return t.connected_entity && P(n) && !F(n) ? "offline" : [
-		t.connected_entity,
-		t.fridge_temperature_entity,
-		t.freezer_temperature_entity,
-		t.door_entity,
-		t.freezer_door_entity
-	].filter((e) => !!e).some((t) => P(N(e, t))) ? "ok" : "unknown";
-}
-var nt = {
-	alert: ["Alerte du réfrigérateur", "mdi:alert-circle-outline"],
-	open: ["Porte ouverte", "mdi:door-open"],
-	offline: ["Hors ligne", "mdi:wifi-off"],
-	ok: ["Fonctionnement normal", "mdi:check-circle-outline"],
-	unknown: ["Données indisponibles", "mdi:help-circle-outline"]
-}, rt = class extends M {
-	constructor(...e) {
-		super(...e), this.actionError = "", this.busy = !1;
-	}
-	static {
-		this.properties = {
-			...M.properties,
-			actionError: { state: !0 },
-			busy: { state: !0 }
-		};
-	}
-	static {
-		this.styles = [M.styles, o`
-    .fridge-shell { min-height:440px; --machine-accent:#83d7e9; }
-    .fridge-shell::before { background-image:linear-gradient(90deg,rgba(3,8,15,.74),rgba(3,8,15,.1) 70%),linear-gradient(0deg,rgba(3,8,15,.7),transparent 45%),var(--machine-image,none); }
-    .fridge-shell .machine-content { min-height:440px; }
-    .fridge-icon { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(8,18,27,.58); color:var(--machine-accent); }
-    .fridge-icon ha-icon { --mdc-icon-size:25px; }
-    .fridge-status { display:flex; align-items:center; gap:7px; margin-top:6px; color:#d8e1e8; font-size:11px; }
-    .fridge-status ha-icon { --mdc-icon-size:14px; }
-    .fridge-status.alert, .fridge-status.open { color:#ffd27b; }
-    .fridge-spacer { min-height:125px; flex:1; }
-    .fridge-panel { padding:15px; border:1px solid rgba(207,226,239,.22); border-radius:22px; background:rgba(7,16,23,var(--machine-glass-alpha,.84)); backdrop-filter:blur(18px); }
-    .temperature-grid, .detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
-    .temperature { display:flex; min-width:0; flex-direction:column; padding:12px; border:1px solid rgba(214,230,239,.13); border-radius:16px; background:rgba(255,255,255,.045); }
-    .temperature small { display:flex; align-items:center; gap:5px; color:#b8c8d2; font-size:11px; }
-    .temperature small ha-icon { --mdc-icon-size:16px; color:var(--machine-accent); }
-    .temperature strong { margin-top:8px; color:#fff; font-size:29px; letter-spacing:-.05em; line-height:1; }
-    .temperature span { margin-top:5px; color:#a9bbc7; font-size:10px; }
-    .fridge-signals { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
-    .fridge-signal { display:flex; align-items:center; gap:6px; min-height:29px; padding:0 9px; border:1px solid rgba(214,230,239,.16); border-radius:999px; background:rgba(255,255,255,.055); color:#dce8ee; font-size:11px; }
-    .fridge-signal ha-icon { --mdc-icon-size:16px; color:var(--machine-accent); }
-    .fridge-signal.warning ha-icon { color:#ffd27b; }
-    .fridge-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; }
-    .fridge-footer small { color:#abc0ca; font-size:10px; }
-    .detail-tile { display:flex; min-width:0; align-items:center; gap:10px; padding:11px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); text-align:left; }
-    button.detail-tile { width:100%; color:var(--auralis-text); cursor:pointer; }
-    .detail-tile ha-icon { --mdc-icon-size:21px; flex:0 0 auto; color:var(--auralis-info); }
-    .detail-tile span { min-width:0; flex:1; }
-    .detail-tile small, .detail-tile strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .detail-tile small { color:var(--auralis-muted); font-size:10px; }
-    .detail-tile strong { margin-top:3px; font-size:13px; }
-    .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
-    .control-row { display:flex; align-items:center; gap:9px; padding:10px; margin-top:8px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); }
-    .control-row > span { min-width:0; flex:1; font-size:12px; font-weight:650; }
-    .control-row button { display:grid; width:35px; height:35px; flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:10px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
-    .control-row button:disabled, .control-row select:disabled { opacity:.45; cursor:not-allowed; }
-    .control-row output { min-width:49px; font-size:13px; text-align:center; }
-    .control-row select { max-width:55%; padding:7px; border:1px solid var(--auralis-border); border-radius:9px; background:var(--auralis-card); color:var(--auralis-text); }
-    .action-error { margin-top:12px; color:var(--auralis-danger); font-size:12px; }
-    @container (max-width:330px) { .fridge-shell { padding:13px; } .fridge-panel { padding:11px; } .temperature strong { font-size:24px; } .fridge-spacer { min-height:90px; } }
-  `];
-	}
-	setConfig(e) {
-		this.config = {
-			...e,
-			name: e.name || "Frigo connecté",
-			theme: e.theme || "carbon"
-		};
-	}
-	static getStubConfig() {
-		return {
-			name: "Frigo connecté",
-			theme: "carbon",
-			fridge_temperature_entity: "sensor.frigo_temperature"
-		};
-	}
-	static getConfigForm() {
-		let e = (e) => ({
-			name: e,
-			selector: { entity: {} }
-		});
-		return { schema: [
-			{
-				name: "name",
-				selector: { text: {} }
-			},
-			{
-				name: "theme",
-				selector: { select: { options: [
-					"auto",
-					"halo",
-					"carbon",
-					"mono",
-					"aurora"
-				] } }
-			},
-			e("connected_entity"),
-			e("fridge_temperature_entity"),
-			e("freezer_temperature_entity"),
-			e("fridge_target_entity"),
-			e("freezer_target_entity"),
-			e("door_entity"),
-			e("freezer_door_entity"),
-			e("alert_entity"),
-			e("filter_entity"),
-			e("energy_entity"),
-			e("mode_entity"),
-			e("quick_cool_entity"),
-			e("quick_freeze_entity"),
-			e("lock_entity"),
-			{
-				name: "background_image",
-				selector: { text: {} }
-			},
-			{
-				name: "background_position",
-				selector: { text: {} }
-			},
-			{
-				name: "accent_color",
-				selector: { text: {} }
-			},
-			{
-				name: "image_brightness",
-				selector: { number: {
-					min: 30,
-					max: 100,
-					step: 1,
-					mode: "slider"
-				} }
-			},
-			{
-				name: "glass_opacity",
-				selector: { number: {
-					min: .45,
-					max: .96,
-					step: .01,
-					mode: "slider"
-				} }
-			}
-		] };
-	}
-	getCardSize() {
-		return 7;
-	}
-	getGridOptions() {
-		return {
-			rows: 7,
-			min_rows: 5,
-			columns: 6,
-			min_columns: 3
-		};
-	}
-	temperature(e) {
-		let t = N(this.hass, e);
-		if (!t || !P(t)) return "—";
-		let n = L(t, NaN), r = typeof t.attributes.unit_of_measurement == "string" ? t.attributes.unit_of_measurement : "°C";
-		return Number.isFinite(n) ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(n)} ${r}` : z(this.hass, e);
-	}
-	doorLabel(e) {
-		let t = N(this.hass, e);
-		return P(t) ? F(t) ? "Ouverte" : "Fermée" : "Indisponible";
-	}
-	async call(e, t, n, r = {}) {
-		if (this.hass && !this.busy) {
-			this.busy = !0, this.actionError = "";
-			try {
-				await this.hass.callService(e, t, r, { entity_id: n });
-			} catch {
-				this.actionError = "Commande non exécutée. Vérifiez la disponibilité de l’appareil.";
-			} finally {
-				this.busy = !1;
-			}
-		}
-	}
-	async adjustTarget(e, t) {
-		let n = N(this.hass, e);
-		if (!n || !P(n) || !e.startsWith("number.")) return;
-		let r = L(n, NaN);
-		if (!Number.isFinite(r)) return;
-		let i = Number(n.attributes.step), a = Number.isFinite(i) && i > 0 ? i : 1, o = Number(n.attributes.min), s = Number(n.attributes.max), c = Number.isFinite(o) ? o : -100, l = Math.min(Number.isFinite(s) ? s : 100, Math.max(c, Number((r + t * a).toFixed(3))));
-		l !== r && await this.call("number", "set_value", e, { value: l });
-	}
-	async quickAction(e) {
-		let t = N(this.hass, e);
-		P(t) && (e.startsWith("switch.") ? await this.call("switch", "toggle", e) : e.startsWith("button.") ? await this.call("button", "press", e) : e.startsWith("lock.") && await this.call("lock", t?.state === "locked" ? "unlock" : "lock", e));
-	}
-	detail(e, t, n, r) {
-		return n ? E`<button class="detail-tile" type="button" aria-label=${`Plus d’informations : ${e}`} @click=${() => W(this, n)}>
-      <ha-icon .icon=${t}></ha-icon><span><small>${e}</small><strong>${r ?? z(this.hass, n)}</strong></span><ha-icon icon="mdi:chevron-right"></ha-icon></button>` : E``;
-	}
-	target(e, t) {
-		if (!t) return E``;
-		let n = N(this.hass, t), r = t.startsWith("number.") && P(n) && Number.isFinite(L(n, NaN));
-		return E`<div class="control-row"><span>${e}</span>
-      <button type="button" aria-label=${`Baisser ${e}`} ?disabled=${!r || this.busy} @click=${() => this.adjustTarget(t, -1)}><ha-icon icon="mdi:minus"></ha-icon></button>
-      <output>${this.temperature(t)}</output>
-      <button type="button" aria-label=${`Augmenter ${e}`} ?disabled=${!r || this.busy} @click=${() => this.adjustTarget(t, 1)}><ha-icon icon="mdi:plus"></ha-icon></button></div>`;
-	}
-	quick(e, t, n) {
-		if (!n) return E``;
-		let r = N(this.hass, n), i = n.startsWith("switch.") || n.startsWith("button.") || n.startsWith("lock.");
-		return E`<div class="control-row"><ha-icon .icon=${t}></ha-icon><span>${e}</span>
-      <button type="button" aria-label=${`${e} : ${r?.state || "indisponible"}`} ?disabled=${!i || !P(r) || this.busy}
-        @click=${() => this.quickAction(n)}><ha-icon .icon=${n.startsWith("button.") ? "mdi:play" : n.startsWith("lock.") ? r?.state === "locked" ? "mdi:lock" : "mdi:lock-open-outline" : F(r) ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline"}></ha-icon></button></div>`;
-	}
-	renderDetails() {
-		let e = this.config, t = N(this.hass, e.mode_entity), n = Array.isArray(t?.attributes.options) ? t.attributes.options.filter((e) => typeof e == "string") : [];
-		return this.renderDialog(e.name || "Frigo connecté", "mdi:fridge-outline", E`<div class="dialog-body">
-      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${nt[tt(this.hass, e)][0]}</strong></div>
-        <div class="dialog-stat"><strong>${this.temperature(e.fridge_temperature_entity)}</strong><small>réfrigérateur</small></div></div>
-      <div class="detail-grid">
-        ${this.detail("Réfrigérateur", "mdi:thermometer", e.fridge_temperature_entity, this.temperature(e.fridge_temperature_entity))}
-        ${this.detail("Congélateur", "mdi:snowflake-thermometer", e.freezer_temperature_entity, this.temperature(e.freezer_temperature_entity))}
-        ${this.detail("Porte du frigo", "mdi:door", e.door_entity, this.doorLabel(e.door_entity))}
-        ${this.detail("Porte du congélateur", "mdi:door", e.freezer_door_entity, this.doorLabel(e.freezer_door_entity))}
-        ${this.detail("Alerte", "mdi:alert-circle-outline", e.alert_entity)}
-        ${this.detail("Filtre", "mdi:air-filter", e.filter_entity)}
-        ${this.detail("Énergie", "mdi:lightning-bolt-outline", e.energy_entity)}
-        ${(e.extra_entities || []).map((e) => this.detail(N(this.hass, e)?.attributes.friendly_name || e, "mdi:information-outline", e))}
-      </div>
-      ${e.fridge_target_entity || e.freezer_target_entity ? E`<div class="section-caption">Consignes</div>${this.target("Réfrigérateur", e.fridge_target_entity)}${this.target("Congélateur", e.freezer_target_entity)}` : O}
-      ${e.mode_entity && ["select.", "input_select."].some((t) => e.mode_entity.startsWith(t)) && n.length ? E`<div class="section-caption">Mode</div><label class="control-row"><span>Mode de fonctionnement</span>
-        <select aria-label="Mode de fonctionnement" ?disabled=${!P(t) || this.busy}
-          @change=${(t) => this.call(e.mode_entity.split(".")[0], "select_option", e.mode_entity, { option: t.target.value })}>
-          ${n.map((e) => E`<option value=${e} ?selected=${e === t?.state}>${e}</option>`)}</select></label>` : O}
-      ${e.quick_cool_entity || e.quick_freeze_entity || e.lock_entity ? E`<div class="section-caption">Fonctions rapides</div>
-        ${this.quick("Refroidissement rapide", "mdi:snowflake", e.quick_cool_entity)}
-        ${this.quick("Congélation rapide", "mdi:snowflake-alert", e.quick_freeze_entity)}
-        ${this.quick("Verrouillage", "mdi:lock-outline", e.lock_entity)}` : O}
-      ${this.actionError ? E`<p class="action-error" role="alert">${this.actionError}</p>` : O}
-    </div>`);
-	}
-	render() {
-		if (!this.config) return E``;
-		let e = this.config, t = tt(this.hass, e);
-		return E`<ha-card><div class=${`machine-shell fridge-shell ${this.machineGridClass()}`} style=${this.machineStyle("#83d7e9")}>
-      <div class="machine-content"><header class="machine-header"><span class="fridge-icon"><ha-icon .icon=${e.icon || "mdi:fridge-outline"}></ha-icon></span>
-        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${nt[t][1]}></ha-icon>${nt[t][0]}</div></div></header>
-        <div class="fridge-spacer"></div><section class="fridge-panel" aria-label="État du frigo connecté">
-          <div class="temperature-grid">
-            <div class="temperature"><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(e.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(e.fridge_target_entity)}</span></div>
-            <div class="temperature"><small><ha-icon icon="mdi:snowflake"></ha-icon>Congélateur</small><strong>${this.temperature(e.freezer_temperature_entity)}</strong><span>Consigne ${this.temperature(e.freezer_target_entity)}</span></div>
-          </div><div class="fridge-signals">
-            ${e.door_entity ? E`<span class=${`fridge-signal ${K(N(this.hass, e.door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Frigo ${this.doorLabel(e.door_entity).toLowerCase()}</span>` : O}
-            ${e.freezer_door_entity ? E`<span class=${`fridge-signal ${K(N(this.hass, e.freezer_door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Congélateur ${this.doorLabel(e.freezer_door_entity).toLowerCase()}</span>` : O}
-            ${e.mode_entity ? E`<span class="fridge-signal"><ha-icon icon="mdi:cog-outline"></ha-icon>${z(this.hass, e.mode_entity)}</span>` : O}
-          </div><div class="fridge-footer"><small>${e.filter_entity ? `Filtre · ${z(this.hass, e.filter_entity)}` : "Suivi et commandes"}</small>
-            <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
-        </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
-	}
-};
-customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", rt), window.customCards = window.customCards || [], window.customCards.some((e) => e.type === "auralis-fridge-card") || window.customCards.push({
-	type: "auralis-fridge-card",
-	name: "Auralis · Frigo connecté",
-	description: "Températures, portes, alertes et commandes du réfrigérateur.",
-	preview: !0
-});
-//#endregion
 //#region src/cards/auralis-room-card.ts
-var it = class extends M {
+var Ge = class extends M {
 	constructor(...e) {
 		super(...e), this.historyGraphConfigs = /* @__PURE__ */ new Map(), this.selectedMediaKind = "media", this.toggleAllLights = async () => {
 			let e = this.config?.lights || [], t = e.some((e) => F(N(this.hass, e)));
@@ -4357,7 +3476,7 @@ var it = class extends M {
         </div>
       `);
 	}
-}, at = class extends M {
+}, Ke = class extends M {
 	static {
 		this.styles = [M.styles, o`
       ha-card {
@@ -4802,27 +3921,27 @@ var it = class extends M {
 			min_columns: 3
 		};
 	}
-}, ot = /* @__PURE__ */ new Set([
+}, qe = /* @__PURE__ */ new Set([
 	"off",
 	"offline",
 	"disconnected",
 	"not_home",
 	"stopped"
 ]);
-function st(e) {
-	return !e || !P(e) ? "unavailable" : F(e) ? "online" : ot.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
+function Je(e) {
+	return !e || !P(e) ? "unavailable" : F(e) ? "online" : qe.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
 }
-function q(e) {
+function G(e) {
 	if (!P(e)) return;
 	let t = L(e, NaN);
 	return Number.isFinite(t) ? R(t) : void 0;
 }
-function ct(e) {
+function Ye(e) {
 	if (!e || !P(e)) return;
 	let t = L(e, NaN);
 	return Number.isFinite(t) && t > 0 ? t : void 0;
 }
-function lt(e, t) {
+function Xe(e, t) {
 	if (!e) return;
 	let n = Object.entries(e.attributes);
 	for (let e of t) {
@@ -4832,31 +3951,31 @@ function lt(e, t) {
 		if (Number.isFinite(r)) return r;
 	}
 }
-function ut(e) {
+function Ze(e) {
 	if (!e || !P(e)) return;
-	let t = lt(e, [
+	let t = Xe(e, [
 		"UsedSpacePercentage",
 		"used_space_percentage",
 		"used_percentage"
 	]);
-	return t === void 0 ? q(e) : R(t);
+	return t === void 0 ? G(e) : R(t);
 }
-function dt(e) {
+function Qe(e) {
 	return e >= 1024 ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(e / 1024)} Go` : `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(e)} Mo`;
 }
-function ft(e) {
+function $e(e) {
 	if (!e || !P(e)) return "—";
-	let t = lt(e, ["UsedSpaceMB", "used_space_mb"]), n = lt(e, ["TotalSizeMB", "total_size_mb"]);
-	return t === void 0 || n === void 0 || n <= 0 ? Y(ut(e)) : `${dt(t)} / ${dt(n)}`;
+	let t = Xe(e, ["UsedSpaceMB", "used_space_mb"]), n = Xe(e, ["TotalSizeMB", "total_size_mb"]);
+	return t === void 0 || n === void 0 || n <= 0 ? q(Ze(e)) : `${Qe(t)} / ${Qe(n)}`;
 }
-function pt(e, t = Date.now()) {
+function et(e, t = Date.now()) {
 	if (!e || !P(e)) return "—";
 	let n = Date.parse(e.state);
 	if (!Number.isFinite(n)) return "—";
 	let r = Math.max(0, Math.floor((t - n) / 6e4)), i = Math.floor(r / 1440), a = Math.floor(r % 1440 / 60), o = r % 60;
 	return `${i > 0 ? `${i} j ` : ""}${a} h ${o} min`;
 }
-function mt(e) {
+function tt(e) {
 	return !e || !P(e) ? "—" : {
 		active: "Active",
 		connected: "Connectée",
@@ -4865,13 +3984,13 @@ function mt(e) {
 		unlocked: "Déverrouillée"
 	}[e.state.toLowerCase()] || e.state;
 }
-function J(e, t) {
+function K(e, t) {
 	return !!(t && P(N(e, t)));
 }
-function Y(e) {
+function q(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-function ht(e, t = "Muet", n = "Actif") {
+function nt(e, t = "Muet", n = "Actif") {
 	return !e || !P(e) ? "—" : [
 		"true",
 		"on",
@@ -4879,7 +3998,7 @@ function ht(e, t = "Muet", n = "Actif") {
 		"1"
 	].includes(e.state.toLowerCase()) ? t : n;
 }
-function gt(e) {
+function rt(e) {
 	return !e || !P(e) ? "Indisponible" : [
 		"up",
 		"on",
@@ -4888,23 +4007,23 @@ function gt(e) {
 		"active"
 	].includes(e.state.toLowerCase()) ? "Connecté" : "Déconnecté";
 }
-function _t(e, t) {
+function it(e, t) {
 	let n = N(e, t);
 	if (!P(n)) return "—";
 	let r = L(n, NaN);
 	return Number.isFinite(r) && r < 0 ? "—" : z(e, t);
 }
-var vt = class extends M {
+var at = class extends M {
 	constructor(...e) {
 		super(...e), this.confirmRestart = () => {
-			J(this.hass, this.config?.restart_entity) && (this.askConfirmation({
+			K(this.hass, this.config?.restart_entity) && (this.askConfirmation({
 				title: "Redémarrer le PC ?",
 				message: "Les applications ouvertes pourront perdre leurs données non enregistrées.",
 				confirmLabel: "Redémarrer",
 				action: () => H(this.hass, this.config?.restart_entity)
 			}), this.dialog = "details");
 		}, this.confirmShutdown = () => {
-			J(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
+			K(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
 				title: "Éteindre le PC ?",
 				message: "Cette action arrêtera la machine et les services qui y sont exécutés.",
 				confirmLabel: "Éteindre",
@@ -5050,7 +4169,7 @@ var vt = class extends M {
 	}
 	render() {
 		if (!this.config || !this.hass) return E``;
-		let e = st(N(this.hass, this.config.online_entity)), t = q(N(this.hass, this.config.cpu_entity)), n = q(N(this.hass, this.config.gpu_entity)), r = q(N(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = N(this.hass, this.config.session_entity), c = N(this.hass, this.config.user_entity), l = P(s) ? mt(s) : void 0, u = P(c) ? z(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = q(N(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", te = e === "online" ? "healthy" : e === "offline" ? "danger" : "", _ = !!(u || l || d), v = [n === void 0 ? void 0 : {
+		let e = Je(N(this.hass, this.config.online_entity)), t = G(N(this.hass, this.config.cpu_entity)), n = G(N(this.hass, this.config.gpu_entity)), r = G(N(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = N(this.hass, this.config.session_entity), c = N(this.hass, this.config.user_entity), l = P(s) ? tt(s) : void 0, u = P(c) ? z(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = G(N(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", te = e === "online" ? "healthy" : e === "offline" ? "danger" : "", _ = !!(u || l || d), v = [n === void 0 ? void 0 : {
 			label: "GPU",
 			value: n
 		}, ...o.map((e) => ({
@@ -5068,7 +4187,7 @@ var vt = class extends M {
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${e === "online" ? `${this.config.name} fonctionne normalement` : e === "offline" ? `${this.config.name} est hors ligne` : `État de ${this.config.name} indisponible`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>
               ${v.length ? E`<div class="machine-bars">${v.map((e) => this.renderBar(e.label, e.value))}</div>` : O}
-              ${p || m || h || f !== void 0 ? E`<div class="machine-foot">${p ? E`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : O}${m || h ? E`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : O}${f === void 0 ? O : E`<span class="pc-foot-item">Batterie <strong>${Y(f)}</strong></span>`}</div>` : O}
+              ${p || m || h || f !== void 0 ? E`<div class="machine-foot">${p ? E`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : O}${m || h ? E`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : O}${f === void 0 ? O : E`<span class="pc-foot-item">Batterie <strong>${q(f)}</strong></span>`}</div>` : O}
             </section>
           </div>
         </div>
@@ -5078,30 +4197,30 @@ var vt = class extends M {
 	}
 	uptimeLabel() {
 		if (this.config?.uptime_entity && P(N(this.hass, this.config.uptime_entity))) return z(this.hass, this.config.uptime_entity);
-		let e = pt(N(this.hass, this.config?.last_boot_entity));
+		let e = et(N(this.hass, this.config?.last_boot_entity));
 		return e === "—" ? void 0 : e;
 	}
 	availableDisplay(e) {
 		return P(N(this.hass, e)) ? z(this.hass, e) : void 0;
 	}
 	temperatureLabel(e) {
-		return ct(N(this.hass, e)) === void 0 ? "" : z(this.hass, e);
+		return Ye(N(this.hass, e)) === void 0 ? "" : z(this.hass, e);
 	}
 	renderBar(e, t) {
-		return E`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${Y(t)}</strong></div>`;
+		return E`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${q(t)}</strong></div>`;
 	}
 	validDrives() {
 		return (this.config?.drives?.length ? this.config.drives : this.config?.storage_entity ? [{
 			entity: this.config.storage_entity,
 			label: "Disque"
 		}] : []).flatMap((e) => {
-			let t = N(this.hass, e.entity), n = ut(t);
+			let t = N(this.hass, e.entity), n = Ze(t);
 			return !t || n === void 0 ? [] : [{
 				config: e,
 				state: t,
 				label: this.driveLabel(e, t),
 				usage: n,
-				summary: ft(t)
+				summary: $e(t)
 			}];
 		});
 	}
@@ -5111,7 +4230,7 @@ var vt = class extends M {
 		return typeof n == "string" && n.trim() ? n : t?.state && t.state.length <= 3 ? `Disque ${t.state}` : I(t, "Stockage");
 	}
 	renderDetails() {
-		let e = st(N(this.hass, this.config?.online_entity)), t = e === "online", n = [
+		let e = Je(N(this.hass, this.config?.online_entity)), t = e === "online", n = [
 			[
 				"CPU",
 				this.config?.cpu_entity,
@@ -5152,15 +4271,15 @@ var vt = class extends M {
 				this.config?.network_up_entity,
 				"mdi:upload"
 			]
-		].filter(([e, t]) => e.includes("Température") ? ct(N(this.hass, t)) !== void 0 : P(N(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => P(N(this.hass, e.entity))), a = [
+		].filter(([e, t]) => e.includes("Température") ? Ye(N(this.hass, t)) !== void 0 : P(N(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => P(N(this.hass, e.entity))), a = [
 			this.availableDisplay(this.config?.user_entity) ? ["Utilisateur", this.availableDisplay(this.config?.user_entity)] : void 0,
-			P(N(this.hass, this.config?.session_entity)) ? ["Session", mt(N(this.hass, this.config?.session_entity))] : void 0,
+			P(N(this.hass, this.config?.session_entity)) ? ["Session", tt(N(this.hass, this.config?.session_entity))] : void 0,
 			this.uptimeLabel() ? ["Uptime", this.uptimeLabel()] : void 0,
 			this.availableDisplay(this.config?.last_boot_entity) ? ["Dernier démarrage", this.availableDisplay(this.config?.last_boot_entity)] : void 0,
 			this.availableDisplay(this.config?.last_activity_entity) ? ["Dernière activité", this.availableDisplay(this.config?.last_activity_entity)] : void 0,
 			this.availableDisplay(this.config?.system_state_entity) ? ["Dernier événement", this.availableDisplay(this.config?.system_state_entity)] : void 0
-		].filter((e) => !!e), o = q(N(this.hass, this.config?.battery_percentage_entity)), s = [
-			o === void 0 ? void 0 : ["Batterie", Y(o)],
+		].filter((e) => !!e), o = G(N(this.hass, this.config?.battery_percentage_entity)), s = [
+			o === void 0 ? void 0 : ["Batterie", q(o)],
 			this.availableDisplay(this.config?.battery_status_entity) ? ["État de charge", this.availableDisplay(this.config?.battery_status_entity)] : void 0,
 			this.availableDisplay(this.config?.battery_powerline_entity) ? ["Alimentation", this.availableDisplay(this.config?.battery_powerline_entity)] : void 0,
 			this.nonNegativeDisplay(this.config?.battery_remaining_entity) ? ["Autonomie restante", this.nonNegativeDisplay(this.config?.battery_remaining_entity)] : void 0,
@@ -5176,10 +4295,10 @@ var vt = class extends M {
 			this.config?.restart_entity,
 			this.config?.shutdown_entity,
 			this.config?.wake_entity
-		].some((e) => J(this.hass, e)), d = t && J(this.hass, this.config?.lock_entity), f = t && J(this.hass, this.config?.sleep_entity), p = t && J(this.hass, this.config?.restart_entity), m = t && J(this.hass, this.config?.shutdown_entity), h = e === "offline" && J(this.hass, this.config?.wake_entity);
+		].some((e) => K(this.hass, e)), d = t && K(this.hass, this.config?.lock_entity), f = t && K(this.hass, this.config?.sleep_entity), p = t && K(this.hass, this.config?.restart_entity), m = t && K(this.hass, this.config?.shutdown_entity), h = e === "offline" && K(this.hass, this.config?.wake_entity);
 		return this.renderDialog(this.config?.name || "PC", "mdi:laptop", E`
       <div class="dialog-body">
-        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? E`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : O}</div>${o !== void 0 || q(N(this.hass, this.config?.cpu_entity)) !== void 0 ? E`<div class="dialog-stat"><strong>${Y(o === void 0 ? q(N(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : O}</div>
+        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? E`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : O}</div>${o !== void 0 || G(N(this.hass, this.config?.cpu_entity)) !== void 0 ? E`<div class="dialog-stat"><strong>${q(o === void 0 ? G(N(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : O}</div>
         ${n.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Performances principales</div><div class="grid two">${n.map(([e, t, n]) => E`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${n}></ha-icon></span><strong>${e.includes("Température") ? this.temperatureLabel(t) : z(this.hass, t)}</strong></div><div style="margin-top:10px;">${e}</div></div>`)}</div></section>` : O}
         ${r.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Stockage</div>${r.map((e) => E`<div class="pc-drive-row"><div class="pc-drive-top"><span>${e.label}</span><strong>${e.summary}</strong></div><div class="progress"><span style=${`width:${e.usage}%`}></span></div></div>`)}</section>` : O}
         ${a.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Session et système</div>${a.map(([e, t]) => this.infoRow(e, t))}</section>` : O}
@@ -5194,51 +4313,51 @@ var vt = class extends M {
 		return E`<div class="pc-info-row"><span>${e}</span><strong>${t}</strong></div>`;
 	}
 	nonNegativeDisplay(e) {
-		let t = _t(this.hass, e);
+		let t = it(this.hass, e);
 		return t === "—" ? void 0 : t;
 	}
 	audioDevice(e, t, n, r, i) {
-		return P(N(this.hass, t)) ? E`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${z(this.hass, t)}</strong><div class="pc-audio-meta">${P(N(this.hass, n)) ? E`<span>État · ${z(this.hass, n)}</span>` : O}${P(N(this.hass, r)) ? E`<span>Volume · ${z(this.hass, r)}</span>` : O}${P(N(this.hass, i)) ? E`<span>${ht(N(this.hass, i))}</span>` : O}</div></div>` : O;
+		return P(N(this.hass, t)) ? E`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${z(this.hass, t)}</strong><div class="pc-audio-meta">${P(N(this.hass, n)) ? E`<span>État · ${z(this.hass, n)}</span>` : O}${P(N(this.hass, r)) ? E`<span>Volume · ${z(this.hass, r)}</span>` : O}${P(N(this.hass, i)) ? E`<span>${nt(N(this.hass, i))}</span>` : O}</div></div>` : O;
 	}
 	networkRow(e) {
-		let t = N(this.hass, e.entity), n = gt(t);
+		let t = N(this.hass, e.entity), n = rt(t);
 		return E`<div class="pc-network-row"><span>${e.label || I(t, "Interface réseau")}</span><strong class="pc-network-state"><span class="dot ${n === "Connecté" ? "healthy" : ""}"></span>${n}</strong></div>`;
 	}
 };
 //#endregion
 //#region src/cards/auralis-unraid-card.ts
-function yt(e) {
+function ot(e) {
 	if (!P(e)) return "unavailable";
 	let t = e.state.toLowerCase();
 	return t === "paused" || t === "suspended" ? "paused" : F(e) ? "active" : "stopped";
 }
-function X(e) {
+function J(e) {
 	if (!P(e)) return;
 	let t = L(e, NaN);
 	return Number.isFinite(t) ? R(t) : void 0;
 }
-function bt(e, t = "on") {
+function st(e, t = "on") {
 	return !!(P(e) && e.state.toLowerCase() === t.trim().toLowerCase());
 }
-function xt(e, t, n) {
+function ct(e, t, n) {
 	return t?.[e || "default"]?.trim() || t?.default?.trim() || e || n;
 }
-function Z(e, t) {
+function Y(e, t) {
 	return !!(t && P(N(e, t)));
 }
-function St(e, t) {
+function lt(e, t) {
 	return t === "start" ? e.start_entity || (Ve(e.entity) === "switch" ? e.entity : void 0) : t === "stop" ? e.stop_entity || (Ve(e.entity) === "switch" ? e.entity : void 0) : t === "restart" ? e.restart_entity : t === "pause" ? e.pause_entity : e.resume_entity;
 }
-function Q(e) {
+function X(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-var Ct = class extends M {
+var ut = class extends M {
 	constructor(...e) {
 		super(...e), this.serviceTab = "docker", this.serviceFilter = "all", this.query = "", this.selected = /* @__PURE__ */ new Set(), this.startSelected = async () => {
 			let e = (this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || []).filter((e) => this.selected.has(e.entity));
 			await Promise.all(e.map((e) => this.startItem(e))), this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
 		}, this.confirmArrayStop = () => {
-			Z(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
+			Y(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
 				title: "Arrêter l’array ?",
 				message: "Les partages, conteneurs et machines virtuelles dépendants pourront devenir indisponibles.",
 				confirmLabel: "Arrêter l’array",
@@ -5737,7 +4856,7 @@ var Ct = class extends M {
 	}
 	render() {
 		if (!this.config || !this.hass) return E``;
-		let e = N(this.hass, this.config.status_entity), t = P(e) && F(e), n = P(e), r = X(N(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = X(N(this.hass, this.config.cpu_entity)), l = X(N(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? z(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
+		let e = N(this.hass, this.config.status_entity), t = P(e) && F(e), n = P(e), r = J(N(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = J(N(this.hass, this.config.cpu_entity)), l = J(N(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? z(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
 		return E`
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${p}>
@@ -5749,7 +4868,7 @@ var Ct = class extends M {
               <button class="rail-button ${a ? "has-active" : ""}" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
             </div>
             ${this.renderResourceGauges(c, l)}
-            <div class="machine-context"><small>Array${r === void 0 ? "" : ` · ${Q(r)} utilisés`}</small><strong>${d}</strong></div>
+            <div class="machine-context"><small>Array${r === void 0 ? "" : ` · ${X(r)} utilisés`}</small><strong>${d}</strong></div>
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Stockage</small><strong>${u.length ? `${u.length} disque${u.length > 1 ? "s" : ""} affiché${u.length > 1 ? "s" : ""}` : "Aucun disque sélectionné"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("disks")}><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button></div>
               <div class="machine-bars">
@@ -5787,7 +4906,7 @@ var Ct = class extends M {
 		return this.itemState(e) === "paused";
 	}
 	itemState(e) {
-		return yt(N(this.hass, e.entity));
+		return ot(N(this.hass, e.entity));
 	}
 	serviceItems() {
 		let e = this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || [], t = this.query.trim().toLocaleLowerCase("fr");
@@ -5799,7 +4918,7 @@ var Ct = class extends M {
 	groupedItems() {
 		let e = /* @__PURE__ */ new Map(), t = this.serviceTab === "docker" ? this.config?.docker_group_labels : this.config?.vm_group_labels, n = this.serviceTab === "docker" ? "Services" : "Machines virtuelles";
 		for (let r of this.serviceItems()) {
-			let i = xt(r.group, t, n);
+			let i = ct(r.group, t, n);
 			e.set(i, [...e.get(i) || [], r]);
 		}
 		return e;
@@ -5837,7 +4956,7 @@ var Ct = class extends M {
 		}}>${t}</button>`;
 	}
 	renderServiceRow(e) {
-		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = Z(this.hass, St(e, "start"));
+		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = Y(this.hass, lt(e, "start"));
 		return E`
       <div class="list-row">
         <input class="selection" type="checkbox" .checked=${this.selected.has(e.entity)} ?disabled=${t !== "stopped" || !o} @change=${() => this.toggleSelected(e.entity)} />
@@ -5855,9 +4974,9 @@ var Ct = class extends M {
 	}
 	renderServiceActions(e, t) {
 		let n = e, r = this.serviceTab === "vm", i = (n, r, i, a = "", o = !1) => {
-			let s = St(e, n);
+			let s = lt(e, n);
 			if (!s) return E``;
-			let c = t !== "unavailable" && Z(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
+			let c = t !== "unavailable" && Y(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
 			return E`<button class=${`action ${a}`.trim()} ?disabled=${!c} @click=${l}><ha-icon .icon=${i}></ha-icon>${r}</button>`;
 		};
 		return E`
@@ -5876,8 +4995,8 @@ var Ct = class extends M {
 		t.has(e) ? t.delete(e) : t.add(e), this.selected = t, this.requestUpdate();
 	}
 	async runItemAction(e, t) {
-		let n = St(e, t);
-		if (!Z(this.hass, n)) return;
+		let n = lt(e, t);
+		if (!Y(this.hass, n)) return;
 		let r = t === "start" && !e.start_entity && n === e.entity || t === "stop" && !e.stop_entity && n === e.entity;
 		if (t === "stop" && r) {
 			await He(this.hass, n);
@@ -5889,8 +5008,8 @@ var Ct = class extends M {
 		await this.runItemAction(e, "start");
 	}
 	confirmItemAction(e, t) {
-		let n = St(e, t);
-		if (!Z(this.hass, n)) return;
+		let n = lt(e, t);
+		if (!Y(this.hass, n)) return;
 		let r = t === "restart", i = this.serviceTab === "vm", a = r ? "Redémarrer" : i ? "Éteindre" : "Arrêter";
 		this.askConfirmation({
 			title: `${a} ${e.name} ?`,
@@ -5901,7 +5020,7 @@ var Ct = class extends M {
 	}
 	confirmServerAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
-		Z(this.hass, n) && (this.askConfirmation({
+		Y(this.hass, n) && (this.askConfirmation({
 			title: `${t ? "Redémarrer" : "Éteindre"} le serveur ?`,
 			message: "L’array, les conteneurs Docker et les machines virtuelles pourront devenir indisponibles.",
 			confirmLabel: t ? "Redémarrer" : "Éteindre",
@@ -5909,7 +5028,7 @@ var Ct = class extends M {
 		}), this.dialog = "server");
 	}
 	renderDiskRow(e) {
-		let t = X(N(this.hass, e.usage_entity)), n = N(this.hass, e.status_entity), r = bt(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? P(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
+		let t = J(N(this.hass, e.usage_entity)), n = N(this.hass, e.status_entity), r = st(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? P(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
 		return E`
       <div class="disk-row">
         <div class="disk-row-head">
@@ -5918,7 +5037,7 @@ var Ct = class extends M {
         </div>
         <div class="progress"><span style=${`width:${t ?? 0}%`}></span></div>
         <div class="disk-meta">
-          <span>${e.capacity_entity ? z(this.hass, e.capacity_entity) : `${Q(t)} utilisés`}</span>
+          <span>${e.capacity_entity ? z(this.hass, e.capacity_entity) : `${X(t)} utilisés`}</span>
           ${e.temperature_entity ? E`<span>${z(this.hass, e.temperature_entity)}</span>` : O}
         </div>
       </div>
@@ -5929,12 +5048,12 @@ var Ct = class extends M {
 		return t.length ? t : e.filter((e) => e.show_on_card !== !1);
 	}
 	renderDiskSummary(e) {
-		let t = X(N(this.hass, e.usage_entity));
+		let t = J(N(this.hass, e.usage_entity));
 		return E`
       <div class="machine-bar disk-summary">
         <span title=${e.name}>${e.name}</span>
         <div class="track"><span style=${`width:${t ?? 0}%`}></span></div>
-        <strong>${Q(t)}</strong>
+        <strong>${X(t)}</strong>
       </div>
     `;
 	}
@@ -5947,7 +5066,7 @@ var Ct = class extends M {
 		return t;
 	}
 	renderDisksDialog() {
-		let e = this.config?.disks || [], t = e.filter((e) => P(N(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && bt(N(this.hass, e.status_entity), e.healthy_state || "on")).length;
+		let e = this.config?.disks || [], t = e.filter((e) => P(N(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && st(N(this.hass, e.status_entity), e.healthy_state || "on")).length;
 		return this.renderDialog("Disques", "mdi:harddisk", E`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -5970,10 +5089,10 @@ var Ct = class extends M {
 		}
 	}
 	renderServerDialog() {
-		let e = X(N(this.hass, this.config?.array_usage_entity)), t = N(this.hass, this.config?.status_entity), n = P(t) && F(t), r = N(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? bt(r, this.config.parity_healthy_state) : P(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? P(r) ? i ? "Valide" : z(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? z(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? z(this.hass, this.config.array_label_entity) : Q(e), h = this.config?.ups_connected_entity ? bt(N(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : z(this.hass, this.config?.ups_status_entity);
+		let e = J(N(this.hass, this.config?.array_usage_entity)), t = N(this.hass, this.config?.status_entity), n = P(t) && F(t), r = N(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? st(r, this.config.parity_healthy_state) : P(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? P(r) ? i ? "Valide" : z(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? z(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? z(this.hass, this.config.array_label_entity) : X(e), h = this.config?.ups_connected_entity ? st(N(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : z(this.hass, this.config?.ups_status_entity);
 		return this.renderDialog(this.config?.name || "Serveur UNRAID", "mdi:server", E`
         <div class="dialog-body">
-          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${z(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${Q(e)}</strong><small>utilisé</small></div></div>
+          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${z(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${X(e)}</strong><small>utilisé</small></div></div>
           <div class="dialog-section-title">Stockage et santé</div>
           <div class="grid two">
             ${this.statusTile("Array", `${p} · ${m}`, "mdi:database-outline")}
@@ -6005,14 +5124,14 @@ var Ct = class extends M {
           <div class="dialog-section">
             <div class="dialog-section-title">Services</div>
             <div class="actions">
-              ${this.config?.array_start_entity ? E`<button class="action primary" ?disabled=${!Z(this.hass, this.config.array_start_entity)} @click=${() => H(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : O}
+              ${this.config?.array_start_entity ? E`<button class="action primary" ?disabled=${!Y(this.hass, this.config.array_start_entity)} @click=${() => H(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : O}
               ${f ? E`<button class="action primary" @click=${() => window.open(f, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:open-in-new"></ha-icon>Ouvrir UNRAID</button>` : O}
             </div>
           </div>
           ${d ? E`<div class="dialog-danger-zone"><div class="dialog-section-title">Zone sensible</div><div class="actions">
-                ${this.config?.array_stop_entity ? E`<button class="action danger" ?disabled=${!Z(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : O}
-                ${this.config?.restart_entity ? E`<button class="action danger" ?disabled=${!Z(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : O}
-                ${this.config?.shutdown_entity ? E`<button class="action danger" ?disabled=${!Z(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : O}
+                ${this.config?.array_stop_entity ? E`<button class="action danger" ?disabled=${!Y(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : O}
+                ${this.config?.restart_entity ? E`<button class="action danger" ?disabled=${!Y(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : O}
+                ${this.config?.shutdown_entity ? E`<button class="action danger" ?disabled=${!Y(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : O}
               </div></div>` : O}
         </div>
       `);
@@ -6020,23 +5139,23 @@ var Ct = class extends M {
 };
 //#endregion
 //#region src/utils/information.ts
-function wt(e, t) {
+function dt(e, t) {
 	return P(e) ? t ? e?.attributes[t] : e?.state : void 0;
 }
-function Tt(e) {
+function ft(e) {
 	if (typeof e != "string" && typeof e != "number" || typeof e == "string" && !e.trim()) return;
 	let t = Number(typeof e == "string" ? e.replace(",", ".") : e);
 	return Number.isFinite(t) ? t : void 0;
 }
-function Et(e, t) {
+function pt(e, t) {
 	let n = N(e, t.active_entity);
 	if (P(n) && n?.state === (t.active_state ?? "on")) return t.active_text ?? "En cours";
-	let r = N(e, t.entity), i = wt(r, t.attribute);
+	let r = N(e, t.entity), i = dt(r, t.attribute);
 	if (i == null || i === "" || i === "unknown" || i === "unavailable") return;
 	let a = Number.isFinite(t.precision) ? Math.max(0, Math.min(6, Math.round(t.precision))) : 1, o = (e) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: a }).format(e), s = t.unit ?? (t.attribute ? "" : r?.attributes.unit_of_measurement ?? ""), c = s ? ` ${s}` : "";
 	switch (t.format) {
 		case "duration": {
-			let e = Tt(i);
+			let e = ft(i);
 			if (e === void 0 || e < 0) return;
 			let n = {
 				seconds: 1,
@@ -6064,36 +5183,36 @@ function Et(e, t) {
 			}).format(e) : void 0;
 		}
 		case "ratio": {
-			let n = Tt(i), r = Tt(wt(N(e, t.total_entity), t.total_attribute));
+			let n = ft(i), r = ft(dt(N(e, t.total_entity), t.total_attribute));
 			return n === void 0 || n < 0 || r === void 0 || r <= 0 ? void 0 : `${o(n)} / ${o(r)}${c}`;
 		}
 		default: {
 			if (typeof i == "object") return;
 			if (!t.attribute && t.unit === void 0 && t.precision === void 0) return z(e, t.entity);
-			let n = Tt(i);
+			let n = ft(i);
 			return `${n === void 0 ? String(i) : o(n)}${c}`;
 		}
 	}
 }
 //#endregion
 //#region src/cards/auralis-proxmox-card.ts
-function Dt(e) {
+function mt(e) {
 	return P(e) ? F(e) ? "online" : "offline" : "unavailable";
 }
-function Ot(e) {
+function ht(e) {
 	if (!P(e)) return;
 	let t = e?.attributes.unit_of_measurement;
 	if (t && t !== "%") return;
 	let n = L(e, NaN);
 	return Number.isFinite(n) ? R(n) : void 0;
 }
-function $(e, t) {
+function Z(e, t) {
 	return !!(t && P(N(e, t)));
 }
-function kt(e) {
+function gt(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-var At = class extends M {
+var _t = class extends M {
 	constructor(...e) {
 		super(...e), this.workloadTab = "vm", this.workloadFilter = "all", this.query = "", this.selected = /* @__PURE__ */ new Set(), this.startSelected = async () => {
 			let e = this.allWorkloads();
@@ -6407,7 +5526,7 @@ var At = class extends M {
 	}
 	render() {
 		if (!this.config || !this.hass) return E``;
-		let e = Dt(N(this.hass, this.config.status_entity)), t = Ot(N(this.hass, this.config.cpu_entity || this.config.cluster_usage_entity)), n = Ot(N(this.hass, this.config.memory_entity)), r = (this.config.vms || []).some((e) => this.itemActive(e)), i = (this.config.containers || []).some((e) => this.itemActive(e)), a = this.storageItems().filter((e) => e.show_on_card !== !1), o = e === "online" ? "Nœud en ligne et disponible" : e === "offline" ? "Nœud hors ligne" : "État du nœud indisponible";
+		let e = mt(N(this.hass, this.config.status_entity)), t = ht(N(this.hass, this.config.cpu_entity || this.config.cluster_usage_entity)), n = ht(N(this.hass, this.config.memory_entity)), r = (this.config.vms || []).some((e) => this.itemActive(e)), i = (this.config.containers || []).some((e) => this.itemActive(e)), a = this.storageItems().filter((e) => e.show_on_card !== !1), o = e === "online" ? "Nœud en ligne et disponible" : e === "offline" ? "Nœud hors ligne" : "État du nœud indisponible";
 		return E`
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${this.machineStyle("#50d59b")}>
@@ -6441,7 +5560,7 @@ var At = class extends M {
 	renderInformation() {
 		let e = (this.config?.info_items ?? []).filter((e) => e.show !== !1).map((e) => ({
 			item: e,
-			value: Et(this.hass, e)
+			value: pt(this.hass, e)
 		})).filter(({ item: e, value: t }) => t !== void 0 || e.hide_unavailable === !1);
 		if (!e.length) return O;
 		let t = this.config?.info_columns ?? 3;
@@ -6463,14 +5582,14 @@ var At = class extends M {
 		}] : [] : this.config.storages;
 	}
 	renderStorageBar(e) {
-		let t = Ot(N(this.hass, e.usage_entity));
+		let t = ht(N(this.hass, e.usage_entity));
 		return E`<div class="machine-bar storage-bar">
       <span title=${e.name}>${e.name}</span>
       <div class="track" role="meter" aria-label=${e.name}
         aria-valuemin="0" aria-valuemax="100" aria-valuenow=${t ?? O}
-        aria-valuetext=${t === void 0 ? "Indisponible" : kt(t)}>
+        aria-valuetext=${t === void 0 ? "Indisponible" : gt(t)}>
         <span style=${`width:${t ?? 0}%`}></span>
-      </div><strong>${kt(t)}</strong>
+      </div><strong>${gt(t)}</strong>
     </div>`;
 	}
 	renderStorageDialog() {
@@ -6551,7 +5670,7 @@ var At = class extends M {
 		}}>${t}</button>`;
 	}
 	renderWorkloadRow(e) {
-		let t = this.itemActive(e), n = this.itemPaused(e), r = P(N(this.hass, e.entity)) && $(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0)), i = P(N(this.hass, e.entity)), a = i ? t ? "healthy" : n ? "warning" : "stopped" : "unavailable", o = i ? t ? "Actif" : n ? "Suspendu" : "Arrêté" : "Indisponible";
+		let t = this.itemActive(e), n = this.itemPaused(e), r = P(N(this.hass, e.entity)) && Z(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0)), i = P(N(this.hass, e.entity)), a = i ? t ? "healthy" : n ? "warning" : "stopped" : "unavailable", o = i ? t ? "Actif" : n ? "Suspendu" : "Arrêté" : "Indisponible";
 		return E`
       <div class="list-row">
         ${t ? E`<span class="selection selection-placeholder" aria-hidden="true"></span>` : E`<input class="selection" type="checkbox" aria-label=${`Sélectionner ${e.name}`} .checked=${this.selected.has(e.entity)} ?disabled=${n || !r} @change=${() => this.toggleSelected(e.entity)} />`}
@@ -6568,7 +5687,7 @@ var At = class extends M {
     `;
 	}
 	renderWorkloadAction(e, t, n) {
-		return P(N(this.hass, e.entity)) ? n ? E`<button class="action primary" ?disabled=${!$(this.hass, e.resume_entity)} @click=${() => H(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? E`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : E`<button class="action" ?disabled=${!$(this.hass, e.restart_entity)} @click=${() => H(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : E`<button class="action primary" ?disabled=${!$(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0))} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>` : E`<span class="muted">Indisponible</span>`;
+		return P(N(this.hass, e.entity)) ? n ? E`<button class="action primary" ?disabled=${!Z(this.hass, e.resume_entity)} @click=${() => H(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? E`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : E`<button class="action" ?disabled=${!Z(this.hass, e.restart_entity)} @click=${() => H(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : E`<button class="action primary" ?disabled=${!Z(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0))} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>` : E`<span class="muted">Indisponible</span>`;
 	}
 	toggleSelected(e) {
 		let t = new Set(this.selected);
@@ -6577,11 +5696,11 @@ var At = class extends M {
 	async startItem(e) {
 		if (!P(N(this.hass, e.entity)) || this.itemActive(e) || this.itemPaused(e)) return;
 		let t = e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0);
-		$(this.hass, t) && await H(this.hass, t);
+		Z(this.hass, t) && await H(this.hass, t);
 	}
 	confirmClusterAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
-		Dt(N(this.hass, this.config?.status_entity)) === "online" && $(this.hass, n) && (this.askConfirmation({
+		mt(N(this.hass, this.config?.status_entity)) === "online" && Z(this.hass, n) && (this.askConfirmation({
 			title: `${t ? "Redémarrer" : "Arrêter"} ${this.config?.name || "le nœud"} ?`,
 			message: "Cette action peut interrompre plusieurs machines virtuelles et services. Vérifiez les migrations avant de continuer.",
 			confirmLabel: t ? "Redémarrer" : "Arrêter",
@@ -6589,7 +5708,7 @@ var At = class extends M {
 		}), this.dialog = "cluster");
 	}
 	renderClusterDialog() {
-		let e = this.config, t = Dt(N(this.hass, e.status_entity)), n = t === "online", r = [
+		let e = this.config, t = mt(N(this.hass, e.status_entity)), n = t === "online", r = [
 			[
 				"CPU",
 				e.cpu_entity || e.cluster_usage_entity,
@@ -6656,37 +5775,37 @@ var At = class extends M {
           <div style="margin-top:10px">${e}</div>
         </div>`)}</div>
         ${e.backup_action_entity ? E`<div class="dialog-section"><button class="action"
-          ?disabled=${!n || !$(this.hass, e.backup_action_entity)}
+          ?disabled=${!n || !Z(this.hass, e.backup_action_entity)}
           @click=${() => H(this.hass, e.backup_action_entity)}>
           <ha-icon icon="mdi:backup-restore"></ha-icon>Lancer la sauvegarde</button></div>` : O}
         ${e.restart_entity || e.shutdown_entity ? E`
           <div class="dialog-danger-zone"><div class="dialog-section-title">Actions du nœud</div><div class="actions">
-            ${e.restart_entity ? E`<button class="action danger" ?disabled=${!n || !$(this.hass, e.restart_entity)} @click=${() => this.confirmClusterAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : O}
-            ${e.shutdown_entity ? E`<button class="action danger" ?disabled=${!n || !$(this.hass, e.shutdown_entity)} @click=${() => this.confirmClusterAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Arrêter</button>` : O}
+            ${e.restart_entity ? E`<button class="action danger" ?disabled=${!n || !Z(this.hass, e.restart_entity)} @click=${() => this.confirmClusterAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : O}
+            ${e.shutdown_entity ? E`<button class="action danger" ?disabled=${!n || !Z(this.hass, e.shutdown_entity)} @click=${() => this.confirmClusterAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Arrêter</button>` : O}
           </div></div>` : O}
       </div>`);
 	}
-}, jt = /* @__PURE__ */ new Set([
+}, vt = /* @__PURE__ */ new Set([
 	"unknown",
 	"unavailable",
 	""
 ]);
-function Mt(e) {
+function yt(e) {
 	try {
 		return new URL(e, "https://home-assistant.local").pathname.replace(/\/$/, "") || "/";
 	} catch {
 		return "/";
 	}
 }
-function Nt(e) {
+function bt(e) {
 	let t = (e.path || e.navigation_path || "").trim();
 	if (!(!t || t.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(t))) return t.startsWith("/") || t.startsWith("#") ? t : `/${t}`;
 }
-function Pt(e, t) {
-	let n = [Nt(e), ...e.active_paths || []].filter((e) => !!e).map(Mt), r = Mt(t);
+function xt(e, t) {
+	let n = [bt(e), ...e.active_paths || []].filter((e) => !!e).map(yt), r = yt(t);
 	return n.some((t) => e.exact ? r === t : r === t || t !== "/" && r.startsWith(`${t}/`));
 }
-function Ft(e, t, n) {
+function St(e, t, n) {
 	let r = e ? Math.max(t.offsetLeft, e.left) : t.offsetLeft, i = e ? Math.min(t.offsetLeft + t.width, e.right) : t.offsetLeft + t.width, a = i > r ? r : t.offsetLeft, o = i > r ? i - r : t.width;
 	return {
 		centerX: a + o / 2,
@@ -6696,11 +5815,11 @@ function Ft(e, t, n) {
 		centerY: t.offsetTop + t.height / 2
 	};
 }
-var It = class extends M {
+var Ct = class extends M {
 	constructor(...e) {
 		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.preview = !1, this.editMode = !1, this.updateOverlayGeometry = () => {
 			if (!this.overlay) return;
-			let e = window.visualViewport, t = Ft(this.dashboardElement?.getBoundingClientRect(), {
+			let e = window.visualViewport, t = St(this.dashboardElement?.getBoundingClientRect(), {
 				offsetLeft: e?.offsetLeft ?? 0,
 				offsetTop: e?.offsetTop ?? 0,
 				width: e?.width ?? window.innerWidth,
@@ -6962,7 +6081,7 @@ var It = class extends M {
 			...e,
 			label: e.label?.trim()
 		}));
-		if (n.some((e) => !e.label || !Nt(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
+		if (n.some((e) => !e.label || !bt(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
 		for (let t of [
 			"height_desktop",
 			"height_tablet",
@@ -7073,7 +6192,7 @@ var It = class extends M {
 	badge(e) {
 		if (!e.badge_entity) return;
 		let t = this.hass?.states[e.badge_entity];
-		if (t && !jt.has(t.state.toLowerCase())) return this.hass?.formatEntityState?.(t) || t.state;
+		if (t && !vt.has(t.state.toLowerCase())) return this.hass?.formatEntityState?.(t) || t.state;
 	}
 	navigate(e, t) {
 		if (this.editing) {
@@ -7081,7 +6200,7 @@ var It = class extends M {
 			return;
 		}
 		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-		let n = Nt(t);
+		let n = bt(t);
 		n && (e.preventDefault(), `${window.location.pathname}${window.location.search}${window.location.hash}` !== n && (window.history.pushState(null, "", n), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }))));
 	}
 	render() {
@@ -7099,7 +6218,7 @@ var It = class extends M {
         <div class="navbar-shell ${n}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((n) => {
-			let r = Nt(n), i = Pt(n, e), a = this.badge(n);
+			let r = bt(n), i = xt(n, e), a = this.badge(n);
 			return E`<a class="nav-item ${i ? "active" : ""}" href=${r} aria-current=${i ? "page" : O} title=${n.label} @click=${(e) => this.navigate(e, n)}>
                 <span class="icon-wrap"><ha-icon .icon=${n.icon || "mdi:circle-outline"}></ha-icon>${a ? E`<span class="badge">${a}</span>` : O}</span>
                 ${t ? E`<span class="label">${n.label}</span>` : O}
@@ -7123,8 +6242,854 @@ var It = class extends M {
 			min_columns: 1
 		};
 	}
-}, Lt = "0.13.0";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", it), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", at), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", vt), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Ct), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", At), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", It), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends it {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends vt {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Ct {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends At {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends It {}), window.customCards = window.customCards || [];
+}, wt = [
+	{
+		name: "Blanc chaud",
+		color: "#ffd4a3"
+	},
+	{
+		name: "Blanc neutre",
+		color: "#ffffff"
+	},
+	{
+		name: "Ambre",
+		color: "#ff9d42"
+	},
+	{
+		name: "Rose",
+		color: "#ff7eb8"
+	},
+	{
+		name: "Violet",
+		color: "#9d79ff"
+	},
+	{
+		name: "Bleu",
+		color: "#5caaff"
+	},
+	{
+		name: "Vert",
+		color: "#67d7a2"
+	}
+], Tt = (e) => /^#[0-9a-f]{6}$/i.test(e), Et = class extends M {
+	static {
+		this.styles = [M.styles, o`
+    .lights-shell { padding: 18px; container-type: inline-size; }
+    .lights-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .lights-header .tile-icon { width:44px; height:44px; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
+    .lights-header .tile-icon ha-icon { --mdc-icon-size:25px; }
+    .lights-summary { margin-top:4px; color:var(--auralis-muted); font-size:12px; }
+    .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:12px; }
+    .group { overflow:hidden; border:1px solid var(--auralis-border); border-radius:20px; background:var(--auralis-layer); }
+    .group-photo { position:relative; height:90px; overflow:hidden; background:radial-gradient(circle at 22% 35%,color-mix(in srgb,var(--auralis-active) 32%,transparent),transparent 45%),linear-gradient(125deg,#1a2633,#0c1520); background-size:cover; background-position:center; }
+    .group-photo::after { position:absolute; inset:0; background:linear-gradient(0deg,rgba(7,13,20,.28),transparent 70%); content:""; pointer-events:none; }
+    .group-body { padding:14px; }
+    .group-top { display:flex; align-items:center; gap:9px; }
+    .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
+    .group-title { min-width:0; flex:1; }
+    .group-title strong, .group-title small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .group-title small { margin-top:3px; color:var(--auralis-muted); font-size:11px; }
+    .group-top .icon-button { flex:0 0 auto; }
+    .group-actions { display:flex; gap:7px; margin-top:13px; }
+    .control { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
+    .control ha-icon { --mdc-icon-size:21px; }
+    .control.on { color:var(--auralis-active); }
+    .control[disabled], .swatch[disabled], input[disabled] { opacity:.38; cursor:not-allowed; }
+    .group-actions .spacer { flex:1; }
+    .dimmer { display:flex; align-items:center; gap:10px; margin-top:14px; }
+    .dimmer ha-icon { --mdc-icon-size:18px; color:var(--auralis-active); }
+    .dimmer input { min-width:0; flex:1; accent-color:var(--auralis-active); cursor:pointer; }
+    .dimmer output { min-width:35px; color:var(--auralis-muted); font-size:12px; text-align:right; }
+    .color-input { width:42px; height:42px; padding:3px; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); cursor:pointer; }
+    .color-input::-webkit-color-swatch-wrapper { padding:0; }
+    .color-input::-webkit-color-swatch { border:0; border-radius:8px; }
+    .color-input::-moz-color-swatch { border:0; border-radius:8px; }
+    .swatches { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .swatch { width:28px; height:28px; padding:3px; border:1px solid var(--auralis-border); border-radius:50%; background:var(--auralis-card); cursor:pointer; }
+    .swatch::after { display:block; width:100%; height:100%; border-radius:50%; background:var(--swatch-color); content:""; }
+    .inline-lights { display:grid; gap:3px; padding-top:10px; margin-top:12px; border-top:1px solid var(--auralis-border); }
+    .inline-light { display:flex; min-height:34px; align-items:center; gap:8px; font-size:12px; }
+    .inline-light span { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .inline-light .control { width:32px; height:32px; border-radius:9px; }
+    .inline-light .control ha-icon { --mdc-icon-size:18px; }
+    .light-row { padding:14px; border:1px solid var(--auralis-border); border-radius:16px; background:var(--auralis-layer); }
+    .light-row + .light-row { margin-top:9px; }
+    .light-head { display:flex; align-items:center; gap:10px; }
+    .light-head .tile-icon { color:var(--auralis-active); }
+    .light-head .name { min-width:0; flex:1; overflow:hidden; font-size:13px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+    .light-head .control { width:38px; height:38px; }
+    .light-row .dimmer { margin-top:10px; }
+    .light-row .swatches { margin-top:10px; }
+    .scene-grid { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
+    .scene-item { display:grid; width:56px; gap:4px; justify-items:center; }
+    .scene-item .control { width:46px; height:46px; color:var(--auralis-active); }
+    .scene-item small { width:70px; overflow:hidden; color:var(--auralis-muted); font-size:10px; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
+    .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+    @container (max-width:330px) { .lights-shell { padding:13px; } .group-body { padding:12px; } }
+  `];
+	}
+	setConfig(e) {
+		let t = e.groups ?? (e.lights?.length ? [{
+			name: e.name || "Lumières",
+			lights: e.lights
+		}] : []);
+		if (!t.length || t.some((e) => !e.name || !Array.isArray(e.lights) || !e.lights.length || e.lights.some((e) => !e.startsWith("light.")))) throw Error("Configurez au moins un groupe avec des entités light.*.");
+		if (e.preset_colors?.some((e) => !Tt(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
+		this.config = {
+			...e,
+			theme: e.theme || "carbon",
+			groups: t
+		};
+	}
+	static getStubConfig() {
+		return {
+			name: "Lumières",
+			theme: "carbon",
+			lights: []
+		};
+	}
+	static getConfigForm() {
+		return { schema: [
+			{
+				name: "name",
+				selector: { text: {} }
+			},
+			{
+				name: "theme",
+				selector: { select: {
+					options: [
+						"auto",
+						"halo",
+						"carbon",
+						"mono",
+						"aurora"
+					],
+					mode: "dropdown"
+				} }
+			},
+			{
+				name: "lights",
+				selector: { entity: {
+					multiple: !0,
+					filter: { domain: "light" }
+				} }
+			},
+			{
+				name: "groups",
+				selector: { object: {} }
+			},
+			{
+				name: "scenes",
+				selector: { object: {} }
+			},
+			{
+				name: "preset_colors",
+				selector: { object: {} }
+			},
+			{
+				name: "entity_labels",
+				selector: { object: {} }
+			}
+		] };
+	}
+	groups() {
+		return this.config?.groups || [];
+	}
+	available(e) {
+		return e.lights.filter((e) => P(N(this.hass, e)));
+	}
+	colorIds(e) {
+		return this.available(e).filter((e) => Re(N(this.hass, e)));
+	}
+	supportsBrightness(e) {
+		let t = N(this.hass, e), n = t?.attributes.supported_color_modes;
+		return typeof t?.attributes.brightness == "number" || Array.isArray(n) && n.some((e) => e !== "onoff");
+	}
+	dimmableIds(e) {
+		return this.available(e).filter((e) => this.supportsBrightness(e));
+	}
+	presets() {
+		return this.config?.preset_colors ?? wt;
+	}
+	scenes(e) {
+		return e.scenes ?? this.config?.scenes ?? [];
+	}
+	label(e) {
+		return this.config?.entity_labels?.[e] || I(N(this.hass, e), e);
+	}
+	average(e) {
+		let t = e.lights.map((e) => N(this.hass, e)).filter(F).map(Le);
+		return t.length ? Math.round(t.reduce((e, t) => e + t, 0) / t.length) : 0;
+	}
+	color(e) {
+		let t = this.colorIds(e).map((e) => N(this.hass, e));
+		return V(B(t.find((e) => F(e) && B(e)) ?? t[0]));
+	}
+	imageStyle(e) {
+		let t = e.image?.trim();
+		return !t || !/^(https:\/\/|\/local\/|\/hacsfiles\/)/.test(t) || /["'\\;{}]/.test(t) ? "" : `background-image:linear-gradient(0deg,rgba(7,13,20,.3),rgba(7,13,20,.05)),url("${t}")`;
+	}
+	async power(e, t) {
+		this.hass && e.length && await this.hass.callService("light", t ? "turn_on" : "turn_off", {}, { entity_id: e });
+	}
+	async brightness(e, t) {
+		this.hass && e.length && await this.hass.callService("light", "turn_on", { brightness_pct: Math.round(t) }, { entity_id: e });
+	}
+	async colorize(e, t) {
+		this.hass && e.length && Tt(t) && await We(this.hass, e, t);
+	}
+	renderSwatches(e, t) {
+		return e.length ? E`<div class="swatches" aria-label=${`Couleurs prédéfinies pour ${t}`}>
+      ${this.presets().map((n) => E`<button class="swatch" type="button" style=${`--swatch-color:${n.color}`}
+        title=${`${n.name} · ${t}`} aria-label=${`${n.name} · ${t}`} ?disabled=${!e.length}
+        @click=${() => this.colorize(e, n.color)}></button>`)}
+    </div>` : E``;
+	}
+	renderGroup(e, t) {
+		let n = this.available(e), r = this.dimmableIds(e), i = this.colorIds(e), a = n.filter((e) => F(N(this.hass, e))).length, o = this.average(e), s = this.scenes(e);
+		return E`<section class="group">
+      <div class="group-photo" style=${this.imageStyle(e)}></div>
+      <div class="group-body">
+        <div class="group-top">
+          <span class="tile-icon"><ha-icon .icon=${e.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
+          <span class="group-title"><strong>${e.name}</strong><small>${a}/${e.lights.length} allumée${e.lights.length > 1 ? "s" : ""}</small></span>
+          <button class="icon-button" type="button" title=${`Détails de ${e.name}`} aria-label=${`Détails de ${e.name}`}
+            aria-haspopup="dialog" @click=${() => this.openDialog(`group:${t}`)}><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+        </div>
+        <div class="group-actions">
+          <button class="control on" type="button" title=${`Allumer ${e.name}`} aria-label=${`Allumer ${e.name}`}
+            ?disabled=${!n.length} @click=${() => this.power(n, !0)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
+          <button class="control" type="button" title=${`Éteindre ${e.name}`} aria-label=${`Éteindre ${e.name}`}
+            ?disabled=${!n.length} @click=${() => this.power(n, !1)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
+          ${s.length ? E`<button class="control" type="button" title=${`Ambiances de ${e.name}`} aria-label=${`Ambiances de ${e.name}`}
+            aria-haspopup="dialog" @click=${() => this.openDialog(`scenes:${t}`)}><ha-icon icon="mdi:creation-outline"></ha-icon></button>` : O}
+          <span class="spacer"></span>
+          <input class="color-input" type="color" .value=${this.color(e)} title=${`Couleur de ${e.name}`}
+            aria-label=${`Couleur de ${e.name}`} ?disabled=${!i.length}
+            @change=${(e) => this.colorize(i, e.target.value)} />
+        </div>
+        <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
+          <input type="range" min="1" max="100" .value=${String(Math.max(o, 1))}
+            aria-label=${`Intensité de ${e.name}`} ?disabled=${!r.length}
+            @change=${(e) => this.brightness(r, Number(e.target.value))} />
+          <output>${o}%</output>
+        </label>
+        ${this.renderSwatches(i, e.name)}
+        ${e.show_lights ? E`<div class="inline-lights">${e.lights.map((e) => {
+			let t = N(this.hass, e), n = F(t);
+			return E`<div class="inline-light"><ha-icon .icon=${n ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon><span>${this.label(e)}</span>
+            <button class="control" type="button" title=${`${n ? "Éteindre" : "Allumer"} ${this.label(e)}`} aria-label=${`${n ? "Éteindre" : "Allumer"} ${this.label(e)}`}
+              ?disabled=${!P(t)} @click=${() => this.power([e], !n)}><ha-icon .icon=${n ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button></div>`;
+		})}</div>` : O}
+      </div>
+    </section>`;
+	}
+	renderLight(e) {
+		let t = N(this.hass, e), n = P(t), r = F(t), i = Re(t), a = Le(t), o = this.label(e);
+		return E`<div class="light-row">
+      <div class="light-head">
+        <span class="tile-icon" style=${`color:${r ? V(B(t)) : "var(--auralis-muted)"}`}><ha-icon .icon=${r ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
+        <span class="name">${o}</span>
+        <button class="control" type="button" title=${`Plus d’informations sur ${o}`} aria-label=${`Plus d’informations sur ${o}`}
+          @click=${() => W(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
+        <button class="control ${r ? "on" : ""}" type="button" title=${`${r ? "Éteindre" : "Allumer"} ${o}`} aria-label=${`${r ? "Éteindre" : "Allumer"} ${o}`}
+          ?disabled=${!n} @click=${() => this.power([e], !r)}><ha-icon .icon=${r ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
+      </div>
+      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
+        <input type="range" min="1" max="100" .value=${String(Math.max(a, 1))} aria-label=${`Intensité de ${o}`}
+          ?disabled=${!n || !this.supportsBrightness(e)} @change=${(t) => this.brightness([e], Number(t.target.value))} />
+        <output>${a}%</output>
+        ${i ? E`<input class="color-input" type="color" .value=${V(B(t))}
+          title=${`Couleur de ${o}`} aria-label=${`Couleur de ${o}`} ?disabled=${!n}
+          @change=${(t) => this.colorize([e], t.target.value)} />` : O}
+      </label>
+      ${i ? this.renderSwatches(n ? [e] : [], o) : O}
+    </div>`;
+	}
+	renderScenes(e) {
+		return E`<div class="scene-grid">${this.scenes(e).map((e) => E`<div class="scene-item">
+      <button class="control" type="button" title=${e.label || e.entity} aria-label=${`Activer ${e.label || e.entity}`}
+        @click=${async () => {
+			this.hass && await H(this.hass, e.entity), this.closeDialog();
+		}}>
+        <ha-icon .icon=${e.icon || "mdi:creation-outline"}></ha-icon></button>
+      <small>${e.label || e.entity}</small>
+    </div>`)}</div>`;
+	}
+	renderGroupDialog(e) {
+		let t = this.available(e), n = this.dimmableIds(e), r = this.colorIds(e), i = t.filter((e) => F(N(this.hass, e))).length;
+		return this.renderDialog(e.name, e.icon || "mdi:lightbulb-group-outline", E`<div class="dialog-body">
+      <div class="dialog-overview"><div><span class="eyebrow">Éclairage</span><strong>${i} / ${e.lights.length} allumées</strong></div>
+        <div class="dialog-stat"><strong>${this.average(e)}%</strong><small>intensité</small></div></div>
+      <div class="dialog-section-title">Groupe</div>
+      <div class="group-actions">
+        <button class="control on" type="button" title="Tout allumer" aria-label="Tout allumer" ?disabled=${!t.length} @click=${() => this.power(t, !0)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
+        <button class="control" type="button" title="Tout éteindre" aria-label="Tout éteindre" ?disabled=${!t.length} @click=${() => this.power(t, !1)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
+        <input class="color-input" type="color" .value=${this.color(e)} title="Couleur du groupe" aria-label="Couleur du groupe"
+          ?disabled=${!r.length} @change=${(e) => this.colorize(r, e.target.value)} />
+      </div>
+      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon><input type="range" min="1" max="100"
+        .value=${String(Math.max(this.average(e), 1))} aria-label="Intensité du groupe" ?disabled=${!n.length}
+        @change=${(e) => this.brightness(n, Number(e.target.value))} /><output>${this.average(e)}%</output></label>
+      ${this.renderSwatches(r, e.name)}
+      ${this.scenes(e).length ? E`<div class="section-caption">Ambiances</div>${this.renderScenes(e)}` : O}
+      <div class="section-caption">Lumières</div>
+      ${e.lights.map((e) => this.renderLight(e))}
+    </div>`);
+	}
+	render() {
+		let e = this.groups(), t = e.reduce((e, t) => e + t.lights.length, 0), n = e.reduce((e, t) => e + t.lights.filter((e) => F(N(this.hass, e))).length, 0), [r, i] = (this.dialog || "").split(":"), a = e[Number(i)];
+		return E`<ha-card><div class="shell lights-shell">
+      <header class="lights-header"><span class="tile-icon"><ha-icon .icon=${this.config?.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
+        <div class="title-wrap"><h2>${this.config?.name || "Lumières"}</h2><div class="lights-summary">${n} sur ${t} allumées · ${e.length} groupe${e.length > 1 ? "s" : ""}</div></div></header>
+      <div class="groups">${e.map((e, t) => this.renderGroup(e, t))}</div>
+    </div></ha-card>
+    ${a && r === "group" ? this.renderGroupDialog(a) : O}
+    ${a && r === "scenes" ? this.renderDialog(`Ambiances · ${a.name}`, "mdi:creation-outline", E`<div class="dialog-body">${this.renderScenes(a)}</div>`) : O}`;
+	}
+	getCardSize() {
+		return Math.max(4, this.groups().length * 4);
+	}
+	getGridOptions() {
+		return {
+			rows: 7,
+			min_rows: 4,
+			columns: 6,
+			min_columns: 3
+		};
+	}
+}, Dt = {
+	off: "Arrêt",
+	heat: "Chauffage",
+	cool: "Climatisation",
+	heat_cool: "Auto",
+	auto: "Automatique",
+	dry: "Déshumidifier",
+	fan_only: "Ventilation"
+}, Ot = {
+	off: "mdi:power",
+	heat: "mdi:fire",
+	cool: "mdi:snowflake",
+	heat_cool: "mdi:autorenew",
+	auto: "mdi:autorenew",
+	dry: "mdi:water-off",
+	fan_only: "mdi:fan"
+}, kt = {
+	heating: "Chauffage en cours",
+	cooling: "Refroidissement en cours",
+	drying: "Déshumidification en cours",
+	fan: "Ventilation en cours",
+	idle: "En attente",
+	off: "Arrêt"
+};
+function Q(e, t) {
+	let n = e?.attributes[t];
+	return typeof n == "number" && Number.isFinite(n) ? n : void 0;
+}
+function At(e) {
+	return Q(e, "temperature");
+}
+function jt(e, t) {
+	if (!P(e)) return;
+	let n = At(e);
+	if (n === void 0) return;
+	let r = Q(e, "target_temp_step"), i = r && r > 0 ? r : .5, a = Q(e, "min_temp") ?? 5, o = Q(e, "max_temp") ?? 35;
+	if (a > o) return;
+	let s = Math.min(o, Math.max(a, Math.round((n + t * i) * 1e3) / 1e3));
+	return s === n ? void 0 : s;
+}
+function Mt(e, t) {
+	return e === void 0 ? "—" : `${e.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}${t}`;
+}
+var Nt = class extends M {
+	static {
+		this.properties = {
+			...M.properties,
+			selectedEntity: { state: !0 },
+			pendingEntity: { state: !0 },
+			errorMessage: { state: !0 }
+		};
+	}
+	static {
+		this.styles = [M.styles, o`
+    .thermostat-shell, .thermostat-content { min-height:488px; }
+    .thermostat-shell { --machine-accent:#ffbd78; }
+    .thermostat-header { padding-right:44px; }
+    .thermostat-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
+    .thermostat-header .badge ha-icon { --mdc-icon-size:23px; }
+    .thermostat-header h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .thermostat-header .machine-status { margin-top:5px; }
+    .info-button { position:absolute; top:0; right:0; display:grid; width:40px; height:40px; place-items:center; border:1px solid rgba(195,211,229,.2); border-radius:13px; background:rgba(9,14,20,.78); color:#d9e4f0; cursor:pointer; }
+    .info-button ha-icon { --mdc-icon-size:20px; }
+    .selector { display:flex; gap:7px; overflow-x:auto; padding:2px 1px 8px; margin-top:18px; scrollbar-width:thin; }
+    .selector button { flex:0 0 auto; min-height:37px; max-width:170px; padding:7px 11px; overflow:hidden; border:1px solid rgba(195,211,229,.19); border-radius:12px; background:rgba(9,14,20,.7); color:#bbc8d6; cursor:pointer; text-overflow:ellipsis; white-space:nowrap; }
+    .selector button[aria-pressed="true"] { border-color:color-mix(in srgb,var(--machine-accent) 60%,transparent); background:color-mix(in srgb,var(--machine-accent) 17%,rgba(9,14,20,.9)); color:#fff; }
+    .selector .unavailable { opacity:.5; }
+    .dial-wrap { display:grid; flex:1; min-height:204px; place-items:center; padding:18px 0 10px; }
+    .dial { --dial-position:0%; display:grid; width:190px; height:190px; place-items:center; border-radius:50%; background:conic-gradient(from 220deg,var(--machine-accent) var(--dial-position),rgba(255,255,255,.12) var(--dial-position) 78%,transparent 78%); box-shadow:0 0 0 7px rgba(8,12,18,.72),0 0 0 8px rgba(195,211,229,.16); }
+    .dial-inner { display:grid; width:164px; height:164px; place-content:center; border-radius:50%; background:rgba(11,17,24,.93); text-align:center; }
+    .dial-inner small { color:#9caabb; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+    .dial-inner strong { margin-top:3px; color:#fff; font-size:43px; letter-spacing:-.06em; line-height:1.05; }
+    .dial-inner span { margin-top:6px; color:#c2ceda; font-size:12px; }
+    .thermostat-panel { padding:15px; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .panel-title { min-width:0; }
+    .panel-title small { display:block; color:#9baabd; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+    .panel-title strong { display:block; overflow:hidden; margin-top:4px; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
+    .stepper { display:flex; align-items:center; gap:8px; }
+    .stepper button { display:grid; width:41px; height:41px; flex:0 0 auto; place-items:center; border:1px solid rgba(195,211,229,.22); border-radius:13px; background:rgba(255,255,255,.07); color:#fff; cursor:pointer; font-size:24px; line-height:1; }
+    .stepper button:hover, .mode-button:hover, .info-button:hover { border-color:var(--machine-accent); }
+    .stepper button:disabled, .mode-button:disabled, .info-button:disabled { cursor:not-allowed; opacity:.42; }
+    .stepper output { min-width:58px; color:var(--machine-accent); font-size:21px; font-weight:750; text-align:center; white-space:nowrap; }
+    .metrics { display:flex; flex-wrap:wrap; gap:7px 18px; padding-top:13px; margin-top:13px; border-top:1px solid rgba(195,211,229,.13); }
+    .metrics span { color:#9baabd; font-size:11px; }
+    .metrics strong { margin-left:5px; color:#edf3f9; }
+    .modes { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
+    .mode-button { display:flex; min-height:37px; align-items:center; gap:6px; padding:7px 10px; border:1px solid rgba(195,211,229,.2); border-radius:11px; background:rgba(255,255,255,.05); color:#c5d0dc; cursor:pointer; font-size:11px; font-weight:700; }
+    .mode-button ha-icon { --mdc-icon-size:17px; }
+    .mode-button[aria-pressed="true"] { border-color:color-mix(in srgb,var(--machine-accent) 65%,transparent); background:color-mix(in srgb,var(--machine-accent) 17%,rgba(9,14,20,.7)); color:#fff; }
+    .error { margin-top:10px; color:#ff979d; font-size:11px; }
+    @container (max-width:350px) {
+      .thermostat-shell { padding:14px; }
+      .thermostat-header h2 { font-size:20px; }
+      .dial { width:168px; height:168px; }
+      .dial-inner { width:144px; height:144px; }
+      .panel-head { align-items:flex-start; flex-direction:column; }
+      .stepper { width:100%; justify-content:space-between; }
+    }
+  `];
+	}
+	setConfig(e) {
+		let t = Array.isArray(e.entities) ? e.entities : [], n = [e.entity, ...t].filter((e) => typeof e == "string" && e.length > 0);
+		if (!n.length || n.some((e) => !/^climate\.[a-z0-9_]+$/.test(e))) throw Error("Configurez une ou plusieurs entités climate.*.");
+		let r = [...new Set(n)];
+		this.config = {
+			...e,
+			name: e.name || "Thermostats",
+			theme: e.theme || "carbon",
+			entities: r
+		}, r.includes(this.selectedEntity || "") || (this.selectedEntity = r[0]);
+	}
+	static getStubConfig() {
+		return {
+			name: "Thermostats",
+			theme: "carbon",
+			entity: "climate.salon"
+		};
+	}
+	static getConfigForm() {
+		return { schema: [
+			{
+				name: "name",
+				selector: { text: {} }
+			},
+			{
+				name: "entity",
+				selector: { entity: { filter: { domain: "climate" } } }
+			},
+			{
+				name: "entities",
+				selector: { entity: {
+					multiple: !0,
+					filter: { domain: "climate" }
+				} }
+			},
+			{
+				name: "entity_labels",
+				selector: { object: {} }
+			},
+			{
+				name: "theme",
+				selector: { select: { options: [
+					"auto",
+					"halo",
+					"carbon",
+					"mono",
+					"aurora"
+				] } }
+			},
+			{
+				name: "background_image",
+				selector: { text: {} }
+			},
+			{
+				name: "background_position",
+				selector: { text: {} }
+			},
+			{
+				name: "image_opacity",
+				selector: { number: {
+					min: 0,
+					max: 100,
+					step: 1,
+					mode: "slider"
+				} }
+			},
+			{
+				name: "accent_color",
+				selector: { text: {} }
+			},
+			{
+				name: "card_background",
+				selector: { object: {} }
+			},
+			{
+				name: "show_grid",
+				selector: { boolean: {} }
+			}
+		] };
+	}
+	ids() {
+		return this.config?.entities ?? [];
+	}
+	label(e) {
+		return this.config?.entity_labels?.[e] || I(N(this.hass, e), e);
+	}
+	unit(e) {
+		let t = this.hass?.config?.unit_system?.temperature, n = e?.attributes.temperature_unit ?? e?.attributes.unit_of_measurement ?? t;
+		return typeof n == "string" && n.trim() ? n : "°C";
+	}
+	async adjustTemperature(e, t) {
+		let n = jt(N(this.hass, e), t);
+		if (this.hass && n !== void 0 && !this.pendingEntity) {
+			this.pendingEntity = e, this.errorMessage = void 0;
+			try {
+				await this.hass.callService("climate", "set_temperature", { temperature: n }, { entity_id: e });
+			} catch {
+				this.errorMessage = "La consigne n’a pas pu être modifiée.";
+			} finally {
+				this.pendingEntity = void 0;
+			}
+		}
+	}
+	async setMode(e, t) {
+		let n = N(this.hass, e), r = n?.attributes.hvac_modes;
+		if (this.hass && P(n) && Array.isArray(r) && r.includes(t) && !this.pendingEntity && n?.state !== t) {
+			this.pendingEntity = e, this.errorMessage = void 0;
+			try {
+				await this.hass.callService("climate", "set_hvac_mode", { hvac_mode: t }, { entity_id: e });
+			} catch {
+				this.errorMessage = "Le mode n’a pas pu être modifié.";
+			} finally {
+				this.pendingEntity = void 0;
+			}
+		}
+	}
+	render() {
+		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? At(n) : void 0, a = r ? Q(n, "current_temperature") : void 0, o = r ? Q(n, "target_temp_low") : void 0, s = r ? Q(n, "target_temp_high") : void 0, c = r ? Q(n, "current_humidity") : void 0, l = this.unit(n), u = Q(n, "min_temp") ?? 5, d = Q(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? kt[String(n?.attributes.hvac_action)] || Dt[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${Mt(o, l)} – ${Mt(s, l)}` : "—" : Mt(i, l), g = jt(n, -1) !== void 0 && !this.pendingEntity, ee = jt(n, 1) !== void 0 && !this.pendingEntity;
+		return E`<ha-card><div class="machine-shell thermostat-shell ${this.machineGridClass()}" style=${this.machineStyle("#ffbd78")}>
+      <div class="machine-content thermostat-content">
+        <header class="machine-header thermostat-header">
+          <span class="badge"><ha-icon .icon=${this.config?.icon || "mdi:thermostat"}></ha-icon></span>
+          <div class="title-wrap"><h2>${this.config?.name || "Thermostats"}</h2>
+            <div class="machine-status"><span class="dot ${r ? n?.state === "off" ? "" : "healthy" : "danger"}"></span>${this.label(t)} · ${m}</div>
+          </div>
+        </header>
+        <button class="info-button" type="button" title=${`Détails de ${this.label(t)}`} aria-label=${`Détails de ${this.label(t)}`}
+          ?disabled=${!r} @click=${() => W(this, t)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
+        ${e.length > 1 ? E`<nav class="selector" aria-label="Choisir un thermostat">
+          ${e.map((e) => E`<button type="button" class=${P(N(this.hass, e)) ? "" : "unavailable"}
+            aria-pressed=${e === t} @click=${() => {
+			this.selectedEntity = e, this.errorMessage = void 0;
+		}}>${this.label(e)}</button>`)}
+        </nav>` : O}
+        <div class="dial-wrap"><div class="dial" style=${`--dial-position:${f}%`}>
+          <div class="dial-inner"><small>Température actuelle</small><strong>${Mt(a, l)}</strong><span>${m}</span></div>
+        </div></div>
+        <section class="machine-panel thermostat-panel">
+          <div class="panel-head"><div class="panel-title"><small>Consigne</small><strong>${i === void 0 ? o !== void 0 && s !== void 0 ? "Plage de température" : "Réglage indisponible" : "Température souhaitée"}</strong></div>
+            <div class="stepper">
+              <button type="button" aria-label=${`Baisser la consigne de ${this.label(t)}`} ?disabled=${!g} @click=${() => this.adjustTemperature(t, -1)}>−</button>
+              <output aria-live="polite">${h}</output>
+              <button type="button" aria-label=${`Augmenter la consigne de ${this.label(t)}`} ?disabled=${!ee} @click=${() => this.adjustTemperature(t, 1)}>+</button>
+            </div>
+          </div>
+          <div class="metrics"><span>Mode <strong>${Dt[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
+            ${c === void 0 ? O : E`<span>Humidité <strong>${c.toLocaleString("fr-FR")}%</strong></span>`}</div>
+          ${p.length ? E`<div class="modes" role="group" aria-label=${`Modes de ${this.label(t)}`}>
+            ${p.map((e) => E`<button class="mode-button" type="button" aria-pressed=${e === n?.state}
+              ?disabled=${!!this.pendingEntity} @click=${() => this.setMode(t, e)}>
+              <ha-icon .icon=${Ot[e] || "mdi:tune"}></ha-icon>${Dt[e] || e}</button>`)}
+          </div>` : O}
+          ${this.errorMessage ? E`<p class="error" role="alert">${this.errorMessage}</p>` : O}
+        </section>
+      </div>
+    </div></ha-card>`;
+	}
+	getCardSize() {
+		return 6;
+	}
+	getGridOptions() {
+		return {
+			rows: 7,
+			min_rows: 5,
+			columns: 6,
+			min_columns: 3
+		};
+	}
+}, $ = (e) => P(e) && F(e);
+function Pt(e, t) {
+	if ($(N(e, t.alert_entity))) return "alert";
+	if ($(N(e, t.door_entity)) || $(N(e, t.freezer_door_entity))) return "open";
+	let n = N(e, t.connected_entity);
+	return t.connected_entity && P(n) && !F(n) ? "offline" : [
+		t.connected_entity,
+		t.fridge_temperature_entity,
+		t.freezer_temperature_entity,
+		t.door_entity,
+		t.freezer_door_entity
+	].filter((e) => !!e).some((t) => P(N(e, t))) ? "ok" : "unknown";
+}
+var Ft = {
+	alert: ["Alerte du réfrigérateur", "mdi:alert-circle-outline"],
+	open: ["Porte ouverte", "mdi:door-open"],
+	offline: ["Hors ligne", "mdi:wifi-off"],
+	ok: ["Fonctionnement normal", "mdi:check-circle-outline"],
+	unknown: ["Données indisponibles", "mdi:help-circle-outline"]
+}, It = class extends M {
+	constructor(...e) {
+		super(...e), this.actionError = "", this.busy = !1;
+	}
+	static {
+		this.properties = {
+			...M.properties,
+			actionError: { state: !0 },
+			busy: { state: !0 }
+		};
+	}
+	static {
+		this.styles = [M.styles, o`
+    .fridge-shell { min-height:440px; --machine-accent:#83d7e9; }
+    .fridge-shell::before { background-image:linear-gradient(90deg,rgba(3,8,15,.74),rgba(3,8,15,.1) 70%),linear-gradient(0deg,rgba(3,8,15,.7),transparent 45%),var(--machine-image,none); }
+    .fridge-shell .machine-content { min-height:440px; }
+    .fridge-icon { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(8,18,27,.58); color:var(--machine-accent); }
+    .fridge-icon ha-icon { --mdc-icon-size:25px; }
+    .fridge-status { display:flex; align-items:center; gap:7px; margin-top:6px; color:#d8e1e8; font-size:11px; }
+    .fridge-status ha-icon { --mdc-icon-size:14px; }
+    .fridge-status.alert, .fridge-status.open { color:#ffd27b; }
+    .fridge-spacer { min-height:125px; flex:1; }
+    .fridge-panel { padding:15px; border:1px solid rgba(207,226,239,.22); border-radius:22px; background:rgba(7,16,23,var(--machine-glass-alpha,.84)); backdrop-filter:blur(18px); }
+    .temperature-grid, .detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .temperature { display:flex; min-width:0; flex-direction:column; padding:12px; border:1px solid rgba(214,230,239,.13); border-radius:16px; background:rgba(255,255,255,.045); }
+    .temperature small { display:flex; align-items:center; gap:5px; color:#b8c8d2; font-size:11px; }
+    .temperature small ha-icon { --mdc-icon-size:16px; color:var(--machine-accent); }
+    .temperature strong { margin-top:8px; color:#fff; font-size:29px; letter-spacing:-.05em; line-height:1; }
+    .temperature span { margin-top:5px; color:#a9bbc7; font-size:10px; }
+    .fridge-signals { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .fridge-signal { display:flex; align-items:center; gap:6px; min-height:29px; padding:0 9px; border:1px solid rgba(214,230,239,.16); border-radius:999px; background:rgba(255,255,255,.055); color:#dce8ee; font-size:11px; }
+    .fridge-signal ha-icon { --mdc-icon-size:16px; color:var(--machine-accent); }
+    .fridge-signal.warning ha-icon { color:#ffd27b; }
+    .fridge-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; }
+    .fridge-footer small { color:#abc0ca; font-size:10px; }
+    .detail-tile { display:flex; min-width:0; align-items:center; gap:10px; padding:11px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); text-align:left; }
+    button.detail-tile { width:100%; color:var(--auralis-text); cursor:pointer; }
+    .detail-tile ha-icon { --mdc-icon-size:21px; flex:0 0 auto; color:var(--auralis-info); }
+    .detail-tile span { min-width:0; flex:1; }
+    .detail-tile small, .detail-tile strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .detail-tile small { color:var(--auralis-muted); font-size:10px; }
+    .detail-tile strong { margin-top:3px; font-size:13px; }
+    .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+    .control-row { display:flex; align-items:center; gap:9px; padding:10px; margin-top:8px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); }
+    .control-row > span { min-width:0; flex:1; font-size:12px; font-weight:650; }
+    .control-row button { display:grid; width:35px; height:35px; flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:10px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
+    .control-row button:disabled, .control-row select:disabled { opacity:.45; cursor:not-allowed; }
+    .control-row output { min-width:49px; font-size:13px; text-align:center; }
+    .control-row select { max-width:55%; padding:7px; border:1px solid var(--auralis-border); border-radius:9px; background:var(--auralis-card); color:var(--auralis-text); }
+    .action-error { margin-top:12px; color:var(--auralis-danger); font-size:12px; }
+    @container (max-width:330px) { .fridge-shell { padding:13px; } .fridge-panel { padding:11px; } .temperature strong { font-size:24px; } .fridge-spacer { min-height:90px; } }
+  `];
+	}
+	setConfig(e) {
+		this.config = {
+			...e,
+			name: e.name || "Frigo connecté",
+			theme: e.theme || "carbon"
+		};
+	}
+	static getStubConfig() {
+		return {
+			name: "Frigo connecté",
+			theme: "carbon",
+			fridge_temperature_entity: "sensor.frigo_temperature"
+		};
+	}
+	static getConfigForm() {
+		let e = (e) => ({
+			name: e,
+			selector: { entity: {} }
+		});
+		return { schema: [
+			{
+				name: "name",
+				selector: { text: {} }
+			},
+			{
+				name: "theme",
+				selector: { select: { options: [
+					"auto",
+					"halo",
+					"carbon",
+					"mono",
+					"aurora"
+				] } }
+			},
+			e("connected_entity"),
+			e("fridge_temperature_entity"),
+			e("freezer_temperature_entity"),
+			e("fridge_target_entity"),
+			e("freezer_target_entity"),
+			e("door_entity"),
+			e("freezer_door_entity"),
+			e("alert_entity"),
+			e("filter_entity"),
+			e("energy_entity"),
+			e("mode_entity"),
+			e("quick_cool_entity"),
+			e("quick_freeze_entity"),
+			e("lock_entity"),
+			{
+				name: "background_image",
+				selector: { text: {} }
+			},
+			{
+				name: "background_position",
+				selector: { text: {} }
+			},
+			{
+				name: "accent_color",
+				selector: { text: {} }
+			},
+			{
+				name: "image_brightness",
+				selector: { number: {
+					min: 30,
+					max: 100,
+					step: 1,
+					mode: "slider"
+				} }
+			},
+			{
+				name: "glass_opacity",
+				selector: { number: {
+					min: .45,
+					max: .96,
+					step: .01,
+					mode: "slider"
+				} }
+			}
+		] };
+	}
+	getCardSize() {
+		return 7;
+	}
+	getGridOptions() {
+		return {
+			rows: 7,
+			min_rows: 5,
+			columns: 6,
+			min_columns: 3
+		};
+	}
+	temperature(e) {
+		let t = N(this.hass, e);
+		if (!t || !P(t)) return "—";
+		let n = L(t, NaN), r = typeof t.attributes.unit_of_measurement == "string" ? t.attributes.unit_of_measurement : "°C";
+		return Number.isFinite(n) ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(n)} ${r}` : z(this.hass, e);
+	}
+	doorLabel(e) {
+		let t = N(this.hass, e);
+		return P(t) ? F(t) ? "Ouverte" : "Fermée" : "Indisponible";
+	}
+	async call(e, t, n, r = {}) {
+		if (this.hass && !this.busy) {
+			this.busy = !0, this.actionError = "";
+			try {
+				await this.hass.callService(e, t, r, { entity_id: n });
+			} catch {
+				this.actionError = "Commande non exécutée. Vérifiez la disponibilité de l’appareil.";
+			} finally {
+				this.busy = !1;
+			}
+		}
+	}
+	async adjustTarget(e, t) {
+		let n = N(this.hass, e);
+		if (!n || !P(n) || !e.startsWith("number.")) return;
+		let r = L(n, NaN);
+		if (!Number.isFinite(r)) return;
+		let i = Number(n.attributes.step), a = Number.isFinite(i) && i > 0 ? i : 1, o = Number(n.attributes.min), s = Number(n.attributes.max), c = Number.isFinite(o) ? o : -100, l = Math.min(Number.isFinite(s) ? s : 100, Math.max(c, Number((r + t * a).toFixed(3))));
+		l !== r && await this.call("number", "set_value", e, { value: l });
+	}
+	async quickAction(e) {
+		let t = N(this.hass, e);
+		P(t) && (e.startsWith("switch.") ? await this.call("switch", "toggle", e) : e.startsWith("button.") ? await this.call("button", "press", e) : e.startsWith("lock.") && await this.call("lock", t?.state === "locked" ? "unlock" : "lock", e));
+	}
+	detail(e, t, n, r) {
+		return n ? E`<button class="detail-tile" type="button" aria-label=${`Plus d’informations : ${e}`} @click=${() => W(this, n)}>
+      <ha-icon .icon=${t}></ha-icon><span><small>${e}</small><strong>${r ?? z(this.hass, n)}</strong></span><ha-icon icon="mdi:chevron-right"></ha-icon></button>` : E``;
+	}
+	target(e, t) {
+		if (!t) return E``;
+		let n = N(this.hass, t), r = t.startsWith("number.") && P(n) && Number.isFinite(L(n, NaN));
+		return E`<div class="control-row"><span>${e}</span>
+      <button type="button" aria-label=${`Baisser ${e}`} ?disabled=${!r || this.busy} @click=${() => this.adjustTarget(t, -1)}><ha-icon icon="mdi:minus"></ha-icon></button>
+      <output>${this.temperature(t)}</output>
+      <button type="button" aria-label=${`Augmenter ${e}`} ?disabled=${!r || this.busy} @click=${() => this.adjustTarget(t, 1)}><ha-icon icon="mdi:plus"></ha-icon></button></div>`;
+	}
+	quick(e, t, n) {
+		if (!n) return E``;
+		let r = N(this.hass, n), i = n.startsWith("switch.") || n.startsWith("button.") || n.startsWith("lock.");
+		return E`<div class="control-row"><ha-icon .icon=${t}></ha-icon><span>${e}</span>
+      <button type="button" aria-label=${`${e} : ${r?.state || "indisponible"}`} ?disabled=${!i || !P(r) || this.busy}
+        @click=${() => this.quickAction(n)}><ha-icon .icon=${n.startsWith("button.") ? "mdi:play" : n.startsWith("lock.") ? r?.state === "locked" ? "mdi:lock" : "mdi:lock-open-outline" : F(r) ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline"}></ha-icon></button></div>`;
+	}
+	renderDetails() {
+		let e = this.config, t = N(this.hass, e.mode_entity), n = Array.isArray(t?.attributes.options) ? t.attributes.options.filter((e) => typeof e == "string") : [];
+		return this.renderDialog(e.name || "Frigo connecté", "mdi:fridge-outline", E`<div class="dialog-body">
+      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${Ft[Pt(this.hass, e)][0]}</strong></div>
+        <div class="dialog-stat"><strong>${this.temperature(e.fridge_temperature_entity)}</strong><small>réfrigérateur</small></div></div>
+      <div class="detail-grid">
+        ${this.detail("Réfrigérateur", "mdi:thermometer", e.fridge_temperature_entity, this.temperature(e.fridge_temperature_entity))}
+        ${this.detail("Congélateur", "mdi:snowflake-thermometer", e.freezer_temperature_entity, this.temperature(e.freezer_temperature_entity))}
+        ${this.detail("Porte du frigo", "mdi:door", e.door_entity, this.doorLabel(e.door_entity))}
+        ${this.detail("Porte du congélateur", "mdi:door", e.freezer_door_entity, this.doorLabel(e.freezer_door_entity))}
+        ${this.detail("Alerte", "mdi:alert-circle-outline", e.alert_entity)}
+        ${this.detail("Filtre", "mdi:air-filter", e.filter_entity)}
+        ${this.detail("Énergie", "mdi:lightning-bolt-outline", e.energy_entity)}
+        ${(e.extra_entities || []).map((e) => this.detail(N(this.hass, e)?.attributes.friendly_name || e, "mdi:information-outline", e))}
+      </div>
+      ${e.fridge_target_entity || e.freezer_target_entity ? E`<div class="section-caption">Consignes</div>${this.target("Réfrigérateur", e.fridge_target_entity)}${this.target("Congélateur", e.freezer_target_entity)}` : O}
+      ${e.mode_entity && ["select.", "input_select."].some((t) => e.mode_entity.startsWith(t)) && n.length ? E`<div class="section-caption">Mode</div><label class="control-row"><span>Mode de fonctionnement</span>
+        <select aria-label="Mode de fonctionnement" ?disabled=${!P(t) || this.busy}
+          @change=${(t) => this.call(e.mode_entity.split(".")[0], "select_option", e.mode_entity, { option: t.target.value })}>
+          ${n.map((e) => E`<option value=${e} ?selected=${e === t?.state}>${e}</option>`)}</select></label>` : O}
+      ${e.quick_cool_entity || e.quick_freeze_entity || e.lock_entity ? E`<div class="section-caption">Fonctions rapides</div>
+        ${this.quick("Refroidissement rapide", "mdi:snowflake", e.quick_cool_entity)}
+        ${this.quick("Congélation rapide", "mdi:snowflake-alert", e.quick_freeze_entity)}
+        ${this.quick("Verrouillage", "mdi:lock-outline", e.lock_entity)}` : O}
+      ${this.actionError ? E`<p class="action-error" role="alert">${this.actionError}</p>` : O}
+    </div>`);
+	}
+	render() {
+		if (!this.config) return E``;
+		let e = this.config, t = Pt(this.hass, e);
+		return E`<ha-card><div class=${`machine-shell fridge-shell ${this.machineGridClass()}`} style=${this.machineStyle("#83d7e9")}>
+      <div class="machine-content"><header class="machine-header"><span class="fridge-icon"><ha-icon .icon=${e.icon || "mdi:fridge-outline"}></ha-icon></span>
+        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${Ft[t][1]}></ha-icon>${Ft[t][0]}</div></div></header>
+        <div class="fridge-spacer"></div><section class="fridge-panel" aria-label="État du frigo connecté">
+          <div class="temperature-grid">
+            <div class="temperature"><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(e.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(e.fridge_target_entity)}</span></div>
+            <div class="temperature"><small><ha-icon icon="mdi:snowflake"></ha-icon>Congélateur</small><strong>${this.temperature(e.freezer_temperature_entity)}</strong><span>Consigne ${this.temperature(e.freezer_target_entity)}</span></div>
+          </div><div class="fridge-signals">
+            ${e.door_entity ? E`<span class=${`fridge-signal ${$(N(this.hass, e.door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Frigo ${this.doorLabel(e.door_entity).toLowerCase()}</span>` : O}
+            ${e.freezer_door_entity ? E`<span class=${`fridge-signal ${$(N(this.hass, e.freezer_door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Congélateur ${this.doorLabel(e.freezer_door_entity).toLowerCase()}</span>` : O}
+            ${e.mode_entity ? E`<span class="fridge-signal"><ha-icon icon="mdi:cog-outline"></ha-icon>${z(this.hass, e.mode_entity)}</span>` : O}
+          </div><div class="fridge-footer"><small>${e.filter_entity ? `Filtre · ${z(this.hass, e.filter_entity)}` : "Suivi et commandes"}</small>
+            <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
+        </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
+	}
+}, Lt = "0.13.7";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Ct), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Et), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Nt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", It), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Ct {}), window.customCards = window.customCards || [];
 var Rt = [
 	{
 		type: "auralis-navbar-card",
@@ -7178,6 +7143,32 @@ var Rt = [
 		name: "Auralis · Proxmox",
 		description: "Supervision d’un cluster Proxmox, de ses nœuds, VM et conteneurs LXC.",
 		preview: !1
+	},
+	{
+		type: "auralis-lights-card",
+		name: "Auralis · Lumières",
+		description: "Éclairage par groupes, couleurs et ambiances.",
+		preview: !0,
+		getEntitySuggestion: (e, t) => t.startsWith("light.") ? { config: {
+			type: "custom:auralis-lights-card",
+			lights: [t]
+		} } : null
+	},
+	{
+		type: "auralis-thermostat-card",
+		name: "Auralis · Thermostats",
+		description: "Températures, consignes et modes de plusieurs thermostats.",
+		preview: !0,
+		getEntitySuggestion: (e, t) => t.startsWith("climate.") ? { config: {
+			type: "custom:auralis-thermostat-card",
+			entity: t
+		} } : null
+	},
+	{
+		type: "auralis-fridge-card",
+		name: "Auralis · Frigo connecté",
+		description: "Températures, portes, alertes et commandes du réfrigérateur.",
+		preview: !0
 	}
 ];
 for (let e of Rt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);

@@ -1,4 +1,4 @@
-import "./index";
+import "../auralis-cards";
 import type { HassEntity, HomeAssistant } from "./types/home-assistant";
 import type {
   CoversCardConfig,
