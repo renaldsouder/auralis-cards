@@ -1,3 +1,5 @@
+# Charger la ressource unique /local/auralis-cards/auralis-cards.js (module).
+# Avec HACS, utiliser /hacsfiles/auralis-cards/auralis-cards.js.
 # Un seul thermostat : utilisez entity.
 # Pour plusieurs thermostats, renseignez entities (ou entity + entities).
 type: custom:auralis-thermostat-card

@@ -59,7 +59,7 @@ Une fois le dépôt public créé :
 
 1. Ouvrir **HACS** dans Home Assistant.
 2. Ouvrir le menu à trois points puis **Dépôts personnalisés**.
-3. Coller l'URL GitHub du dépôt `auralis-cards`.
+3. Coller l'URL GitHub du dépôt `https://github.com/renaldsouder/auralis-cards`.
 4. Choisir la catégorie **Dashboard** puis ajouter le dépôt.
 5. Télécharger **Auralis Cards** et actualiser le navigateur.
 

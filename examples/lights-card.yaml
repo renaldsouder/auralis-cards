@@ -1,4 +1,5 @@
-# Ajouter /local/auralis-cards/auralis-cards.js comme ressource JavaScript module.
+# Charger la ressource unique /local/auralis-cards/auralis-cards.js (module).
+# Avec HACS, utiliser /hacsfiles/auralis-cards/auralis-cards.js.
 # Remplacer les entités et les scènes par les identifiants de votre installation.
 type: custom:auralis-lights-card
 name: Lumières

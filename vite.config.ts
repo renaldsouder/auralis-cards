@@ -7,6 +7,7 @@ export default defineConfig({
       formats: ["es"],
       fileName: () => "auralis-cards.js",
     },
+    emptyOutDir: false,
     sourcemap: true,
     minify: "oxc",
   },

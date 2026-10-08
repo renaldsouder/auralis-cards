@@ -1,6 +1,6 @@
 {
   "name": "auralis-cards",
-  "version": "0.13.7",
+  "version": "0.13.8",
   "description": "Auralis Frame cards for rooms, covers, lights, thermostats, connected fridges and machines in Home Assistant.",
   "type": "module",
   "main": "dist/auralis-cards.js",
@@ -13,7 +13,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/sync-legacy-bundle.mjs",
     "check": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --dir tests",
     "verify": "npm run check && npm run test && npm run build"
   },
   "keywords": [

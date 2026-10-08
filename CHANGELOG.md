@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.8
+
+- Réunit les neuf cartes Auralis dans le bundle unique `auralis-cards.js` pour HACS et l'installation manuelle.
+- Ajoute les exemples de configuration Lumières, Frigo connecté et Thermostats avec le chemin de ressource commun.
+- Vérifie l'enregistrement de toutes les cartes et conserve les bundles autonomes lors de la compilation principale.
+
 ## 0.13.7
 
 - Adapte la hauteur de la carte Pièce à son contenu dans les vues Sections au lieu de réserver sept lignes.

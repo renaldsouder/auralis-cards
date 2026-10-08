@@ -1,5 +1,6 @@
 # Copier images/frigo-connecte.jpg dans config/www/auralis-cards/images/.
-# Charger une seule ressource : /local/auralis-cards/auralis-cards.js
+# Charger la ressource unique /local/auralis-cards/auralis-cards.js (module).
+# Avec HACS, utiliser /hacsfiles/auralis-cards/auralis-cards.js.
 # Remplacer les entités d'exemple par celles exposées par votre frigo.
 type: custom:auralis-fridge-card
 name: Frigo connecté
