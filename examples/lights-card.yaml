@@ -1,38 +1,5 @@
-# Charger la ressource unique /local/auralis-cards/auralis-cards.js (module).
-# Avec HACS, utiliser /hacsfiles/auralis-cards/auralis-cards.js.
-# Remplacer les entités et les scènes par les identifiants de votre installation.
 type: custom:auralis-lights-card
 name: Lumières
 theme: carbon
-groups:
-  - name: Salon
-    icon: mdi:sofa-outline
-    # Copier une photo dans config/www/auralis-cards/images/.
-    image: /local/auralis-cards/images/lumieres-salon.jpg
-    show_lights: true
-    lights:
-      - light.plafonnier_salon
-      - light.lampadaire_salon
-    scenes:
-      - entity: scene.soiree_salon
-        label: Soirée
-        icon: mdi:weather-night
-      - entity: scene.lecture_salon
-        label: Lecture
-        icon: mdi:book-open-page-variant-outline
-  - name: Bureau
-    icon: mdi:desk
-    image: /local/auralis-cards/images/lumieres-bureau.jpg
-    lights:
-      - light.bureau
-      - light.ruban_bureau
-entity_labels:
-  light.plafonnier_salon: Plafonnier
-  light.lampadaire_salon: Lampadaire
-preset_colors:
-  - name: Blanc chaud
-    color: "#FFD4A3"
-  - name: Rose
-    color: "#FF7EB8"
-  - name: Bleu
-    color: "#5CAAFF"
+lights:
+  - light.plafonnier_salon

@@ -65,6 +65,8 @@ Une fois le dépôt public créé :
 
 La ressource distribuée par HACS sera disponible sous `/hacsfiles/auralis-cards/auralis-cards.js`. Ce chemin évite le cache persistant utilisé par `/local/`.
 
+Si Home Assistant affiche `Custom element doesn't exist`, vérifiez dans **Paramètres → Tableaux de bord → ⋮ → Ressources** que cette URL est déclarée comme **module JavaScript**, puis rechargez la page. Coller le YAML d'une carte ne charge pas la ressource JavaScript.
+
 ## Installation manuelle
 
 1. Copier `dist/auralis-cards.js` dans `config/www/auralis-cards/`.
