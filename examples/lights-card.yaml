@@ -1,5 +1,37 @@
 type: custom:auralis-lights-card
 name: Lumières
 theme: carbon
-lights:
-  - light.plafonnier_salon
+groups:
+  - name: Salon
+    icon: mdi:sofa-outline
+    show_lights: true
+    lights:
+      - light.plafonnier_salon
+      - light.lampadaire_salon
+    scenes:
+      - entity: scene.soiree_salon
+        label: Soirée
+        icon: mdi:weather-night
+      - entity: scene.lecture_salon
+        label: Lecture
+        icon: mdi:book-open-page-variant-outline
+    # image: /local/auralis-cards/images/lumieres-salon.jpg
+  - name: Bureau
+    icon: mdi:desk
+    show_lights: true
+    lights:
+      - light.bureau
+      - light.ruban_bureau
+    # image: /local/auralis-cards/images/lumieres-bureau.jpg
+entity_labels:
+  light.plafonnier_salon: Plafonnier
+  light.lampadaire_salon: Lampadaire
+  light.bureau: Lampe du bureau
+  light.ruban_bureau: Ruban LED
+preset_colors:
+  - name: Blanc chaud
+    color: "#FFD4A3"
+  - name: Rose
+    color: "#FF7EB8"
+  - name: Bleu
+    color: "#5CAAFF"

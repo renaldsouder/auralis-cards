@@ -4,7 +4,7 @@ La carte dédiée `custom:auralis-lights-card` complète la carte Pièce. Elle a
 
 ## Installation manuelle
 
-La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette ressource comme indiqué dans le [README](../README.md), puis adaptez [l'exemple de configuration](../examples/lights-card.yaml) aux entités réelles. Vous pouvez aussi copier les trois fichiers du dossier `images/` dans `config/www/auralis-cards/images/`.
+La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette ressource comme indiqué dans le [README](../README.md), puis adaptez [l'exemple complet](../examples/lights-card.yaml) aux entités réelles. Une [version minimale](../examples/lights-card-minimal.yaml) est disponible pour un premier test. Vous pouvez aussi copier les trois fichiers du dossier `images/` dans `config/www/auralis-cards/images/`.
 
 ## Configuration
 

@@ -1,0 +1,5 @@
+type: custom:auralis-lights-card
+name: Lumières
+theme: carbon
+lights:
+  - light.plafonnier_salon

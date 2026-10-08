@@ -79,7 +79,7 @@ Chaque GitHub Release contenant `auralis-cards.js` devient une version sélectio
 
 Le fichier `examples/dashboard.yaml` est une configuration complète à coller dans l'éditeur de configuration brute du dashboard. Les blocs commençant directement par `type: custom:...` sont, eux, destinés à l'éditeur YAML d'une carte individuelle.
 
-Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les autres cartes. Leurs configurations sont dans [Lumières](examples/lights-card.yaml), [Thermostats](examples/thermostat-card.yaml) et [Frigo connecté](examples/fridge-card.yaml). Pour le fond du frigo, copiez [frigo-connecte.jpg](images/frigo-connecte.jpg) dans `config/www/auralis-cards/images/`, puis remplacez les identifiants d'entités par ceux de votre appareil. Voir les guides [Lumières](docs/LIGHTS_CARD.md), [Thermostats](docs/THERMOSTAT_CARD.md) et [Frigo](docs/FRIDGE_CARD.md).
+Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les autres cartes. Leurs configurations sont dans [Lumières](examples/lights-card.yaml) ([version minimale](examples/lights-card-minimal.yaml)), [Thermostats](examples/thermostat-card.yaml) et [Frigo connecté](examples/fridge-card.yaml). Pour le fond du frigo, copiez [frigo-connecte.jpg](images/frigo-connecte.jpg) dans `config/www/auralis-cards/images/`, puis remplacez les identifiants d'entités par ceux de votre appareil. Voir les guides [Lumières](docs/LIGHTS_CARD.md), [Thermostats](docs/THERMOSTAT_CARD.md) et [Frigo](docs/FRIDGE_CARD.md).
 
 ## Exemple minimal — Navigation
 
