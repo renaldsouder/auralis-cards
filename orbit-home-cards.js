@@ -5789,23 +5789,49 @@ var _t = class extends M {
 	"unknown",
 	"unavailable",
 	""
-]);
-function yt(e) {
+]), yt = "\n  :host([data-auralis-navbar-reserve-right]) hui-view-container {\n    box-sizing: border-box !important;\n    padding-right: calc(var(--view-container-inset-right, 0px) + 176px) !important;\n  }\n", bt = /* @__PURE__ */ new Map();
+function xt(e, t, n) {
+	return n ? Math.min(e, t || e) < 600 ? "phone" : "tablet" : e < 600 ? "phone" : e < 1200 ? "tablet" : "desktop";
+}
+function St(e) {
+	let t = e.getRootNode();
+	for (; t instanceof ShadowRoot;) {
+		if (t.host.localName === "hui-root") return t;
+		t = t.host.getRootNode();
+	}
+}
+function Ct(e, t) {
+	let n = bt.get(t);
+	if (!n) {
+		let e = document.createElement("style");
+		e.dataset.auralisNavbarRightDock = "", e.textContent = yt, t.append(e), n = {
+			owners: /* @__PURE__ */ new Set(),
+			style: e
+		}, bt.set(t, n);
+	}
+	n.owners.add(e), n.style.isConnected || t.append(n.style), t.host.setAttribute("data-auralis-navbar-reserve-right", "");
+}
+function wt(e, t) {
+	if (!t) return;
+	let n = bt.get(t);
+	n && (n.owners.delete(e), !n.owners.size && (t.host.removeAttribute("data-auralis-navbar-reserve-right"), n.style.remove(), bt.delete(t)));
+}
+function Tt(e) {
 	try {
 		return new URL(e, "https://home-assistant.local").pathname.replace(/\/$/, "") || "/";
 	} catch {
 		return "/";
 	}
 }
-function bt(e) {
+function Et(e) {
 	let t = (e.path || e.navigation_path || "").trim();
 	if (!(!t || t.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(t))) return t.startsWith("/") || t.startsWith("#") ? t : `/${t}`;
 }
-function xt(e, t) {
-	let n = [bt(e), ...e.active_paths || []].filter((e) => !!e).map(yt), r = yt(t);
+function Dt(e, t) {
+	let n = [Et(e), ...e.active_paths || []].filter((e) => !!e).map(Tt), r = Tt(t);
 	return n.some((t) => e.exact ? r === t : r === t || t !== "/" && r.startsWith(`${t}/`));
 }
-function St(e, t, n) {
+function Ot(e, t, n) {
 	let r = e ? Math.max(t.offsetLeft, e.left) : t.offsetLeft, i = e ? Math.min(t.offsetLeft + t.width, e.right) : t.offsetLeft + t.width, a = i > r ? r : t.offsetLeft, o = i > r ? i - r : t.width;
 	return {
 		centerX: a + o / 2,
@@ -5815,11 +5841,13 @@ function St(e, t, n) {
 		centerY: t.offsetTop + t.height / 2
 	};
 }
-var Ct = class extends M {
+var kt = class extends M {
 	constructor(...e) {
-		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.preview = !1, this.editMode = !1, this.updateOverlayGeometry = () => {
+		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.preview = !1, this.editMode = !1, this.viewportChanged = () => {
+			this.syncOverlay(), this.requestUpdate();
+		}, this.updateOverlayGeometry = () => {
 			if (!this.overlay) return;
-			let e = window.visualViewport, t = St(this.dashboardElement?.getBoundingClientRect(), {
+			let e = window.visualViewport, t = Ot(this.dashboardElement?.getBoundingClientRect(), {
 				offsetLeft: e?.offsetLeft ?? 0,
 				offsetTop: e?.offsetTop ?? 0,
 				width: e?.width ?? window.innerWidth,
@@ -6030,6 +6058,12 @@ var Ct = class extends M {
 	get editing() {
 		return this.preview || this.editMode;
 	}
+	get effectivePosition() {
+		let e = this.config?.position || "bottom";
+		if (typeof window > "u") return e;
+		let t = Math.min(window.screen.width, window.screen.height), n = xt(window.innerWidth, t, /Android/i.test(navigator.userAgent));
+		return n === "phone" ? this.config?.phone_position || e : n === "tablet" && this.config?.tablet_position || e;
+	}
 	findDashboardElement() {
 		let e = this, t;
 		for (; e;) {
@@ -6044,22 +6078,28 @@ var Ct = class extends M {
 	}
 	syncOverlay() {
 		if (this.isPortal) return;
-		if (!this.config || this.config.position === "inline" || this.editing) {
+		let e = this.effectivePosition;
+		this.setAttribute("data-position", e);
+		let t = this.isConnected && this.config && e === "right" && !this.editing ? St(this) : void 0;
+		if (this.reservedRoot !== t && wt(this, this.reservedRoot), t && Ct(this, t), this.reservedRoot = t, !this.config || e === "inline" || this.editing) {
 			this.removeOverlay();
 			return;
 		}
-		this.overlay || (this.overlay = document.createElement("auralis-navbar-card"), this.overlay.isPortal = !0, this.overlay.setAttribute("data-portal", ""), document.body.append(this.overlay)), this.overlayConfig !== this.config && (this.overlay.setConfig(this.config), this.overlayConfig = this.config), this.overlay.hass = this.hass;
-		let e = this.findDashboardElement();
-		e !== this.dashboardElement && (this.dashboardObserver?.disconnect(), this.dashboardElement = e, e && typeof ResizeObserver < "u" && (this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry), this.dashboardObserver.observe(e))), this.updateOverlayGeometry();
+		this.overlay || (this.overlay = document.createElement("auralis-navbar-card"), this.overlay.isPortal = !0, this.overlay.setAttribute("data-portal", ""), document.body.append(this.overlay)), (this.overlayConfig !== this.config || this.overlayPosition !== e) && (this.overlay.setConfig({
+			...this.config,
+			position: e
+		}), this.overlayConfig = this.config, this.overlayPosition = e), this.overlay.hass = this.hass;
+		let n = this.findDashboardElement();
+		n !== this.dashboardElement && (this.dashboardObserver?.disconnect(), this.dashboardElement = n, n && typeof ResizeObserver < "u" && (this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry), this.dashboardObserver.observe(n))), this.updateOverlayGeometry();
 	}
 	removeOverlay() {
-		this.dashboardObserver?.disconnect(), this.dashboardObserver = void 0, this.dashboardElement = void 0, this.overlay?.remove(), this.overlay = void 0, this.overlayConfig = void 0;
+		this.dashboardObserver?.disconnect(), this.dashboardObserver = void 0, this.dashboardElement = void 0, this.overlay?.remove(), this.overlay = void 0, this.overlayConfig = void 0, this.overlayPosition = void 0;
 	}
 	connectedCallback() {
-		super.connectedCallback(), window.addEventListener("location-changed", this.routeChanged), window.addEventListener("popstate", this.routeChanged), this.isPortal || (window.addEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.addEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry));
+		super.connectedCallback(), window.addEventListener("location-changed", this.routeChanged), window.addEventListener("popstate", this.routeChanged), this.isPortal || (window.addEventListener("resize", this.viewportChanged), window.visualViewport?.addEventListener("resize", this.viewportChanged), window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry));
 	}
 	disconnectedCallback() {
-		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("resize", this.updateOverlayGeometry), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), this.removeOverlay()), super.disconnectedCallback();
+		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), wt(this, this.reservedRoot), this.reservedRoot = void 0, this.removeOverlay()), super.disconnectedCallback();
 	}
 	willUpdate() {
 		this.toggleAttribute("data-edit-mode", this.editing);
@@ -6077,11 +6117,23 @@ var Ct = class extends M {
 			"left",
 			"right"
 		].includes(t)) throw Error("position doit être inline, top, bottom, left ou right.");
+		if (e.phone_position && ![
+			"inline",
+			"top",
+			"bottom"
+		].includes(e.phone_position)) throw Error("phone_position doit être inline, top ou bottom.");
+		if (e.tablet_position && ![
+			"inline",
+			"top",
+			"bottom",
+			"left",
+			"right"
+		].includes(e.tablet_position)) throw Error("tablet_position doit être inline, top, bottom, left ou right.");
 		let n = e.items.map((e) => ({
 			...e,
 			label: e.label?.trim()
 		}));
-		if (n.some((e) => !e.label || !bt(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
+		if (n.some((e) => !e.label || !Et(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
 		for (let t of [
 			"height_desktop",
 			"height_tablet",
@@ -6117,6 +6169,30 @@ var Ct = class extends M {
 			},
 			{
 				name: "position",
+				selector: { select: {
+					options: [
+						"inline",
+						"top",
+						"bottom",
+						"left",
+						"right"
+					],
+					mode: "dropdown"
+				} }
+			},
+			{
+				name: "phone_position",
+				selector: { select: {
+					options: [
+						"inline",
+						"top",
+						"bottom"
+					],
+					mode: "dropdown"
+				} }
+			},
+			{
+				name: "tablet_position",
 				selector: { select: {
 					options: [
 						"inline",
@@ -6200,11 +6276,11 @@ var Ct = class extends M {
 			return;
 		}
 		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-		let n = bt(t);
+		let n = Et(t);
 		n && (e.preventDefault(), `${window.location.pathname}${window.location.search}${window.location.hash}` !== n && (window.history.pushState(null, "", n), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }))));
 	}
 	render() {
-		if (!this.config || this.config.position !== "inline" && !this.isPortal && !this.editing) return E``;
+		if (!this.config || this.effectivePosition !== "inline" && !this.isPortal && !this.editing) return E``;
 		let e = typeof window > "u" ? "/" : window.location.pathname, t = this.config.show_labels !== !1, n = [this.config.compact ? "compact" : "", t ? "" : "labels-hidden"].filter(Boolean).join(" "), r = [
 			"desktop",
 			"tablet",
@@ -6218,7 +6294,7 @@ var Ct = class extends M {
         <div class="navbar-shell ${n}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((n) => {
-			let r = bt(n), i = xt(n, e), a = this.badge(n);
+			let r = Et(n), i = Dt(n, e), a = this.badge(n);
 			return E`<a class="nav-item ${i ? "active" : ""}" href=${r} aria-current=${i ? "page" : O} title=${n.label} @click=${(e) => this.navigate(e, n)}>
                 <span class="icon-wrap"><ha-icon .icon=${n.icon || "mdi:circle-outline"}></ha-icon>${a ? E`<span class="badge">${a}</span>` : O}</span>
                 ${t ? E`<span class="label">${n.label}</span>` : O}
@@ -6232,7 +6308,7 @@ var Ct = class extends M {
 		return 1;
 	}
 	getGridOptions() {
-		return this.config?.position === "inline" || this.editing ? {
+		return this.effectivePosition === "inline" || this.editing ? {
 			rows: 2,
 			min_rows: 1,
 			columns: 12,
@@ -6242,7 +6318,7 @@ var Ct = class extends M {
 			min_columns: 1
 		};
 	}
-}, wt = [
+}, At = [
 	{
 		name: "Blanc chaud",
 		color: "#ffd4a3"
@@ -6271,7 +6347,7 @@ var Ct = class extends M {
 		name: "Vert",
 		color: "#67d7a2"
 	}
-], Tt = (e) => /^#[0-9a-f]{6}$/i.test(e), Et = class extends M {
+], jt = (e) => /^#[0-9a-f]{6}$/i.test(e), Mt = class extends M {
 	static {
 		this.styles = [M.styles, o`
     .lights-shell { padding: 18px; container-type: inline-size; }
@@ -6334,7 +6410,7 @@ var Ct = class extends M {
 			lights: e.lights
 		}] : []);
 		if (!t.length || t.some((e) => !e.name || !Array.isArray(e.lights) || !e.lights.length || e.lights.some((e) => !e.startsWith("light.")))) throw Error("Configurez au moins un groupe avec des entités light.*.");
-		if (e.preset_colors?.some((e) => !Tt(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
+		if (e.preset_colors?.some((e) => !jt(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
 		this.config = {
 			...e,
 			theme: e.theme || "carbon",
@@ -6409,7 +6485,7 @@ var Ct = class extends M {
 		return this.available(e).filter((e) => this.supportsBrightness(e));
 	}
 	presets() {
-		return this.config?.preset_colors ?? wt;
+		return this.config?.preset_colors ?? At;
 	}
 	scenes(e) {
 		return e.scenes ?? this.config?.scenes ?? [];
@@ -6436,7 +6512,7 @@ var Ct = class extends M {
 		this.hass && e.length && await this.hass.callService("light", "turn_on", { brightness_pct: Math.round(t) }, { entity_id: e });
 	}
 	async colorize(e, t) {
-		this.hass && e.length && Tt(t) && await We(this.hass, e, t);
+		this.hass && e.length && jt(t) && await We(this.hass, e, t);
 	}
 	renderSwatches(e, t) {
 		return e.length ? E`<div class="swatches" aria-label=${`Couleurs prédéfinies pour ${t}`}>
@@ -6558,7 +6634,7 @@ var Ct = class extends M {
 			min_columns: 3
 		};
 	}
-}, Dt = {
+}, Nt = {
 	off: "Arrêt",
 	heat: "Chauffage",
 	cool: "Climatisation",
@@ -6566,7 +6642,7 @@ var Ct = class extends M {
 	auto: "Automatique",
 	dry: "Déshumidifier",
 	fan_only: "Ventilation"
-}, Ot = {
+}, Pt = {
 	off: "mdi:power",
 	heat: "mdi:fire",
 	cool: "mdi:snowflake",
@@ -6574,7 +6650,7 @@ var Ct = class extends M {
 	auto: "mdi:autorenew",
 	dry: "mdi:water-off",
 	fan_only: "mdi:fan"
-}, kt = {
+}, Ft = {
 	heating: "Chauffage en cours",
 	cooling: "Refroidissement en cours",
 	drying: "Déshumidification en cours",
@@ -6586,22 +6662,22 @@ function Q(e, t) {
 	let n = e?.attributes[t];
 	return typeof n == "number" && Number.isFinite(n) ? n : void 0;
 }
-function At(e) {
+function It(e) {
 	return Q(e, "temperature");
 }
-function jt(e, t) {
+function Lt(e, t) {
 	if (!P(e)) return;
-	let n = At(e);
+	let n = It(e);
 	if (n === void 0) return;
 	let r = Q(e, "target_temp_step"), i = r && r > 0 ? r : .5, a = Q(e, "min_temp") ?? 5, o = Q(e, "max_temp") ?? 35;
 	if (a > o) return;
 	let s = Math.min(o, Math.max(a, Math.round((n + t * i) * 1e3) / 1e3));
 	return s === n ? void 0 : s;
 }
-function Mt(e, t) {
+function Rt(e, t) {
 	return e === void 0 ? "—" : `${e.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}${t}`;
 }
-var Nt = class extends M {
+var zt = class extends M {
 	static {
 		this.properties = {
 			...M.properties,
@@ -6750,7 +6826,7 @@ var Nt = class extends M {
 		return typeof n == "string" && n.trim() ? n : "°C";
 	}
 	async adjustTemperature(e, t) {
-		let n = jt(N(this.hass, e), t);
+		let n = Lt(N(this.hass, e), t);
 		if (this.hass && n !== void 0 && !this.pendingEntity) {
 			this.pendingEntity = e, this.errorMessage = void 0;
 			try {
@@ -6776,7 +6852,7 @@ var Nt = class extends M {
 		}
 	}
 	render() {
-		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? At(n) : void 0, a = r ? Q(n, "current_temperature") : void 0, o = r ? Q(n, "target_temp_low") : void 0, s = r ? Q(n, "target_temp_high") : void 0, c = r ? Q(n, "current_humidity") : void 0, l = this.unit(n), u = Q(n, "min_temp") ?? 5, d = Q(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? kt[String(n?.attributes.hvac_action)] || Dt[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${Mt(o, l)} – ${Mt(s, l)}` : "—" : Mt(i, l), g = jt(n, -1) !== void 0 && !this.pendingEntity, ee = jt(n, 1) !== void 0 && !this.pendingEntity;
+		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? It(n) : void 0, a = r ? Q(n, "current_temperature") : void 0, o = r ? Q(n, "target_temp_low") : void 0, s = r ? Q(n, "target_temp_high") : void 0, c = r ? Q(n, "current_humidity") : void 0, l = this.unit(n), u = Q(n, "min_temp") ?? 5, d = Q(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? Ft[String(n?.attributes.hvac_action)] || Nt[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${Rt(o, l)} – ${Rt(s, l)}` : "—" : Rt(i, l), g = Lt(n, -1) !== void 0 && !this.pendingEntity, ee = Lt(n, 1) !== void 0 && !this.pendingEntity;
 		return E`<ha-card><div class="machine-shell thermostat-shell ${this.machineGridClass()}" style=${this.machineStyle("#ffbd78")}>
       <div class="machine-content thermostat-content">
         <header class="machine-header thermostat-header">
@@ -6794,7 +6870,7 @@ var Nt = class extends M {
 		}}>${this.label(e)}</button>`)}
         </nav>` : O}
         <div class="dial-wrap"><div class="dial" style=${`--dial-position:${f}%`}>
-          <div class="dial-inner"><small>Température actuelle</small><strong>${Mt(a, l)}</strong><span>${m}</span></div>
+          <div class="dial-inner"><small>Température actuelle</small><strong>${Rt(a, l)}</strong><span>${m}</span></div>
         </div></div>
         <section class="machine-panel thermostat-panel">
           <div class="panel-head"><div class="panel-title"><small>Consigne</small><strong>${i === void 0 ? o !== void 0 && s !== void 0 ? "Plage de température" : "Réglage indisponible" : "Température souhaitée"}</strong></div>
@@ -6804,12 +6880,12 @@ var Nt = class extends M {
               <button type="button" aria-label=${`Augmenter la consigne de ${this.label(t)}`} ?disabled=${!ee} @click=${() => this.adjustTemperature(t, 1)}>+</button>
             </div>
           </div>
-          <div class="metrics"><span>Mode <strong>${Dt[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
+          <div class="metrics"><span>Mode <strong>${Nt[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
             ${c === void 0 ? O : E`<span>Humidité <strong>${c.toLocaleString("fr-FR")}%</strong></span>`}</div>
           ${p.length ? E`<div class="modes" role="group" aria-label=${`Modes de ${this.label(t)}`}>
             ${p.map((e) => E`<button class="mode-button" type="button" aria-pressed=${e === n?.state}
               ?disabled=${!!this.pendingEntity} @click=${() => this.setMode(t, e)}>
-              <ha-icon .icon=${Ot[e] || "mdi:tune"}></ha-icon>${Dt[e] || e}</button>`)}
+              <ha-icon .icon=${Pt[e] || "mdi:tune"}></ha-icon>${Nt[e] || e}</button>`)}
           </div>` : O}
           ${this.errorMessage ? E`<p class="error" role="alert">${this.errorMessage}</p>` : O}
         </section>
@@ -6828,7 +6904,7 @@ var Nt = class extends M {
 		};
 	}
 }, $ = (e) => P(e) && F(e);
-function Pt(e, t) {
+function Bt(e, t) {
 	if ($(N(e, t.alert_entity))) return "alert";
 	if ($(N(e, t.door_entity)) || $(N(e, t.freezer_door_entity))) return "open";
 	let n = N(e, t.connected_entity);
@@ -6840,13 +6916,13 @@ function Pt(e, t) {
 		t.freezer_door_entity
 	].filter((e) => !!e).some((t) => P(N(e, t))) ? "ok" : "unknown";
 }
-var Ft = {
+var Vt = {
 	alert: ["Alerte du réfrigérateur", "mdi:alert-circle-outline"],
 	open: ["Porte ouverte", "mdi:door-open"],
 	offline: ["Hors ligne", "mdi:wifi-off"],
 	ok: ["Fonctionnement normal", "mdi:check-circle-outline"],
 	unknown: ["Données indisponibles", "mdi:help-circle-outline"]
-}, It = class extends M {
+}, Ht = class extends M {
 	constructor(...e) {
 		super(...e), this.actionError = "", this.busy = !1;
 	}
@@ -7046,7 +7122,7 @@ var Ft = {
 	renderDetails() {
 		let e = this.config, t = N(this.hass, e.mode_entity), n = Array.isArray(t?.attributes.options) ? t.attributes.options.filter((e) => typeof e == "string") : [];
 		return this.renderDialog(e.name || "Frigo connecté", "mdi:fridge-outline", E`<div class="dialog-body">
-      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${Ft[Pt(this.hass, e)][0]}</strong></div>
+      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${Vt[Bt(this.hass, e)][0]}</strong></div>
         <div class="dialog-stat"><strong>${this.temperature(e.fridge_temperature_entity)}</strong><small>réfrigérateur</small></div></div>
       <div class="detail-grid">
         ${this.detail("Réfrigérateur", "mdi:thermometer", e.fridge_temperature_entity, this.temperature(e.fridge_temperature_entity))}
@@ -7072,10 +7148,10 @@ var Ft = {
 	}
 	render() {
 		if (!this.config) return E``;
-		let e = this.config, t = Pt(this.hass, e);
+		let e = this.config, t = Bt(this.hass, e);
 		return E`<ha-card><div class=${`machine-shell fridge-shell ${this.machineGridClass()}`} style=${this.machineStyle("#83d7e9")}>
       <div class="machine-content"><header class="machine-header"><span class="fridge-icon"><ha-icon .icon=${e.icon || "mdi:fridge-outline"}></ha-icon></span>
-        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${Ft[t][1]}></ha-icon>${Ft[t][0]}</div></div></header>
+        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${Vt[t][1]}></ha-icon>${Vt[t][0]}</div></div></header>
         <div class="fridge-spacer"></div><section class="fridge-panel" aria-label="État du frigo connecté">
           <div class="temperature-grid">
             <div class="temperature"><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(e.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(e.fridge_target_entity)}</span></div>
@@ -7088,9 +7164,9 @@ var Ft = {
             <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
         </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
 	}
-}, Lt = "0.13.8";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Ct), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Et), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Nt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", It), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Ct {}), window.customCards = window.customCards || [];
-var Rt = [
+}, Ut = "0.13.9";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", kt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Mt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", zt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Ht), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends kt {}), window.customCards = window.customCards || [];
+var Wt = [
 	{
 		type: "auralis-navbar-card",
 		name: "Auralis · Navigation",
@@ -7171,8 +7247,8 @@ var Rt = [
 		preview: !0
 	}
 ];
-for (let e of Rt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
-console.info(`%c AURALIS CARDS %c v${Lt} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
+for (let e of Wt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
+console.info(`%c AURALIS CARDS %c v${Ut} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
 //#endregion
 
 //# sourceMappingURL=auralis-cards.js.map

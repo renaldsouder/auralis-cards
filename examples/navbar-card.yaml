@@ -1,12 +1,16 @@
 type: custom:auralis-navbar-card
 theme: carbon
-position: bottom  # inline, top, bottom, left ou right
+position: bottom  # position sur ordinateur et repli par défaut
+phone_position: bottom
+tablet_position: right  # tablette Android, portrait et paysage
 height_desktop: 76  # largeur > 1024 px
 height_tablet: 72   # largeur de 601 à 1024 px
 height_mobile: 72   # largeur <= 600 px
 accent_color: "#79D6F2"
 show_labels: true
 compact: false
+grid_options:
+  rows: auto
 
 items:
   - label: Accueil

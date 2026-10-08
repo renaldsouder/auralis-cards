@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.9
+
+- Permet de placer la navbar à droite sur tablette Android avec `tablet_position: right`, y compris en paysage.
+- Réserve 176 px au contenu du dashboard pour empêcher la navbar de recouvrir les cartes.
+- Ajoute `phone_position` pour conserver la navigation en bas sur téléphone.
+
 ## 0.13.8
 
 - Réunit les neuf cartes Auralis dans le bundle unique `auralis-cards.js` pour HACS et l'installation manuelle.

@@ -41,6 +41,13 @@ describe("Auralis navbar routes", () => {
 });
 
 describe("Auralis navbar configuration", () => {
+  it("recognizes Android tablets in portrait and landscape", () => {
+    expect(navbar.navbarDevice(800, 800, true)).toBe("tablet");
+    expect(navbar.navbarDevice(1280, 800, true)).toBe("tablet");
+    expect(navbar.navbarDevice(393, 393, true)).toBe("phone");
+    expect(navbar.navbarDevice(1440, 900, false)).toBe("desktop");
+  });
+
   it("centers the overlay in the dashboard area and follows the visible mobile viewport", () => {
     const desktop = navbar.navbarOverlayPlacement(
       { left: 240, right: 1200 },
@@ -85,6 +92,15 @@ describe("Auralis navbar configuration", () => {
     expect(internals.config.height_tablet).toBe(76);
     expect(internals.config.height_mobile).toBe(64);
     expect(() => card.setConfig(config({ height_mobile: 48 }))).toThrow("height_mobile doit être");
+  });
+
+  it("accepts separate tablet and phone positions", () => {
+    const card = new navbar.AuralisNavbarCard();
+    card.setConfig(config({ position: "bottom", phone_position: "bottom", tablet_position: "right" }));
+    const internals = card as unknown as { config: NavbarCardConfig };
+    expect(internals.config.tablet_position).toBe("right");
+    expect(() => card.setConfig(config({ phone_position: "right" as NavbarCardConfig["phone_position"] }))).toThrow("phone_position doit être");
+    expect(() => card.setConfig(config({ tablet_position: "corner" as NavbarCardConfig["tablet_position"] }))).toThrow("tablet_position doit être");
   });
 
   it("accepts four fixed screen edges and frees its dashboard grid footprint", () => {

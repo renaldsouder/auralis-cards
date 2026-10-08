@@ -89,11 +89,15 @@ Une configuration autonome est disponible dans [`examples/navbar-card.yaml`](exa
 type: custom:auralis-navbar-card
 theme: carbon
 position: bottom
+phone_position: bottom
+tablet_position: right
 height_desktop: 76
 height_tablet: 72
 height_mobile: 72
 accent_color: "#79D6F2"
 show_labels: true
+grid_options:
+  rows: auto
 items:
   - label: Accueil
     icon: mdi:home-outline
@@ -110,7 +114,7 @@ items:
     badge_entity: sensor.systemes_en_alerte
 ```
 
-`position` place la barre au bord visible de l'écran : `top`, `bottom`, `left` ou `right`. Le placement par défaut est `bottom` ; `inline` conserve la carte dans le flux du dashboard. Les placements horizontaux sont centrés dans la zone du tableau de bord, même avec la barre latérale Home Assistant ouverte. Les positions latérales empilent les boutons verticalement. `height_desktop` s'applique au-delà de 1024 px, `height_tablet` entre 601 et 1024 px et `height_mobile` jusqu'à 600 px. Chaque hauteur est un entier de 56 à 160 pixels ; les valeurs par défaut sont 76, 72 et 72 px. `path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
+`position` place la barre au bord visible de l'écran : `top`, `bottom`, `left` ou `right`. Le placement par défaut est `bottom` ; `inline` conserve la carte dans le flux du dashboard. `phone_position` et `tablet_position` remplacent cette position selon l'appareil. Sur Android, une tablette est reconnue par son côté court d'au moins 600 px, y compris en paysage. Avec `tablet_position: right`, la navbar réserve 176 px dans la vue Home Assistant pour que les cartes ne passent pas dessous. Les placements horizontaux sont centrés dans la zone du tableau de bord, même avec la barre latérale Home Assistant ouverte. Les positions latérales empilent les boutons verticalement. `height_desktop` s'applique au-delà de 1024 px, `height_tablet` entre 601 et 1024 px et `height_mobile` jusqu'à 600 px. Chaque hauteur est un entier de 56 à 160 pixels ; les valeurs par défaut sont 76, 72 et 72 px. `path` cible une vue ou une sous-vue interne Home Assistant. Une entrée reste active dans ses sous-routes ; `exact: true` limite l’état actif à la route exacte. `active_paths` associe plusieurs sous-vues au même bouton. `show_labels: false` produit une barre uniquement composée d’icônes.
 
 En mode édition, la navbar reste une carte normale dans la grille pour pouvoir la sélectionner et la déplacer. Elle se fixe au bord choisi dès la sortie de l'éditeur.
 Si son ancien emplacement réserve encore une ligne dans une vue Sections, mettez `grid_options.rows: auto` sur la carte navbar existante.

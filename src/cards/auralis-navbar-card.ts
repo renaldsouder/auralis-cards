@@ -4,6 +4,57 @@ import type { NavbarCardConfig, NavbarItemConfig } from "../types/config";
 import { sharedStyles } from "../styles/shared";
 
 const UNAVAILABLE_STATES = new Set(["unknown", "unavailable", ""]);
+type NavbarPosition = NonNullable<NavbarCardConfig["position"]>;
+type NavbarDevice = "phone" | "tablet" | "desktop";
+const RIGHT_DOCK_WIDTH = 176;
+const RIGHT_DOCK_STYLE = `
+  :host([data-auralis-navbar-reserve-right]) hui-view-container {
+    box-sizing: border-box !important;
+    padding-right: calc(var(--view-container-inset-right, 0px) + ${RIGHT_DOCK_WIDTH}px) !important;
+  }
+`;
+const rightDockOwners = new Map<ShadowRoot, { owners: Set<AuralisNavbarCard>; style: HTMLStyleElement }>();
+
+export function navbarDevice(viewportWidth: number, screenShortSide: number, android: boolean): NavbarDevice {
+  if (android) return Math.min(viewportWidth, screenShortSide || viewportWidth) < 600 ? "phone" : "tablet";
+  if (viewportWidth < 600) return "phone";
+  return viewportWidth < 1200 ? "tablet" : "desktop";
+}
+
+function lovelaceRoot(element: HTMLElement): ShadowRoot | undefined {
+  let root = element.getRootNode();
+  while (root instanceof ShadowRoot) {
+    if (root.host.localName === "hui-root") return root;
+    root = root.host.getRootNode();
+  }
+  return undefined;
+}
+
+function reserveRight(card: AuralisNavbarCard, root: ShadowRoot): void {
+  let entry = rightDockOwners.get(root);
+  if (!entry) {
+    const style = document.createElement("style");
+    style.dataset.auralisNavbarRightDock = "";
+    style.textContent = RIGHT_DOCK_STYLE;
+    root.append(style);
+    entry = { owners: new Set(), style };
+    rightDockOwners.set(root, entry);
+  }
+  entry.owners.add(card);
+  if (!entry.style.isConnected) root.append(entry.style);
+  root.host.setAttribute("data-auralis-navbar-reserve-right", "");
+}
+
+function releaseRight(card: AuralisNavbarCard, root?: ShadowRoot): void {
+  if (!root) return;
+  const entry = rightDockOwners.get(root);
+  if (!entry) return;
+  entry.owners.delete(card);
+  if (entry.owners.size) return;
+  root.host.removeAttribute("data-auralis-navbar-reserve-right");
+  entry.style.remove();
+  rightDockOwners.delete(root);
+}
 
 function pathnameOf(value: string): string {
   try {
@@ -255,14 +306,31 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   private isPortal = false;
   private overlay?: AuralisNavbarCard;
   private overlayConfig?: NavbarCardConfig;
+  private overlayPosition?: NavbarPosition;
   private dashboardElement?: Element;
   private dashboardObserver?: ResizeObserver;
+  private reservedRoot?: ShadowRoot;
   public preview = false;
   public editMode = false;
 
   private get editing(): boolean {
     return this.preview || this.editMode;
   }
+
+  private get effectivePosition(): NavbarPosition {
+    const position = this.config?.position || "bottom";
+    if (typeof window === "undefined") return position;
+    const shortSide = Math.min(window.screen.width, window.screen.height);
+    const device = navbarDevice(window.innerWidth, shortSide, /Android/i.test(navigator.userAgent));
+    if (device === "phone") return this.config?.phone_position || position;
+    if (device === "tablet") return this.config?.tablet_position || position;
+    return position;
+  }
+
+  private readonly viewportChanged = (): void => {
+    this.syncOverlay();
+    this.requestUpdate();
+  };
   private readonly updateOverlayGeometry = (): void => {
     if (!this.overlay) return;
     const viewport = window.visualViewport;
@@ -296,7 +364,15 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   private syncOverlay(): void {
     if (this.isPortal) return;
-    if (!this.config || this.config.position === "inline" || this.editing) {
+    const position = this.effectivePosition;
+    this.setAttribute("data-position", position);
+    const root = this.isConnected && this.config && position === "right" && !this.editing
+      ? lovelaceRoot(this)
+      : undefined;
+    if (this.reservedRoot !== root) releaseRight(this, this.reservedRoot);
+    if (root) reserveRight(this, root);
+    this.reservedRoot = root;
+    if (!this.config || position === "inline" || this.editing) {
       this.removeOverlay();
       return;
     }
@@ -306,9 +382,10 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       this.overlay.setAttribute("data-portal", "");
       document.body.append(this.overlay);
     }
-    if (this.overlayConfig !== this.config) {
-      this.overlay.setConfig(this.config);
+    if (this.overlayConfig !== this.config || this.overlayPosition !== position) {
+      this.overlay.setConfig({ ...this.config, position });
       this.overlayConfig = this.config;
+      this.overlayPosition = position;
     }
     this.overlay.hass = this.hass;
 
@@ -331,6 +408,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     this.overlay?.remove();
     this.overlay = undefined;
     this.overlayConfig = undefined;
+    this.overlayPosition = undefined;
   }
 
   public connectedCallback(): void {
@@ -338,8 +416,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     window.addEventListener("location-changed", this.routeChanged);
     window.addEventListener("popstate", this.routeChanged);
     if (!this.isPortal) {
-      window.addEventListener("resize", this.updateOverlayGeometry);
-      window.visualViewport?.addEventListener("resize", this.updateOverlayGeometry);
+      window.addEventListener("resize", this.viewportChanged);
+      window.visualViewport?.addEventListener("resize", this.viewportChanged);
       window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry);
     }
   }
@@ -348,9 +426,11 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     window.removeEventListener("location-changed", this.routeChanged);
     window.removeEventListener("popstate", this.routeChanged);
     if (!this.isPortal) {
-      window.removeEventListener("resize", this.updateOverlayGeometry);
-      window.visualViewport?.removeEventListener("resize", this.updateOverlayGeometry);
+      window.removeEventListener("resize", this.viewportChanged);
+      window.visualViewport?.removeEventListener("resize", this.viewportChanged);
       window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry);
+      releaseRight(this, this.reservedRoot);
+      this.reservedRoot = undefined;
       this.removeOverlay();
     }
     super.disconnectedCallback();
@@ -373,6 +453,12 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (!["inline", "top", "bottom", "left", "right"].includes(position)) {
       throw new Error("position doit être inline, top, bottom, left ou right.");
     }
+    if (config.phone_position && !["inline", "top", "bottom"].includes(config.phone_position)) {
+      throw new Error("phone_position doit être inline, top ou bottom.");
+    }
+    if (config.tablet_position && !["inline", "top", "bottom", "left", "right"].includes(config.tablet_position)) {
+      throw new Error("tablet_position doit être inline, top, bottom, left ou right.");
+    }
     const items = config.items.map((item) => ({ ...item, label: item.label?.trim() }));
     if (items.some((item) => !item.label || !navbarTarget(item))) {
       throw new Error("Chaque entrée de navigation doit avoir un label et un path valides.");
@@ -392,6 +478,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
       { name: "accent_color", selector: { text: {} } },
       { name: "position", selector: { select: { options: ["inline", "top", "bottom", "left", "right"], mode: "dropdown" } } },
+      { name: "phone_position", selector: { select: { options: ["inline", "top", "bottom"], mode: "dropdown" } } },
+      { name: "tablet_position", selector: { select: { options: ["inline", "top", "bottom", "left", "right"], mode: "dropdown" } } },
       { name: "height_desktop", selector: { number: { min: 56, max: 160, mode: "box" } } },
       { name: "height_tablet", selector: { number: { min: 56, max: 160, mode: "box" } } },
       { name: "height_mobile", selector: { number: { min: 56, max: 160, mode: "box" } } },
@@ -437,7 +525,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   protected render(): TemplateResult {
     if (!this.config) return html``;
-    if (this.config.position !== "inline" && !this.isPortal && !this.editing) return html``;
+    if (this.effectivePosition !== "inline" && !this.isPortal && !this.editing) return html``;
     const currentPath = typeof window === "undefined" ? "/" : window.location.pathname;
     const showLabels = this.config.show_labels !== false;
     const classes = [this.config.compact ? "compact" : "", showLabels ? "" : "labels-hidden"].filter(Boolean).join(" ");
@@ -468,7 +556,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   public getCardSize(): number { return 1; }
   public getGridOptions(): Record<string, number> {
-    return this.config?.position === "inline" || this.editing
+    return this.effectivePosition === "inline" || this.editing
       ? { rows: 2, min_rows: 1, columns: 12, min_columns: 4 }
       : { columns: 1, min_columns: 1 };
   }
