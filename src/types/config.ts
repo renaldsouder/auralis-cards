@@ -164,6 +164,8 @@ export interface SwitchesCardConfig extends BaseCardConfig {
   switches?: string[];
   groups?: SwitchesGroupConfig[];
   group_columns?: number;
+  show_header?: boolean;
+  show_group_label?: boolean;
   entity_labels?: Record<string, string>;
 }
 

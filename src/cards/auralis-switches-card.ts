@@ -32,20 +32,22 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     .group-open { display:flex; min-height:131px; flex:1; flex-direction:column; justify-content:space-between; padding:13px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
     .group-top { display:flex; align-items:center; }
     .group-top .tile-icon { width:37px; height:37px; flex:0 0 auto; background:rgba(33,43,48,.86); color:var(--switch-accent); }
-    .group-arrow { display:grid; width:30px; height:30px; align-self:center; place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:9px; background:rgba(13,25,35,.82); color:#fff; }
-    .group-arrow ha-icon { --mdc-icon-size:20px; }
     .group-copy { display:block; min-width:0; }
     .group-name { min-width:0; overflow:hidden; font-size:20px; font-weight:780; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 2px 5px #000; }
     .group-state { color:#e5edf3; font-size:12px; text-shadow:0 1px 4px #000; }
-    .group-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; margin:0 12px 12px; padding:3px; border:1px solid rgba(216,229,238,.35); border-radius:12px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); }
-    .group-control { display:grid; min-width:0; min-height:38px; place-items:center; padding:4px; border:0; border-radius:8px; background:transparent; color:#d8e2eb; cursor:pointer; }
-    .group-control.selected { background:color-mix(in srgb,var(--switch-accent) 32%,#132531); color:#fff; }
-    .group-control ha-icon { --mdc-icon-size:23px; }
-    .group-control:disabled,.action:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
-    .group-open:focus-visible,.group-control:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
+    .group-power { position:relative; display:flex; min-height:47px; align-items:center; justify-content:space-between; margin:0 12px 12px; padding:0 15px; overflow:hidden; border:1px solid rgba(216,229,238,.4); border-radius:13px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); color:#cbd8e3; cursor:pointer; }
+    .group-power.on { border-color:color-mix(in srgb,var(--switch-accent) 72%,#fff); background:color-mix(in srgb,var(--switch-accent) 20%,rgba(14,29,41,.9)); }
+    .group-power.mixed { border-color:color-mix(in srgb,var(--switch-accent) 52%,#fff); }
+    .group-power ha-icon { position:relative; z-index:1; --mdc-icon-size:21px; }
+    .group-power ha-icon:first-child { color:#d5dfe8; }
+    .group-power ha-icon:last-child { color:var(--switch-accent); }
+    .group-power.on ha-icon:last-child { color:#172430; }
+    .group-power-thumb { position:absolute; top:5px; left:5px; width:35px; height:35px; border-radius:10px; background:#526777; box-shadow:0 2px 9px rgba(0,0,0,.35); transition:left .18s ease,background .18s ease; }
+    .group-power.on .group-power-thumb { left:calc(100% - 40px); background:var(--switch-accent); }
+    .group-power.mixed .group-power-thumb { left:calc(50% - 17px); background:color-mix(in srgb,var(--switch-accent) 58%,#526777); }
+    .group-power:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
+    .group-open:focus-visible,.group-power:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
     .dialog-header .tile-icon { color:var(--switch-accent); }
-    .dialog-bar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:16px; }
-    .dialog-bar .action { min-width:0; }
     .switch-row { display:flex; min-width:0; align-items:center; gap:11px; padding:12px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); }
     .switch-row + .switch-row { margin-top:8px; }
     .switch-row .tile-icon { flex:0 0 auto; color:var(--auralis-muted); }
@@ -89,6 +91,8 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
       { name: "switches", selector: { entity: { multiple: true, filter: { domain: "switch" } } } },
       { name: "groups", selector: { object: {} } },
       { name: "group_columns", selector: { number: { min: 1, max: 4, step: 1, mode: "box" } } },
+      { name: "show_header", selector: { boolean: {} } },
+      { name: "show_group_label", selector: { boolean: {} } },
       { name: "entity_labels", selector: { object: {} } },
       { name: "background_image", selector: { text: {} } },
       { name: "background_position", selector: { text: {} } },
@@ -124,8 +128,13 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
 
   private renderGroup(group: SwitchesGroupConfig, index: number): TemplateResult {
     const stats = this.groupStats(group);
-    const allOn = stats.availableIds.length > 0 && stats.availableIds.every((id) => this.active(id));
-    const allOff = stats.availableIds.length > 0 && stats.availableIds.every((id) => !this.active(id));
+    const ids = this.ids(group);
+    const availableIds = ids.filter((id) => this.operational(id));
+    const allOn = availableIds.length > 0 && availableIds.every((id) => this.active(id));
+    const anyOn = availableIds.some((id) => this.active(id));
+    const mode = allOn ? "on" : anyOn ? "mixed" : "off";
+    const busy = ids.some((id) => this.pending.has(id));
+    const action = allOn ? "Éteindre" : "Allumer";
     const image = group.background_image?.trim() || this.config?.background_image?.trim();
     const position = group.background_position?.trim() || this.config?.background_position?.trim();
     const safePosition = position && /^[\w\s.%+-]+$/.test(position) ? position : "center";
@@ -137,14 +146,12 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
         @click=${() => this.openDialog(`group:${index}`)}>
         <span class="group-top"><span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:power-socket-eu"}></ha-icon></span></span>
         <span class="group-copy"><span class="group-name">${group.name}</span><br/><span class="group-state">${status}</span></span>
-        <span class="group-arrow"><ha-icon icon="mdi:chevron-right"></ha-icon></span>
       </button>
-      <div class="group-controls" role="group" aria-label=${`Commandes du groupe ${group.name}`}>
-        <button class=${`group-control ${allOn ? "selected" : ""}`} type="button" title="Tout allumer" aria-label=${`Tout allumer ${group.name}`} aria-pressed=${allOn ? "true" : "false"} ?disabled=${!stats.availableIds.length}
-          @click=${() => this.power(stats.availableIds, true)}><ha-icon icon="mdi:toggle-switch"></ha-icon></button>
-        <button class=${`group-control ${allOff ? "selected" : ""}`} type="button" title="Tout éteindre" aria-label=${`Tout éteindre ${group.name}`} aria-pressed=${allOff ? "true" : "false"} ?disabled=${!stats.availableIds.length}
-          @click=${() => this.power(stats.availableIds, false)}><ha-icon icon="mdi:toggle-switch-off"></ha-icon></button>
-      </div>
+      <button class=${`group-power ${mode}`} type="button" title=${`${action} le groupe ${group.name}`}
+        aria-label=${`${action} tous les interrupteurs du groupe ${group.name}`} aria-pressed=${mode === "mixed" ? "mixed" : allOn ? "true" : "false"}
+        ?disabled=${!availableIds.length || busy} @click=${() => this.power(availableIds, !allOn)}>
+        <ha-icon icon="mdi:power-off"></ha-icon><span class="group-power-thumb"></span><ha-icon icon="mdi:power-on"></ha-icon>
+      </button>
     </section>`;
   }
 
@@ -169,11 +176,6 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
         <strong>${stats.active} interrupteur${stats.active === 1 ? "" : "s"} allumé${stats.active === 1 ? "" : "s"} sur ${stats.total}</strong>
         <span class="muted">Commandes directes pour les prises disponibles.</span></div>
         <div class="dialog-stat"><strong>${stats.available}/${stats.total}</strong><small>disponibles</small></div></div>
-      <div class="dialog-section-title">Commandes du groupe</div>
-      <div class="dialog-bar"><button class="action" ?disabled=${!stats.availableIds.some((id) => !this.active(id))}
-        @click=${() => this.power(stats.availableIds, true)}><ha-icon icon="mdi:power"></ha-icon>Tout allumer</button>
-        <button class="action" ?disabled=${!stats.availableIds.some((id) => this.active(id))}
-        @click=${() => this.power(stats.availableIds, false)}><ha-icon icon="mdi:power"></ha-icon>Tout éteindre</button></div>
       <div class="dialog-section-title">Interrupteurs</div>
       ${ids.map((id) => this.renderSwitch(id))}
     </div>`);
@@ -188,10 +190,10 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     const selectedIndex = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1;
     const selected = Number.isInteger(selectedIndex) ? groups[selectedIndex] : undefined;
     return html`<div class="switches-root" style=${this.machineStyle("var(--auralis-active)")}><ha-card><div class="switches-shell ${this.machineGridClass()}">
-      <header class="switches-header"><span class="tile-icon"><ha-icon .icon=${this.config.icon || "mdi:power-socket-eu"}></ha-icon></span>
+      ${this.config.show_header !== false ? html`<header class="switches-header"><span class="tile-icon"><ha-icon .icon=${this.config.icon || "mdi:power-socket-eu"}></ha-icon></span>
         <div class="title-wrap"><h2>${this.config.name || "Prises & interrupteurs"}</h2><div class="switches-summary">${active} allumé${active === 1 ? "" : "s"} sur ${ids.length} · ${groups.length} groupe${groups.length === 1 ? "" : "s"}</div></div>
-        <span class="switches-count">${active}/${ids.length} actifs</span></header>
-      <p class="section-label">Groupes d’interrupteurs</p>
+        <span class="switches-count">${active}/${ids.length} actifs</span></header>` : nothing}
+      ${this.config.show_group_label !== false ? html`<p class="section-label">Groupes d’interrupteurs</p>` : nothing}
       <div class="groups-grid ${columns === 1 ? "single-column" : ""}" style=${`--group-columns:${columns}`}>
         ${groups.map((group, index) => this.renderGroup(group, index))}</div>
     </div></ha-card>${selected ? this.renderGroupDialog(selected) : nothing}</div>`;

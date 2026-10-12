@@ -6659,20 +6659,22 @@ var kt = class extends M {
     .group-open { display:flex; min-height:131px; flex:1; flex-direction:column; justify-content:space-between; padding:13px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
     .group-top { display:flex; align-items:center; }
     .group-top .tile-icon { width:37px; height:37px; flex:0 0 auto; background:rgba(33,43,48,.86); color:var(--switch-accent); }
-    .group-arrow { display:grid; width:30px; height:30px; align-self:center; place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:9px; background:rgba(13,25,35,.82); color:#fff; }
-    .group-arrow ha-icon { --mdc-icon-size:20px; }
     .group-copy { display:block; min-width:0; }
     .group-name { min-width:0; overflow:hidden; font-size:20px; font-weight:780; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 2px 5px #000; }
     .group-state { color:#e5edf3; font-size:12px; text-shadow:0 1px 4px #000; }
-    .group-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; margin:0 12px 12px; padding:3px; border:1px solid rgba(216,229,238,.35); border-radius:12px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); }
-    .group-control { display:grid; min-width:0; min-height:38px; place-items:center; padding:4px; border:0; border-radius:8px; background:transparent; color:#d8e2eb; cursor:pointer; }
-    .group-control.selected { background:color-mix(in srgb,var(--switch-accent) 32%,#132531); color:#fff; }
-    .group-control ha-icon { --mdc-icon-size:23px; }
-    .group-control:disabled,.action:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
-    .group-open:focus-visible,.group-control:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
+    .group-power { position:relative; display:flex; min-height:47px; align-items:center; justify-content:space-between; margin:0 12px 12px; padding:0 15px; overflow:hidden; border:1px solid rgba(216,229,238,.4); border-radius:13px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); color:#cbd8e3; cursor:pointer; }
+    .group-power.on { border-color:color-mix(in srgb,var(--switch-accent) 72%,#fff); background:color-mix(in srgb,var(--switch-accent) 20%,rgba(14,29,41,.9)); }
+    .group-power.mixed { border-color:color-mix(in srgb,var(--switch-accent) 52%,#fff); }
+    .group-power ha-icon { position:relative; z-index:1; --mdc-icon-size:21px; }
+    .group-power ha-icon:first-child { color:#d5dfe8; }
+    .group-power ha-icon:last-child { color:var(--switch-accent); }
+    .group-power.on ha-icon:last-child { color:#172430; }
+    .group-power-thumb { position:absolute; top:5px; left:5px; width:35px; height:35px; border-radius:10px; background:#526777; box-shadow:0 2px 9px rgba(0,0,0,.35); transition:left .18s ease,background .18s ease; }
+    .group-power.on .group-power-thumb { left:calc(100% - 40px); background:var(--switch-accent); }
+    .group-power.mixed .group-power-thumb { left:calc(50% - 17px); background:color-mix(in srgb,var(--switch-accent) 58%,#526777); }
+    .group-power:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
+    .group-open:focus-visible,.group-power:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
     .dialog-header .tile-icon { color:var(--switch-accent); }
-    .dialog-bar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:16px; }
-    .dialog-bar .action { min-width:0; }
     .switch-row { display:flex; min-width:0; align-items:center; gap:11px; padding:12px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); }
     .switch-row + .switch-row { margin-top:8px; }
     .switch-row .tile-icon { flex:0 0 auto; color:var(--auralis-muted); }
@@ -6753,6 +6755,14 @@ var kt = class extends M {
 					step: 1,
 					mode: "box"
 				} }
+			},
+			{
+				name: "show_header",
+				selector: { boolean: {} }
+			},
+			{
+				name: "show_group_label",
+				selector: { boolean: {} }
 			},
 			{
 				name: "entity_labels",
@@ -6847,21 +6857,19 @@ var kt = class extends M {
 		}
 	}
 	renderGroup(e, t) {
-		let n = this.groupStats(e), r = n.availableIds.length > 0 && n.availableIds.every((e) => this.active(e)), i = n.availableIds.length > 0 && n.availableIds.every((e) => !this.active(e)), a = e.background_image?.trim() || this.config?.background_image?.trim(), o = e.background_position?.trim() || this.config?.background_position?.trim(), s = o && /^[\w\s.%+-]+$/.test(o) ? o : "center", c = n.available === 0 ? "Indisponible" : n.total === 1 ? n.active ? "Allumé" : "Éteint" : `${n.active} sur ${n.total} allumés`;
+		let n = this.groupStats(e), r = this.ids(e), i = r.filter((e) => this.operational(e)), a = i.length > 0 && i.every((e) => this.active(e)), o = i.some((e) => this.active(e)), s = a ? "on" : o ? "mixed" : "off", c = r.some((e) => this.pending.has(e)), l = a ? "Éteindre" : "Allumer", u = e.background_image?.trim() || this.config?.background_image?.trim(), d = e.background_position?.trim() || this.config?.background_position?.trim(), f = d && /^[\w\s.%+-]+$/.test(d) ? d : "center", p = n.available === 0 ? "Indisponible" : n.total === 1 ? n.active ? "Allumé" : "Éteint" : `${n.active} sur ${n.total} allumés`;
 		return E`<section class="group-tile">
-      ${a ? E`<img class="group-photo" src=${a} alt="" style=${`object-position:${s}`} loading="lazy" />` : O}
+      ${u ? E`<img class="group-photo" src=${u} alt="" style=${`object-position:${f}`} loading="lazy" />` : O}
       <button class="group-open" type="button" aria-haspopup="dialog" aria-label=${`Afficher les interrupteurs du groupe ${e.name}`}
         @click=${() => this.openDialog(`group:${t}`)}>
         <span class="group-top"><span class="tile-icon"><ha-icon .icon=${e.icon || "mdi:power-socket-eu"}></ha-icon></span></span>
-        <span class="group-copy"><span class="group-name">${e.name}</span><br/><span class="group-state">${c}</span></span>
-        <span class="group-arrow"><ha-icon icon="mdi:chevron-right"></ha-icon></span>
+        <span class="group-copy"><span class="group-name">${e.name}</span><br/><span class="group-state">${p}</span></span>
       </button>
-      <div class="group-controls" role="group" aria-label=${`Commandes du groupe ${e.name}`}>
-        <button class=${`group-control ${r ? "selected" : ""}`} type="button" title="Tout allumer" aria-label=${`Tout allumer ${e.name}`} aria-pressed=${r ? "true" : "false"} ?disabled=${!n.availableIds.length}
-          @click=${() => this.power(n.availableIds, !0)}><ha-icon icon="mdi:toggle-switch"></ha-icon></button>
-        <button class=${`group-control ${i ? "selected" : ""}`} type="button" title="Tout éteindre" aria-label=${`Tout éteindre ${e.name}`} aria-pressed=${i ? "true" : "false"} ?disabled=${!n.availableIds.length}
-          @click=${() => this.power(n.availableIds, !1)}><ha-icon icon="mdi:toggle-switch-off"></ha-icon></button>
-      </div>
+      <button class=${`group-power ${s}`} type="button" title=${`${l} le groupe ${e.name}`}
+        aria-label=${`${l} tous les interrupteurs du groupe ${e.name}`} aria-pressed=${s === "mixed" ? "mixed" : a ? "true" : "false"}
+        ?disabled=${!i.length || c} @click=${() => this.power(i, !a)}>
+        <ha-icon icon="mdi:power-off"></ha-icon><span class="group-power-thumb"></span><ha-icon icon="mdi:power-on"></ha-icon>
+      </button>
     </section>`;
 	}
 	renderSwitch(e) {
@@ -6880,11 +6888,6 @@ var kt = class extends M {
         <strong>${t.active} interrupteur${t.active === 1 ? "" : "s"} allumé${t.active === 1 ? "" : "s"} sur ${t.total}</strong>
         <span class="muted">Commandes directes pour les prises disponibles.</span></div>
         <div class="dialog-stat"><strong>${t.available}/${t.total}</strong><small>disponibles</small></div></div>
-      <div class="dialog-section-title">Commandes du groupe</div>
-      <div class="dialog-bar"><button class="action" ?disabled=${!t.availableIds.some((e) => !this.active(e))}
-        @click=${() => this.power(t.availableIds, !0)}><ha-icon icon="mdi:power"></ha-icon>Tout allumer</button>
-        <button class="action" ?disabled=${!t.availableIds.some((e) => this.active(e))}
-        @click=${() => this.power(t.availableIds, !1)}><ha-icon icon="mdi:power"></ha-icon>Tout éteindre</button></div>
       <div class="dialog-section-title">Interrupteurs</div>
       ${n.map((e) => this.renderSwitch(e))}
     </div>`);
@@ -6893,10 +6896,10 @@ var kt = class extends M {
 		if (!this.config || !this.hass) return E``;
 		let e = this.groups(), t = Math.min(this.config.group_columns ?? 2, e.length), n = [...new Set(e.flatMap((e) => e.switches))], r = n.filter((e) => this.active(e)).length, i = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1, a = Number.isInteger(i) ? e[i] : void 0;
 		return E`<div class="switches-root" style=${this.machineStyle("var(--auralis-active)")}><ha-card><div class="switches-shell ${this.machineGridClass()}">
-      <header class="switches-header"><span class="tile-icon"><ha-icon .icon=${this.config.icon || "mdi:power-socket-eu"}></ha-icon></span>
+      ${this.config.show_header === !1 ? O : E`<header class="switches-header"><span class="tile-icon"><ha-icon .icon=${this.config.icon || "mdi:power-socket-eu"}></ha-icon></span>
         <div class="title-wrap"><h2>${this.config.name || "Prises & interrupteurs"}</h2><div class="switches-summary">${r} allumé${r === 1 ? "" : "s"} sur ${n.length} · ${e.length} groupe${e.length === 1 ? "" : "s"}</div></div>
-        <span class="switches-count">${r}/${n.length} actifs</span></header>
-      <p class="section-label">Groupes d’interrupteurs</p>
+        <span class="switches-count">${r}/${n.length} actifs</span></header>`}
+      ${this.config.show_group_label === !1 ? O : E`<p class="section-label">Groupes d’interrupteurs</p>`}
       <div class="groups-grid ${t === 1 ? "single-column" : ""}" style=${`--group-columns:${t}`}>
         ${e.map((e, t) => this.renderGroup(e, t))}</div>
     </div></ha-card>${a ? this.renderGroupDialog(a) : O}</div>`;
@@ -7441,7 +7444,7 @@ var Ht = {
             <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
         </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
 	}
-}, Wt = "0.14.1";
+}, Wt = "0.14.2";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", kt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Mt), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Nt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Bt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Ut), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends kt {}), window.customCards = window.customCards || [];
 var Gt = [
 	{

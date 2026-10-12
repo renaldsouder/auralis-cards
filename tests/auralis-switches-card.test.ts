@@ -48,11 +48,13 @@ describe("Auralis switches card", () => {
     const group = card.config!.groups![0];
     expect(internals.groupStats(group)).toEqual({ total: 3, active: 1, available: 2, availableIds: ["switch.lampe", "switch.tv"] });
     const handlers = internals.renderGroup(group, 0).values.filter((value): value is () => Promise<void> => typeof value === "function");
-    expect(handlers).toHaveLength(3);
+    expect(handlers).toHaveLength(2);
     await handlers[1]();
-    await handlers[2]();
     expect(callService).toHaveBeenNthCalledWith(1, "switch", "turn_on", {}, { entity_id: ["switch.tv"] });
-    expect(callService).toHaveBeenNthCalledWith(2, "switch", "turn_off", {}, { entity_id: ["switch.lampe"] });
+    hass.states["switch.tv"].state = "on";
+    const offHandlers = internals.renderGroup(group, 0).values.filter((value): value is () => Promise<void> => typeof value === "function");
+    await offHandlers[1]();
+    expect(callService).toHaveBeenNthCalledWith(2, "switch", "turn_off", {}, { entity_id: ["switch.lampe", "switch.tv"] });
     expect(internals.dialog).toBeNull();
   });
 
@@ -72,5 +74,18 @@ describe("Auralis switches card", () => {
     expect(internals.dialog).toBe("group:0");
     expect(internals.render().values).toContain("--group-columns:1");
     expect(internals.render().values.some((value) => typeof value === "string" && value.includes("--machine-accent:#ffd27a"))).toBe(true);
+  });
+
+  it("hides optional labels while keeping the whole group area available for details", () => {
+    const card = new SwitchesCard();
+    card.setConfig({ type: "custom:auralis-switches-card", name: "Prises", switches: ["switch.prise"],
+      show_header: false, show_group_label: false });
+    card.hass = { states: { "switch.prise": state("switch.prise", "off") }, callService: vi.fn(async () => undefined) };
+    const rendered = (card as unknown as { render(): { values: unknown[] } }).render();
+    expect(rendered.values.filter((value) => typeof value === "object" && value !== null && "strings" in value)).toHaveLength(0);
+    const group = card.config!.groups![0];
+    const groupHtml = (card as unknown as { renderGroup(group: SwitchesGroupConfig, index: number): { strings: string[] } }).renderGroup(group, 0);
+    expect(groupHtml.strings.join("")).toContain('class="group-open"');
+    expect(groupHtml.strings.join("")).not.toContain("group-arrow");
   });
 });

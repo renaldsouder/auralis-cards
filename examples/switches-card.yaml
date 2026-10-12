@@ -11,6 +11,9 @@ type: custom:auralis-switches-card
 name: Prises & interrupteurs
 theme: carbon
 group_columns: 2
+# Facultatif : masquer les éléments au-dessus des tuiles.
+# show_header: false
+# show_group_label: false
 accent_color: "#ffc45f"
 card_background:
   mode: gradient

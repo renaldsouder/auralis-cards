@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.2
+
+- Permet de masquer l'en-tête de la carte et le libellé des groupes avec `show_header` et `show_group_label`.
+- Ouvre le détail en cliquant sur toute la zone descriptive du groupe et retire la flèche.
+- Remplace les deux commandes de groupe par un interrupteur unique avec états éteint, mixte et allumé ; la pop-up reste dédiée aux interrupteurs individuels.
+
 ## 0.14.1
 
 - Étend un groupe unique sur toute la largeur de la carte, même si `group_columns` vaut 2 ou plus.
