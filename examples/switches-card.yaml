@@ -1,0 +1,42 @@
+# Une ou plusieurs prises dans une seule tuile :
+# type: custom:auralis-switches-card
+# name: Prises du salon
+# switches:
+#   - switch.lampe_salon
+#   - switch.television_salon
+
+# Plusieurs tuiles : les boutons de chaque tuile commandent le groupe entier.
+# La flèche blanche ouvre la liste des interrupteurs individuels.
+type: custom:auralis-switches-card
+name: Prises & interrupteurs
+theme: carbon
+group_columns: 2
+accent_color: "#ffc45f"
+card_background:
+  mode: gradient
+  gradient: "linear-gradient(145deg, #09111a, #0d1822 58%, #081018)"
+show_grid: false
+# Image commune facultative, utilisée par les groupes sans image propre.
+# background_image: /local/auralis-cards/images/prises.jpg
+# background_position: center
+# image_brightness: 72
+# image_opacity: 100
+# glass_opacity: 0.84
+groups:
+  - name: Salon
+    icon: mdi:sofa-outline
+    background_image: /local/auralis-cards/images/salon.jpg
+    background_position: center
+    switches:
+      - switch.lampe_salon
+      - switch.television_salon
+      - switch.diffuseur_salon
+  - name: Bureau
+    icon: mdi:desk
+    background_image: /local/auralis-cards/images/bureau.jpg
+    switches:
+      - switch.ecran_bureau
+      - switch.imprimante_bureau
+entity_labels:
+  switch.lampe_salon: Lampe d’appoint
+  switch.television_salon: Télévision

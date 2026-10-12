@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+- Ajoute la carte Interrupteurs pour piloter un ou plusieurs `switch` Home Assistant.
+- Permet d'allumer ou d'éteindre chaque groupe depuis la carte et d'ouvrir la liste des interrupteurs avec la flèche blanche.
+- Reprend les réglages visuels des autres cartes Auralis, notamment les images de fond, les couleurs, l'opacité et la disposition.
+
 ## 0.13.9
 
 - Permet de placer la navbar à droite sur tablette Android avec `tablet_position: right`, y compris en paysage.

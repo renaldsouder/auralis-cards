@@ -151,6 +151,22 @@ export interface CoversCardConfig extends BaseCardConfig {
   entity_labels?: Record<string, string>;
 }
 
+export interface SwitchesGroupConfig {
+  name: string;
+  switches: string[];
+  icon?: string;
+  background_image?: string;
+  background_position?: string;
+}
+
+export interface SwitchesCardConfig extends BaseCardConfig {
+  type: "custom:auralis-switches-card";
+  switches?: string[];
+  groups?: SwitchesGroupConfig[];
+  group_columns?: number;
+  entity_labels?: Record<string, string>;
+}
+
 export interface PcDriveConfig {
   entity: string;
   label?: string;

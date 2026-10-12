@@ -12,11 +12,11 @@ describe("Auralis entrypoint", () => {
     const cards: Array<{ type: string }> = [];
     vi.stubGlobal("window", { customCards: cards });
 
-    await import("../auralis-cards");
+    await import("../auralis-cards.ts");
 
     const expected = [
       "auralis-navbar-card", "auralis-room-card", "auralis-covers-card",
-      "auralis-thermostat-card", "auralis-lights-card", "auralis-fridge-card",
+      "auralis-thermostat-card", "auralis-lights-card", "auralis-switches-card", "auralis-fridge-card",
       "auralis-pc-card", "auralis-unraid-card", "auralis-proxmox-card",
     ];
     expect([...definitions.keys()].filter((type) => type.startsWith("auralis-")).sort()).toEqual([...expected].sort());

@@ -52,6 +52,7 @@ declare global {
     "auralis-proxmox-card": HTMLElement;
     "auralis-navbar-card": HTMLElement;
     "auralis-lights-card": HTMLElement;
+    "auralis-switches-card": HTMLElement;
     "auralis-thermostat-card": HTMLElement;
     "auralis-fridge-card": HTMLElement;
     "orbit-room-card": HTMLElement;

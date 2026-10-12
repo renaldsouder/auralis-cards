@@ -6,10 +6,11 @@ import { AuralisUnraidCard } from "./src/cards/auralis-unraid-card";
 import { AuralisProxmoxCard } from "./src/cards/auralis-proxmox-card";
 import { AuralisNavbarCard } from "./src/cards/auralis-navbar-card";
 import { AuralisLightsCard } from "./src/cards/auralis-lights-card";
+import { AuralisSwitchesCard } from "./src/cards/auralis-switches-card";
 import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
 import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 
-const VERSION = "0.13.9";
+const VERSION = "0.14.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -18,6 +19,7 @@ if (!customElements.get("auralis-unraid-card")) customElements.define("auralis-u
 if (!customElements.get("auralis-proxmox-card")) customElements.define("auralis-proxmox-card", AuralisProxmoxCard);
 if (!customElements.get("auralis-navbar-card")) customElements.define("auralis-navbar-card", AuralisNavbarCard);
 if (!customElements.get("auralis-lights-card")) customElements.define("auralis-lights-card", AuralisLightsCard);
+if (!customElements.get("auralis-switches-card")) customElements.define("auralis-switches-card", AuralisSwitchesCard);
 if (!customElements.get("auralis-thermostat-card")) customElements.define("auralis-thermostat-card", AuralisThermostatCard);
 if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-fridge-card", AuralisFridgeCard);
 
@@ -93,6 +95,15 @@ const cards = [
     preview: true,
     getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("climate.")
       ? { config: { type: "custom:auralis-thermostat-card", entity: entityId } }
+      : null,
+  },
+  {
+    type: "auralis-switches-card",
+    name: "Auralis · Prises et interrupteurs",
+    description: "Commandes groupées et individuelles pour les entités switch.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("switch.")
+      ? { config: { type: "custom:auralis-switches-card", switches: [entityId] } }
       : null,
   },
   {

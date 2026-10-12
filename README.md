@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, éclairage, thermostats, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -8,6 +8,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 
 - `custom:auralis-room-card`
 - `custom:auralis-covers-card`
+- `custom:auralis-switches-card`
 - `custom:auralis-navbar-card`
 - `custom:auralis-pc-card`
 - `custom:auralis-unraid-card`
@@ -254,6 +255,20 @@ groups:
 Les quatre photos intégrées se répètent si davantage de groupes sont configurés. Les entités absentes ou indisponibles restent visibles, et leurs commandes individuelles sont désactivées.
 
 `group_columns` règle le nombre de colonnes des groupes, de 1 à 4. Sans cette option, un seul groupe occupe toute la largeur et plusieurs groupes utilisent deux colonnes. Pour forcer une seule colonne, ajoutez `group_columns: 1` au niveau de la carte, à côté de `theme`. Sur une carte étroite, la grille réduit automatiquement le nombre de colonnes pour garder les commandes utilisables. Cette option est distincte de `grid_options.columns`, qui règle la largeur de la carte dans Home Assistant.
+
+## Carte Prises et interrupteurs
+
+`custom:auralis-switches-card` accepte une liste `switches` contenant une seule entité ou plusieurs. Pour créer plusieurs tuiles, utilisez `groups` : chaque groupe possède un `name` et une liste `switches`. Les boutons **Allumer** et **Éteindre** de la tuile commandent le groupe ; la flèche blanche ouvre la pop-up avec une commande pour chaque interrupteur. Les entités absentes ou indisponibles restent visibles, avec leurs commandes désactivées.
+
+Le visuel se règle comme sur les autres cartes : `theme`, `accent_color`, `card_background`, `show_grid`, une `background_image` commune ou propre à chaque groupe, `background_position`, `image_brightness`, `image_opacity`, `glass_opacity`, ainsi que `icon` et `entity_labels`. `group_columns` accepte de 1 à 4 colonnes ; avec un seul groupe, la tuile prend toute la largeur par défaut. Voir [l’exemple complet](examples/switches-card.yaml).
+
+```yaml
+type: custom:auralis-switches-card
+name: Prises du salon
+switches:
+  - switch.lampe_salon
+  - switch.television_salon
+```
 
 ## Exemple minimal — PC
 
