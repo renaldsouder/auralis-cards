@@ -30,16 +30,17 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     .group-tile::after { position:absolute; z-index:-1; inset:0; background:linear-gradient(180deg,rgba(4,10,17,.48),rgba(4,10,17,.1) 42%,rgba(4,10,17,.9)); content:""; pointer-events:none; }
     .group-photo { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--machine-image-opacity,1); filter:brightness(var(--machine-image-brightness,.72)); pointer-events:none; }
     .group-open { display:flex; min-height:131px; flex:1; flex-direction:column; justify-content:space-between; padding:13px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
-    .group-top,.group-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .group-top { display:flex; align-items:center; }
     .group-top .tile-icon { width:37px; height:37px; flex:0 0 auto; background:rgba(33,43,48,.86); color:var(--switch-accent); }
-    .group-arrow { display:grid; width:30px; height:30px; place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:9px; background:rgba(13,25,35,.82); color:#fff; }
+    .group-arrow { display:grid; width:30px; height:30px; align-self:center; place-items:center; border:1px solid rgba(255,255,255,.55); border-radius:9px; background:rgba(13,25,35,.82); color:#fff; }
     .group-arrow ha-icon { --mdc-icon-size:20px; }
+    .group-copy { display:block; min-width:0; }
     .group-name { min-width:0; overflow:hidden; font-size:20px; font-weight:780; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 2px 5px #000; }
     .group-state { color:#e5edf3; font-size:12px; text-shadow:0 1px 4px #000; }
-    .group-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:0 12px 12px; }
-    .group-control { display:flex; min-width:0; min-height:38px; align-items:center; justify-content:center; gap:6px; padding:5px; border:1px solid rgba(216,229,238,.45); border-radius:10px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); color:#f4f8fc; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
-    .group-control.on { border-color:color-mix(in srgb,var(--switch-accent) 75%,#fff); background:color-mix(in srgb,var(--switch-accent) 39%,rgba(14,29,41,.88)); }
-    .group-control ha-icon { --mdc-icon-size:17px; }
+    .group-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; margin:0 12px 12px; padding:3px; border:1px solid rgba(216,229,238,.35); border-radius:12px; background:rgba(14,29,41,var(--machine-glass-alpha,.84)); }
+    .group-control { display:grid; min-width:0; min-height:38px; place-items:center; padding:4px; border:0; border-radius:8px; background:transparent; color:#d8e2eb; cursor:pointer; }
+    .group-control.selected { background:color-mix(in srgb,var(--switch-accent) 32%,#132531); color:#fff; }
+    .group-control ha-icon { --mdc-icon-size:23px; }
     .group-control:disabled,.action:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
     .group-open:focus-visible,.group-control:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
     .dialog-header .tile-icon { color:var(--switch-accent); }
@@ -123,6 +124,8 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
 
   private renderGroup(group: SwitchesGroupConfig, index: number): TemplateResult {
     const stats = this.groupStats(group);
+    const allOn = stats.availableIds.length > 0 && stats.availableIds.every((id) => this.active(id));
+    const allOff = stats.availableIds.length > 0 && stats.availableIds.every((id) => !this.active(id));
     const image = group.background_image?.trim() || this.config?.background_image?.trim();
     const position = group.background_position?.trim() || this.config?.background_position?.trim();
     const safePosition = position && /^[\w\s.%+-]+$/.test(position) ? position : "center";
@@ -132,15 +135,15 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
       ${image ? html`<img class="group-photo" src=${image} alt="" style=${`object-position:${safePosition}`} loading="lazy" />` : nothing}
       <button class="group-open" type="button" aria-haspopup="dialog" aria-label=${`Afficher les interrupteurs du groupe ${group.name}`}
         @click=${() => this.openDialog(`group:${index}`)}>
-        <span class="group-top"><span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:power-socket-eu"}></ha-icon></span>
-          <span class="group-arrow"><ha-icon icon="mdi:chevron-right"></ha-icon></span></span>
-        <span><span class="group-name">${group.name}</span><br/><span class="group-state">${status}</span></span>
+        <span class="group-top"><span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:power-socket-eu"}></ha-icon></span></span>
+        <span class="group-copy"><span class="group-name">${group.name}</span><br/><span class="group-state">${status}</span></span>
+        <span class="group-arrow"><ha-icon icon="mdi:chevron-right"></ha-icon></span>
       </button>
-      <div class="group-controls" aria-label=${`Commandes du groupe ${group.name}`}>
-        <button class="group-control on" type="button" aria-label=${`Allumer ${group.name}`} ?disabled=${!stats.availableIds.some((id) => !this.active(id))}
-          @click=${() => this.power(stats.availableIds, true)}><ha-icon icon="mdi:power"></ha-icon>Allumer</button>
-        <button class="group-control" type="button" aria-label=${`Éteindre ${group.name}`} ?disabled=${!stats.availableIds.some((id) => this.active(id))}
-          @click=${() => this.power(stats.availableIds, false)}><ha-icon icon="mdi:power"></ha-icon>Éteindre</button>
+      <div class="group-controls" role="group" aria-label=${`Commandes du groupe ${group.name}`}>
+        <button class=${`group-control ${allOn ? "selected" : ""}`} type="button" title="Tout allumer" aria-label=${`Tout allumer ${group.name}`} aria-pressed=${allOn ? "true" : "false"} ?disabled=${!stats.availableIds.length}
+          @click=${() => this.power(stats.availableIds, true)}><ha-icon icon="mdi:toggle-switch"></ha-icon></button>
+        <button class=${`group-control ${allOff ? "selected" : ""}`} type="button" title="Tout éteindre" aria-label=${`Tout éteindre ${group.name}`} aria-pressed=${allOff ? "true" : "false"} ?disabled=${!stats.availableIds.length}
+          @click=${() => this.power(stats.availableIds, false)}><ha-icon icon="mdi:toggle-switch-off"></ha-icon></button>
       </div>
     </section>`;
   }
@@ -179,7 +182,7 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
   protected render(): TemplateResult {
     if (!this.config || !this.hass) return html``;
     const groups = this.groups();
-    const columns = this.config.group_columns ?? Math.min(2, groups.length);
+    const columns = Math.min(this.config.group_columns ?? 2, groups.length);
     const ids = [...new Set(groups.flatMap((group) => group.switches))];
     const active = ids.filter((id) => this.active(id)).length;
     const selectedIndex = this.dialog?.startsWith("group:") ? Number(this.dialog.slice(6)) : -1;
@@ -194,6 +197,6 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     </div></ha-card>${selected ? this.renderGroupDialog(selected) : nothing}</div>`;
   }
 
-  public getCardSize(): number { const count = this.groups().length; const columns = this.config?.group_columns ?? Math.min(2, count || 1); return 2 + Math.ceil(count / Math.min(columns, 2)) * 3; }
+  public getCardSize(): number { const count = this.groups().length; const columns = Math.min(this.config?.group_columns ?? 2, count || 1); return 2 + Math.ceil(count / Math.min(columns, 2)) * 3; }
   public getGridOptions(): Record<string, number> { return { columns: 6, min_columns: 3 }; }
 }

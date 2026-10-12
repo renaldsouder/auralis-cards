@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+- Étend un groupe unique sur toute la largeur de la carte, même si `group_columns` vaut 2 ou plus.
+- Remplace les libellés des commandes de groupe par un interrupteur à deux options avec icônes marche/arrêt.
+- Centre horizontalement la flèche qui ouvre le détail du groupe.
+
 ## 0.14.0
 
 - Ajoute la carte Interrupteurs pour piloter un ou plusieurs `switch` Home Assistant.

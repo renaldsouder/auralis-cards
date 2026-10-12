@@ -258,9 +258,9 @@ Les quatre photos intégrées se répètent si davantage de groupes sont configu
 
 ## Carte Prises et interrupteurs
 
-`custom:auralis-switches-card` accepte une liste `switches` contenant une seule entité ou plusieurs. Pour créer plusieurs tuiles, utilisez `groups` : chaque groupe possède un `name` et une liste `switches`. Les boutons **Allumer** et **Éteindre** de la tuile commandent le groupe ; la flèche blanche ouvre la pop-up avec une commande pour chaque interrupteur. Les entités absentes ou indisponibles restent visibles, avec leurs commandes désactivées.
+`custom:auralis-switches-card` accepte une liste `switches` contenant une seule entité ou plusieurs. Pour créer plusieurs tuiles, utilisez `groups` : chaque groupe possède un `name` et une liste `switches`. La commande à deux icônes de la tuile allume ou éteint tout le groupe ; la flèche blanche centrée ouvre la pop-up avec une commande pour chaque interrupteur. Les entités absentes ou indisponibles restent visibles, avec leurs commandes désactivées.
 
-Le visuel se règle comme sur les autres cartes : `theme`, `accent_color`, `card_background`, `show_grid`, une `background_image` commune ou propre à chaque groupe, `background_position`, `image_brightness`, `image_opacity`, `glass_opacity`, ainsi que `icon` et `entity_labels`. `group_columns` accepte de 1 à 4 colonnes ; avec un seul groupe, la tuile prend toute la largeur par défaut. Voir [l’exemple complet](examples/switches-card.yaml).
+Le visuel se règle comme sur les autres cartes : `theme`, `accent_color`, `card_background`, `show_grid`, une `background_image` commune ou propre à chaque groupe, `background_position`, `image_brightness`, `image_opacity`, `glass_opacity`, ainsi que `icon` et `entity_labels`. `group_columns` accepte de 1 à 4 colonnes ; un groupe unique prend toujours toute la largeur, même avec `group_columns: 2`. Voir [l’exemple complet](examples/switches-card.yaml).
 
 ```yaml
 type: custom:auralis-switches-card

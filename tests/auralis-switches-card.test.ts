@@ -58,7 +58,7 @@ describe("Auralis switches card", () => {
 
   it("opens the detail popup with the arrow and keeps the visual settings on the card", () => {
     const card = new SwitchesCard();
-    card.setConfig({ type: "custom:auralis-switches-card", name: "Prises", switches: ["switch.prise"],
+    card.setConfig({ type: "custom:auralis-switches-card", name: "Prises", switches: ["switch.prise"], group_columns: 2,
       background_image: "/local/prises.jpg", accent_color: "#ffd27a", card_background: { mode: "solid", color: "#101820" } });
     card.hass = { states: { "switch.prise": state("switch.prise", "off") }, callService: vi.fn(async () => undefined) };
     const internals = card as unknown as {
