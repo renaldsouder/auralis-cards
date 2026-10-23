@@ -4051,6 +4051,11 @@ var at = class extends M {
       .pc-drive-top span, .pc-network-row span, .pc-info-row span { min-width: 0; color: var(--auralis-muted); font-size: 12px; }
       .pc-drive-top strong, .pc-network-row strong, .pc-info-row strong { min-width: 0; overflow-wrap: anywhere; text-align: right; }
       .pc-network-state { display: inline-flex; align-items: center; gap: 7px; }
+      .pc-extra-row { width: 100%; padding: 12px 0; border: 0; border-bottom: 1px solid var(--auralis-border); background: transparent; color: inherit; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; font: inherit; }
+      .pc-extra-row:last-child { border-bottom: 0; }
+      .pc-extra-row:hover { color: var(--auralis-info); }
+      .pc-extra-row span { min-width: 0; color: var(--auralis-muted); font-size: 12px; }
+      .pc-extra-row strong { min-width: 0; overflow-wrap: anywhere; text-align: right; }
       .pc-audio-device { padding: 14px; border: 1px solid var(--auralis-border); border-radius: 18px; background: var(--auralis-layer); }
       .pc-audio-device + .pc-audio-device { margin-top: 10px; }
       .pc-audio-device > strong { display: block; margin-top: 9px; overflow-wrap: anywhere; }
@@ -4105,6 +4110,10 @@ var at = class extends M {
 			},
 			{
 				name: "network_interfaces",
+				selector: { object: {} }
+			},
+			{
+				name: "extra_sections",
 				selector: { object: {} }
 			},
 			{
@@ -4305,12 +4314,19 @@ var at = class extends M {
         ${s.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Alimentation</div>${s.map(([e, t]) => this.infoRow(e, t))}</section>` : O}
         ${c || l.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Audio</div>${this.audioDevice("Sortie", this.config?.audio_output_entity, this.config?.audio_output_state_entity, this.config?.audio_output_volume_entity, this.config?.audio_output_muted_entity)}${this.audioDevice("Entrée", this.config?.audio_input_entity, this.config?.audio_input_state_entity, this.config?.audio_input_volume_entity, this.config?.audio_input_muted_entity)}${l.length ? E`<div class="grid two" style="margin-top:10px;">${l.map(([e, t]) => E`<div class="tile"><div class="tile-head"><span>${e}</span><strong>${t}</strong></div></div>`)}</div>` : O}</section>` : O}
         ${i.length ? E`<section class="pc-detail-section"><div class="dialog-section-title">Interfaces réseau${this.availableDisplay(this.config?.network_total_entity) ? ` · ${this.availableDisplay(this.config?.network_total_entity)}` : ""}</div>${i.map((e) => this.networkRow(e))}</section>` : O}
+        ${(this.config?.extra_sections || []).filter((e) => e.entities?.length).map((e) => E`<section class="pc-detail-section"><div class="dialog-section-title">${e.title}</div>${e.entities.map((e) => this.extraEntityRow(e))}</section>`)}
         ${u ? E`<section class="pc-detail-section"><div class="dialog-section-title">Commandes</div><div class="actions">${t && this.config?.lock_entity ? E`<button class="action" ?disabled=${!d} @click=${() => H(this.hass, this.config?.lock_entity)}><ha-icon icon="mdi:lock-outline"></ha-icon>Verrouiller</button>` : O}${t && this.config?.sleep_entity ? E`<button class="action" ?disabled=${!f} @click=${() => H(this.hass, this.config?.sleep_entity)}><ha-icon icon="mdi:power-sleep"></ha-icon>Veille</button>` : O}${t && this.config?.restart_entity ? E`<button class="action" ?disabled=${!p} @click=${this.confirmRestart}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : O}${e === "offline" && this.config?.wake_entity ? E`<button class="action primary" ?disabled=${!h} @click=${() => H(this.hass, this.config?.wake_entity)}><ha-icon icon="mdi:power"></ha-icon>Démarrer</button>` : O}</div>${t && this.config?.shutdown_entity ? E`<div class="dialog-danger-zone"><button class="action danger" style="width:100%;" ?disabled=${!m} @click=${this.confirmShutdown}><ha-icon icon="mdi:power"></ha-icon>Éteindre le PC</button></div>` : O}</section>` : O}
       </div>
     `, "pc-dialog");
 	}
 	infoRow(e, t) {
 		return E`<div class="pc-info-row"><span>${e}</span><strong>${t}</strong></div>`;
+	}
+	extraEntityRow(e) {
+		let t = N(this.hass, e.entity), n = e.entity.split(".")[0] === "button" ? P(t) ? "Ouvrir" : "Indisponible" : z(this.hass, e.entity);
+		return E`<button type="button" class="pc-extra-row" @click=${() => {
+			this.closeDialog(), W(this, e.entity);
+		}}><span>${e.label || I(t, e.entity)}</span><strong>${n}</strong></button>`;
 	}
 	nonNegativeDisplay(e) {
 		let t = it(this.hass, e);

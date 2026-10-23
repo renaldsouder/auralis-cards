@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.3
+
+- Ajoute `extra_sections` à la carte PC pour afficher et ouvrir d'autres entités dans sa fenêtre Détails.
+
 ## 0.14.2
 
 - Permet de masquer l'en-tête de la carte et le libellé des groupes avec `show_header` et `show_group_label`.

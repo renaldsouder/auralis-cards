@@ -308,6 +308,18 @@ La façade reprend la composition Auralis Frame d'origine : cadrans circulaires 
 
 `background_image` ajoute une photographie derrière la carte PC. `image_opacity` règle uniquement l'opacité de ce fond de `0` à `100`, sans modifier les textes, boutons et indicateurs. `background_position` permet de recadrer l'image et `image_brightness` d'ajuster sa luminosité.
 
+Pour afficher d'autres entités dans la fenêtre **Détails** de la carte PC, utilisez `extra_sections`. Chaque section contient un `title` et une liste `entities` avec `entity` et, facultativement, `label`. Un clic sur une ligne ouvre la fiche native Home Assistant de l'entité. Cela permet de consulter ou commander des entités qui ne correspondent pas aux champs spécialisés de la carte, sans ajouter de cartes sous le PC.
+
+```yaml
+extra_sections:
+  - title: Système
+    entities:
+      - entity: sensor.pc_linux_cpu_load_average
+        label: Charge CPU
+      - entity: switch.pc_linux_do_not_disturb
+        label: Ne pas déranger
+```
+
 ## Exemple minimal — UNRAID
 
 Consultez [examples/dashboard.yaml](examples/dashboard.yaml) pour une configuration complète avec Docker et VM.

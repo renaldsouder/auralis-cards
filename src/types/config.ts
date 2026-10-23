@@ -179,6 +179,16 @@ export interface PcNetworkInterfaceConfig {
   label?: string;
 }
 
+export interface PcExtraEntityConfig {
+  entity: string;
+  label?: string;
+}
+
+export interface PcExtraSectionConfig {
+  title: string;
+  entities: PcExtraEntityConfig[];
+}
+
 export interface PcCardConfig extends BaseCardConfig {
   type: "custom:auralis-pc-card";
   online_entity: string;
@@ -200,6 +210,7 @@ export interface PcCardConfig extends BaseCardConfig {
   network_up_entity?: string;
   network_total_entity?: string;
   network_interfaces?: PcNetworkInterfaceConfig[];
+  extra_sections?: PcExtraSectionConfig[];
   battery_percentage_entity?: string;
   battery_status_entity?: string;
   battery_powerline_entity?: string;
