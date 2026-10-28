@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.5
+
+- Corrige le défilement tactile des sous-menus de toutes les cartes sur Android, sans faire défiler le tableau de bord en arrière-plan.
+- Adapte la hauteur des sous-menus à la zone visible du navigateur mobile.
+
 ## 0.14.4
 
 - Réserve la hauteur de la navbar fixée pour que les dernières cartes restent entièrement accessibles au défilement.

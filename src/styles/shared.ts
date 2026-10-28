@@ -306,6 +306,8 @@ export const sharedStyles = css`
     padding: 20px;
     background: rgba(5, 10, 20, 0.46);
     backdrop-filter: blur(8px);
+    overscroll-behavior: contain;
+    touch-action: none;
     --auralis-bg: #0b1118;
     --auralis-card: #101923;
     --auralis-layer: #17222e;
@@ -322,7 +324,11 @@ export const sharedStyles = css`
   .dialog {
     width: min(720px, calc(100vw - 24px));
     max-height: min(820px, calc(100vh - 32px));
-    overflow: auto;
+    max-height: min(820px, calc(100dvh - 32px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     border: 1px solid var(--auralis-border);
     border-radius: 30px;
     background:
@@ -863,6 +869,7 @@ export const sharedStyles = css`
     .dialog {
       width: 100vw;
       max-height: 92vh;
+      max-height: 92dvh;
       border-radius: 26px 26px 0 0;
     }
 

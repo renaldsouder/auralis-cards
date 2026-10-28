@@ -114,7 +114,9 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   protected renderDialog(title: string, icon: string, content: TemplateResult, dialogClass = ""): TemplateResult {
     return html`
-      <div class="dialog-backdrop" @click=${(event: MouseEvent) => event.target === event.currentTarget && this.closeDialog()}>
+      <div class="dialog-backdrop" @click=${(event: MouseEvent) => event.target === event.currentTarget && this.closeDialog()}
+        @touchstart=${(event: TouchEvent) => event.stopPropagation()}
+        @touchmove=${(event: TouchEvent) => event.stopPropagation()}>
         <section class="dialog ${dialogClass}" role="dialog" aria-modal="true" aria-label=${title}>
           <header class="dialog-header">
             <span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span>

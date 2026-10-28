@@ -816,6 +816,8 @@ var Pe = o`
     padding: 20px;
     background: rgba(5, 10, 20, 0.46);
     backdrop-filter: blur(8px);
+    overscroll-behavior: contain;
+    touch-action: none;
     --auralis-bg: #0b1118;
     --auralis-card: #101923;
     --auralis-layer: #17222e;
@@ -832,7 +834,11 @@ var Pe = o`
   .dialog {
     width: min(720px, calc(100vw - 24px));
     max-height: min(820px, calc(100vh - 32px));
-    overflow: auto;
+    max-height: min(820px, calc(100dvh - 32px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     border: 1px solid var(--auralis-border);
     border-radius: 30px;
     background:
@@ -1373,6 +1379,7 @@ var Pe = o`
     .dialog {
       width: 100vw;
       max-height: 92vh;
+      max-height: 92dvh;
       border-radius: 26px 26px 0 0;
     }
 
@@ -1456,7 +1463,9 @@ var Pe = o`
 	}
 	renderDialog(e, t, n, r = "") {
 		return E`
-      <div class="dialog-backdrop" @click=${(e) => e.target === e.currentTarget && this.closeDialog()}>
+      <div class="dialog-backdrop" @click=${(e) => e.target === e.currentTarget && this.closeDialog()}
+        @touchstart=${(e) => e.stopPropagation()}
+        @touchmove=${(e) => e.stopPropagation()}>
         <section class="dialog ${r}" role="dialog" aria-modal="true" aria-label=${e}>
           <header class="dialog-header">
             <span class="tile-icon"><ha-icon .icon=${t}></ha-icon></span>
@@ -7489,7 +7498,7 @@ var qt = {
             <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
         </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
 	}
-}, Yt = "0.14.2";
+}, Yt = "0.14.5";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Nt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", It), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Lt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Wt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Jt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Nt {}), window.customCards = window.customCards || [];
 var Xt = [
 	{
