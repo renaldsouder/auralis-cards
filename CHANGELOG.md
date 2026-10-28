@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.4
+
+- Réserve la hauteur de la navbar fixée pour que les dernières cartes restent entièrement accessibles au défilement.
+- Ajoute `hide_native_header` pour masquer les onglets et l'en-tête Home Assistant hors mode édition.
+- Permet une navbar mobile de 56 px avec `compact: true` sans couper ses boutons.
+
 ## 0.14.3
 
 - Ajoute `extra_sections` à la carte PC pour afficher et ouvrir d'autres entités dans sa fenêtre Détails.

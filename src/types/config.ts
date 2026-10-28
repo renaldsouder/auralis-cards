@@ -43,6 +43,7 @@ export interface NavbarCardConfig extends BaseCardConfig {
   height_desktop?: number;
   height_tablet?: number;
   height_mobile?: number;
+  hide_native_header?: boolean;
   show_labels?: boolean;
   compact?: boolean;
   aria_label?: string;

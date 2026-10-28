@@ -1,4 +1,4 @@
-//#region ../node_modules/@lit/reactive-element/css-tag.js
+//#region node_modules/@lit/reactive-element/css-tag.js
 var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, n = Symbol(), r = /* @__PURE__ */ new WeakMap(), i = class {
 	constructor(e, t, r) {
 		if (this._$cssResult$ = !0, r !== n) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
@@ -253,7 +253,7 @@ var y = class extends HTMLElement {
 };
 y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[_("elementProperties")] = /* @__PURE__ */ new Map(), y[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
-//#region ../node_modules/lit-html/lit-html.js
+//#region node_modules/lit-html/lit-html.js
 var ie = globalThis, ae = (e) => e, oe = ie.trustedTypes, se = oe ? oe.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, ce = "$lit$", b = `lit$${Math.random().toFixed(9).slice(2)}$`, le = "?" + b, ue = `<${le}>`, x = document, S = () => x.createComment(""), C = (e) => e === null || typeof e != "object" && typeof e != "function", de = Array.isArray, fe = (e) => de(e) || typeof e?.[Symbol.iterator] == "function", pe = "[ 	\n\f\r]", w = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, me = /-->/g, he = />/g, T = RegExp(`>|${pe}(?:([^\\s"'>=/]+)(${pe}*=${pe}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), ge = /'/g, _e = /"/g, ve = /^(?:script|style|textarea|title)$/i, E = ((e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
@@ -5805,18 +5805,40 @@ var _t = class extends M {
 	"unknown",
 	"unavailable",
 	""
-]), yt = "\n  :host([data-auralis-navbar-reserve-right]) hui-view-container {\n    box-sizing: border-box !important;\n    padding-right: calc(var(--view-container-inset-right, 0px) + 176px) !important;\n  }\n", bt = /* @__PURE__ */ new Map();
-function xt(e, t, n) {
+]), yt = "\n  :host([data-auralis-navbar-reserve-right]) hui-view-container {\n    box-sizing: border-box !important;\n    padding-right: calc(var(--view-container-inset-right, 0px) + 176px) !important;\n  }\n", bt = /* @__PURE__ */ new Map(), xt = "\n  :host([data-auralis-navbar-hide-header]) :not(.edit-mode) > .header { display: none !important; }\n  :host([data-auralis-navbar-hide-header]) :not(.edit-mode) > hui-view-container {\n    padding-top: calc(var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px)) !important;\n  }\n  :host([data-auralis-navbar-reserve-bottom]) :not(.edit-mode) > hui-view-container {\n    padding-bottom: calc(var(--view-container-inset-bottom, 0px) + var(--view-container-padding-bottom, 0px) + var(--auralis-navbar-bottom-height, 72px) + 16px) !important;\n  }\n  :host([data-auralis-navbar-reserve-top]) :not(.edit-mode) > hui-view-container {\n    padding-top: calc(var(--header-height, 56px) + var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px) + var(--auralis-navbar-top-height, 72px) + 16px) !important;\n  }\n  :host([data-auralis-navbar-reserve-top][data-auralis-navbar-hide-header]) :not(.edit-mode) > hui-view-container {\n    padding-top: calc(var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px) + var(--auralis-navbar-top-height, 72px) + 16px) !important;\n  }\n", Q = /* @__PURE__ */ new Map();
+function St(e) {
+	let t = Q.get(e);
+	if (!t) return;
+	let n = [...t.owners].filter(([e]) => e.isConnected && !e.preview && !e.editMode), r = e.host, i = window.innerWidth, a = (e) => i <= 600 ? e.config?.height_mobile ?? 72 : i <= 1024 ? e.config?.height_tablet ?? 72 : e.config?.height_desktop ?? 76, o = n.filter(([, e]) => e === "bottom").map(([e]) => e), s = n.filter(([, e]) => e === "top").map(([e]) => e);
+	r.toggleAttribute("data-auralis-navbar-hide-header", n.some(([e]) => e.config?.hide_native_header === !0)), r.toggleAttribute("data-auralis-navbar-reserve-bottom", o.length > 0), r.toggleAttribute("data-auralis-navbar-reserve-top", s.length > 0), o.length ? r.style.setProperty("--auralis-navbar-bottom-height", `${Math.max(...o.map(a))}px`) : r.style.removeProperty("--auralis-navbar-bottom-height"), s.length ? r.style.setProperty("--auralis-navbar-top-height", `${Math.max(...s.map(a))}px`) : r.style.removeProperty("--auralis-navbar-top-height");
+}
+function Ct(e, t, n) {
+	let r = Q.get(t);
+	if (!r) {
+		let e = document.createElement("style");
+		e.textContent = xt, t.append(e), r = {
+			owners: /* @__PURE__ */ new Map(),
+			style: e
+		}, Q.set(t, r);
+	}
+	r.owners.set(e, n), r.style.isConnected || t.append(r.style), St(t);
+}
+function wt(e, t) {
+	if (!t) return;
+	let n = Q.get(t);
+	n && (n.owners.delete(e), St(t), n.owners.size || (n.style.remove(), Q.delete(t)));
+}
+function Tt(e, t, n) {
 	return n ? Math.min(e, t || e) < 600 ? "phone" : "tablet" : e < 600 ? "phone" : e < 1200 ? "tablet" : "desktop";
 }
-function St(e) {
+function Et(e) {
 	let t = e.getRootNode();
 	for (; t instanceof ShadowRoot;) {
 		if (t.host.localName === "hui-root") return t;
 		t = t.host.getRootNode();
 	}
 }
-function Ct(e, t) {
+function Dt(e, t) {
 	let n = bt.get(t);
 	if (!n) {
 		let e = document.createElement("style");
@@ -5827,27 +5849,27 @@ function Ct(e, t) {
 	}
 	n.owners.add(e), n.style.isConnected || t.append(n.style), t.host.setAttribute("data-auralis-navbar-reserve-right", "");
 }
-function wt(e, t) {
+function Ot(e, t) {
 	if (!t) return;
 	let n = bt.get(t);
 	n && (n.owners.delete(e), !n.owners.size && (t.host.removeAttribute("data-auralis-navbar-reserve-right"), n.style.remove(), bt.delete(t)));
 }
-function Tt(e) {
+function kt(e) {
 	try {
 		return new URL(e, "https://home-assistant.local").pathname.replace(/\/$/, "") || "/";
 	} catch {
 		return "/";
 	}
 }
-function Et(e) {
+function At(e) {
 	let t = (e.path || e.navigation_path || "").trim();
 	if (!(!t || t.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(t))) return t.startsWith("/") || t.startsWith("#") ? t : `/${t}`;
 }
-function Dt(e, t) {
-	let n = [Et(e), ...e.active_paths || []].filter((e) => !!e).map(Tt), r = Tt(t);
+function jt(e, t) {
+	let n = [At(e), ...e.active_paths || []].filter((e) => !!e).map(kt), r = kt(t);
 	return n.some((t) => e.exact ? r === t : r === t || t !== "/" && r.startsWith(`${t}/`));
 }
-function Ot(e, t, n) {
+function Mt(e, t, n) {
 	let r = e ? Math.max(t.offsetLeft, e.left) : t.offsetLeft, i = e ? Math.min(t.offsetLeft + t.width, e.right) : t.offsetLeft + t.width, a = i > r ? r : t.offsetLeft, o = i > r ? i - r : t.width;
 	return {
 		centerX: a + o / 2,
@@ -5857,13 +5879,13 @@ function Ot(e, t, n) {
 		centerY: t.offsetTop + t.height / 2
 	};
 }
-var kt = class extends M {
+var Nt = class extends M {
 	constructor(...e) {
 		super(...e), this.routeChanged = () => this.requestUpdate(), this.isPortal = !1, this.preview = !1, this.editMode = !1, this.viewportChanged = () => {
 			this.syncOverlay(), this.requestUpdate();
 		}, this.updateOverlayGeometry = () => {
 			if (!this.overlay) return;
-			let e = window.visualViewport, t = Ot(this.dashboardElement?.getBoundingClientRect(), {
+			let e = window.visualViewport, t = Mt(this.dashboardElement?.getBoundingClientRect(), {
 				offsetLeft: e?.offsetLeft ?? 0,
 				offsetTop: e?.offsetTop ?? 0,
 				width: e?.width ?? window.innerWidth,
@@ -6067,6 +6089,7 @@ var kt = class extends M {
         }
         .navbar-shell { padding: 6px; }
         .nav-item { padding: 2px 6px; gap: 2px; }
+        .compact .nav-item { min-height: 0; padding: 2px 6px; }
         ha-icon { --mdc-icon-size: 20px; }
       }
     `];
@@ -6077,7 +6100,7 @@ var kt = class extends M {
 	get effectivePosition() {
 		let e = this.config?.position || "bottom";
 		if (typeof window > "u") return e;
-		let t = Math.min(window.screen.width, window.screen.height), n = xt(window.innerWidth, t, /Android/i.test(navigator.userAgent));
+		let t = Math.min(window.screen.width, window.screen.height), n = Tt(window.innerWidth, t, /Android/i.test(navigator.userAgent));
 		return n === "phone" ? this.config?.phone_position || e : n === "tablet" && this.config?.tablet_position || e;
 	}
 	findDashboardElement() {
@@ -6096,8 +6119,10 @@ var kt = class extends M {
 		if (this.isPortal) return;
 		let e = this.effectivePosition;
 		this.setAttribute("data-position", e);
-		let t = this.isConnected && this.config && e === "right" && !this.editing ? St(this) : void 0;
-		if (this.reservedRoot !== t && wt(this, this.reservedRoot), t && Ct(this, t), this.reservedRoot = t, !this.config || e === "inline" || this.editing) {
+		let t = this.isConnected && this.config && e === "right" && !this.editing ? Et(this) : void 0;
+		this.reservedRoot !== t && Ot(this, this.reservedRoot), t && Dt(this, t), this.reservedRoot = t;
+		let n = this.isConnected && this.config && !this.editing && (e === "bottom" || e === "top" || this.config.hide_native_header) ? Et(this) : void 0;
+		if (this.layoutRoot !== n && wt(this, this.layoutRoot), n && Ct(this, n, e), this.layoutRoot = n, !this.config || e === "inline" || this.editing) {
 			this.removeOverlay();
 			return;
 		}
@@ -6105,8 +6130,8 @@ var kt = class extends M {
 			...this.config,
 			position: e
 		}), this.overlayConfig = this.config, this.overlayPosition = e), this.overlay.hass = this.hass;
-		let n = this.findDashboardElement();
-		n !== this.dashboardElement && (this.dashboardObserver?.disconnect(), this.dashboardElement = n, n && typeof ResizeObserver < "u" && (this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry), this.dashboardObserver.observe(n))), this.updateOverlayGeometry();
+		let r = this.findDashboardElement();
+		r !== this.dashboardElement && (this.dashboardObserver?.disconnect(), this.dashboardElement = r, r && typeof ResizeObserver < "u" && (this.dashboardObserver = new ResizeObserver(this.updateOverlayGeometry), this.dashboardObserver.observe(r))), this.updateOverlayGeometry();
 	}
 	removeOverlay() {
 		this.dashboardObserver?.disconnect(), this.dashboardObserver = void 0, this.dashboardElement = void 0, this.overlay?.remove(), this.overlay = void 0, this.overlayConfig = void 0, this.overlayPosition = void 0;
@@ -6115,7 +6140,7 @@ var kt = class extends M {
 		super.connectedCallback(), window.addEventListener("location-changed", this.routeChanged), window.addEventListener("popstate", this.routeChanged), this.isPortal || (window.addEventListener("resize", this.viewportChanged), window.visualViewport?.addEventListener("resize", this.viewportChanged), window.visualViewport?.addEventListener("scroll", this.updateOverlayGeometry));
 	}
 	disconnectedCallback() {
-		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), wt(this, this.reservedRoot), this.reservedRoot = void 0, this.removeOverlay()), super.disconnectedCallback();
+		window.removeEventListener("location-changed", this.routeChanged), window.removeEventListener("popstate", this.routeChanged), this.isPortal || (window.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("resize", this.viewportChanged), window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry), Ot(this, this.reservedRoot), this.reservedRoot = void 0, wt(this, this.layoutRoot), this.layoutRoot = void 0, this.removeOverlay()), super.disconnectedCallback();
 	}
 	willUpdate() {
 		this.toggleAttribute("data-edit-mode", this.editing);
@@ -6149,7 +6174,7 @@ var kt = class extends M {
 			...e,
 			label: e.label?.trim()
 		}));
-		if (n.some((e) => !e.label || !Et(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
+		if (n.some((e) => !e.label || !At(e))) throw Error("Chaque entrée de navigation doit avoir un label et un path valides.");
 		for (let t of [
 			"height_desktop",
 			"height_tablet",
@@ -6245,6 +6270,10 @@ var kt = class extends M {
 				} }
 			},
 			{
+				name: "hide_native_header",
+				selector: { boolean: {} }
+			},
+			{
 				name: "show_labels",
 				selector: { boolean: {} }
 			},
@@ -6292,7 +6321,7 @@ var kt = class extends M {
 			return;
 		}
 		if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-		let n = Et(t);
+		let n = At(t);
 		n && (e.preventDefault(), `${window.location.pathname}${window.location.search}${window.location.hash}` !== n && (window.history.pushState(null, "", n), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }))));
 	}
 	render() {
@@ -6310,7 +6339,7 @@ var kt = class extends M {
         <div class="navbar-shell ${n}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((n) => {
-			let r = Et(n), i = Dt(n, e), a = this.badge(n);
+			let r = At(n), i = jt(n, e), a = this.badge(n);
 			return E`<a class="nav-item ${i ? "active" : ""}" href=${r} aria-current=${i ? "page" : O} title=${n.label} @click=${(e) => this.navigate(e, n)}>
                 <span class="icon-wrap"><ha-icon .icon=${n.icon || "mdi:circle-outline"}></ha-icon>${a ? E`<span class="badge">${a}</span>` : O}</span>
                 ${t ? E`<span class="label">${n.label}</span>` : O}
@@ -6334,7 +6363,7 @@ var kt = class extends M {
 			min_columns: 1
 		};
 	}
-}, At = [
+}, Pt = [
 	{
 		name: "Blanc chaud",
 		color: "#ffd4a3"
@@ -6363,7 +6392,7 @@ var kt = class extends M {
 		name: "Vert",
 		color: "#67d7a2"
 	}
-], jt = (e) => /^#[0-9a-f]{6}$/i.test(e), Mt = class extends M {
+], Ft = (e) => /^#[0-9a-f]{6}$/i.test(e), It = class extends M {
 	static {
 		this.styles = [M.styles, o`
     .lights-shell { padding: 18px; container-type: inline-size; }
@@ -6426,7 +6455,7 @@ var kt = class extends M {
 			lights: e.lights
 		}] : []);
 		if (!t.length || t.some((e) => !e.name || !Array.isArray(e.lights) || !e.lights.length || e.lights.some((e) => !e.startsWith("light.")))) throw Error("Configurez au moins un groupe avec des entités light.*.");
-		if (e.preset_colors?.some((e) => !jt(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
+		if (e.preset_colors?.some((e) => !Ft(e.color))) throw Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
 		this.config = {
 			...e,
 			theme: e.theme || "carbon",
@@ -6501,7 +6530,7 @@ var kt = class extends M {
 		return this.available(e).filter((e) => this.supportsBrightness(e));
 	}
 	presets() {
-		return this.config?.preset_colors ?? At;
+		return this.config?.preset_colors ?? Pt;
 	}
 	scenes(e) {
 		return e.scenes ?? this.config?.scenes ?? [];
@@ -6528,7 +6557,7 @@ var kt = class extends M {
 		this.hass && e.length && await this.hass.callService("light", "turn_on", { brightness_pct: Math.round(t) }, { entity_id: e });
 	}
 	async colorize(e, t) {
-		this.hass && e.length && jt(t) && await We(this.hass, e, t);
+		this.hass && e.length && Ft(t) && await We(this.hass, e, t);
 	}
 	renderSwatches(e, t) {
 		return e.length ? E`<div class="swatches" aria-label=${`Couleurs prédéfinies pour ${t}`}>
@@ -6650,7 +6679,7 @@ var kt = class extends M {
 			min_columns: 3
 		};
 	}
-}, Nt = class extends M {
+}, Lt = class extends M {
 	constructor(...e) {
 		super(...e), this.pending = /* @__PURE__ */ new Set();
 	}
@@ -6930,7 +6959,7 @@ var kt = class extends M {
 			min_columns: 3
 		};
 	}
-}, Pt = {
+}, Rt = {
 	off: "Arrêt",
 	heat: "Chauffage",
 	cool: "Climatisation",
@@ -6938,7 +6967,7 @@ var kt = class extends M {
 	auto: "Automatique",
 	dry: "Déshumidifier",
 	fan_only: "Ventilation"
-}, Ft = {
+}, zt = {
 	off: "mdi:power",
 	heat: "mdi:fire",
 	cool: "mdi:snowflake",
@@ -6946,7 +6975,7 @@ var kt = class extends M {
 	auto: "mdi:autorenew",
 	dry: "mdi:water-off",
 	fan_only: "mdi:fan"
-}, It = {
+}, Bt = {
 	heating: "Chauffage en cours",
 	cooling: "Refroidissement en cours",
 	drying: "Déshumidification en cours",
@@ -6954,26 +6983,26 @@ var kt = class extends M {
 	idle: "En attente",
 	off: "Arrêt"
 };
-function Q(e, t) {
+function $(e, t) {
 	let n = e?.attributes[t];
 	return typeof n == "number" && Number.isFinite(n) ? n : void 0;
 }
-function Lt(e) {
-	return Q(e, "temperature");
+function Vt(e) {
+	return $(e, "temperature");
 }
-function Rt(e, t) {
+function Ht(e, t) {
 	if (!P(e)) return;
-	let n = Lt(e);
+	let n = Vt(e);
 	if (n === void 0) return;
-	let r = Q(e, "target_temp_step"), i = r && r > 0 ? r : .5, a = Q(e, "min_temp") ?? 5, o = Q(e, "max_temp") ?? 35;
+	let r = $(e, "target_temp_step"), i = r && r > 0 ? r : .5, a = $(e, "min_temp") ?? 5, o = $(e, "max_temp") ?? 35;
 	if (a > o) return;
 	let s = Math.min(o, Math.max(a, Math.round((n + t * i) * 1e3) / 1e3));
 	return s === n ? void 0 : s;
 }
-function zt(e, t) {
+function Ut(e, t) {
 	return e === void 0 ? "—" : `${e.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}${t}`;
 }
-var Bt = class extends M {
+var Wt = class extends M {
 	static {
 		this.properties = {
 			...M.properties,
@@ -7122,7 +7151,7 @@ var Bt = class extends M {
 		return typeof n == "string" && n.trim() ? n : "°C";
 	}
 	async adjustTemperature(e, t) {
-		let n = Rt(N(this.hass, e), t);
+		let n = Ht(N(this.hass, e), t);
 		if (this.hass && n !== void 0 && !this.pendingEntity) {
 			this.pendingEntity = e, this.errorMessage = void 0;
 			try {
@@ -7148,7 +7177,7 @@ var Bt = class extends M {
 		}
 	}
 	render() {
-		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? Lt(n) : void 0, a = r ? Q(n, "current_temperature") : void 0, o = r ? Q(n, "target_temp_low") : void 0, s = r ? Q(n, "target_temp_high") : void 0, c = r ? Q(n, "current_humidity") : void 0, l = this.unit(n), u = Q(n, "min_temp") ?? 5, d = Q(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? It[String(n?.attributes.hvac_action)] || Pt[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${zt(o, l)} – ${zt(s, l)}` : "—" : zt(i, l), g = Rt(n, -1) !== void 0 && !this.pendingEntity, ee = Rt(n, 1) !== void 0 && !this.pendingEntity;
+		let e = this.ids(), t = e.includes(this.selectedEntity || "") ? this.selectedEntity : e[0], n = N(this.hass, t), r = P(n), i = r ? Vt(n) : void 0, a = r ? $(n, "current_temperature") : void 0, o = r ? $(n, "target_temp_low") : void 0, s = r ? $(n, "target_temp_high") : void 0, c = r ? $(n, "current_humidity") : void 0, l = this.unit(n), u = $(n, "min_temp") ?? 5, d = $(n, "max_temp") ?? 35, f = i !== void 0 && d > u ? Math.max(0, Math.min(78, (i - u) / (d - u) * 78)) : 0, p = r && Array.isArray(n?.attributes.hvac_modes) ? n.attributes.hvac_modes.filter((e) => typeof e == "string") : [], m = r ? Bt[String(n?.attributes.hvac_action)] || Rt[n?.state || ""] || n?.state : "Indisponible", h = i === void 0 ? o !== void 0 && s !== void 0 ? `${Ut(o, l)} – ${Ut(s, l)}` : "—" : Ut(i, l), g = Ht(n, -1) !== void 0 && !this.pendingEntity, ee = Ht(n, 1) !== void 0 && !this.pendingEntity;
 		return E`<ha-card><div class="machine-shell thermostat-shell ${this.machineGridClass()}" style=${this.machineStyle("#ffbd78")}>
       <div class="machine-content thermostat-content">
         <header class="machine-header thermostat-header">
@@ -7166,7 +7195,7 @@ var Bt = class extends M {
 		}}>${this.label(e)}</button>`)}
         </nav>` : O}
         <div class="dial-wrap"><div class="dial" style=${`--dial-position:${f}%`}>
-          <div class="dial-inner"><small>Température actuelle</small><strong>${zt(a, l)}</strong><span>${m}</span></div>
+          <div class="dial-inner"><small>Température actuelle</small><strong>${Ut(a, l)}</strong><span>${m}</span></div>
         </div></div>
         <section class="machine-panel thermostat-panel">
           <div class="panel-head"><div class="panel-title"><small>Consigne</small><strong>${i === void 0 ? o !== void 0 && s !== void 0 ? "Plage de température" : "Réglage indisponible" : "Température souhaitée"}</strong></div>
@@ -7176,12 +7205,12 @@ var Bt = class extends M {
               <button type="button" aria-label=${`Augmenter la consigne de ${this.label(t)}`} ?disabled=${!ee} @click=${() => this.adjustTemperature(t, 1)}>+</button>
             </div>
           </div>
-          <div class="metrics"><span>Mode <strong>${Pt[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
+          <div class="metrics"><span>Mode <strong>${Rt[n?.state || ""] || (r ? n?.state : "—")}</strong></span>
             ${c === void 0 ? O : E`<span>Humidité <strong>${c.toLocaleString("fr-FR")}%</strong></span>`}</div>
           ${p.length ? E`<div class="modes" role="group" aria-label=${`Modes de ${this.label(t)}`}>
             ${p.map((e) => E`<button class="mode-button" type="button" aria-pressed=${e === n?.state}
               ?disabled=${!!this.pendingEntity} @click=${() => this.setMode(t, e)}>
-              <ha-icon .icon=${Ft[e] || "mdi:tune"}></ha-icon>${Pt[e] || e}</button>`)}
+              <ha-icon .icon=${zt[e] || "mdi:tune"}></ha-icon>${Rt[e] || e}</button>`)}
           </div>` : O}
           ${this.errorMessage ? E`<p class="error" role="alert">${this.errorMessage}</p>` : O}
         </section>
@@ -7199,10 +7228,10 @@ var Bt = class extends M {
 			min_columns: 3
 		};
 	}
-}, $ = (e) => P(e) && F(e);
-function Vt(e, t) {
-	if ($(N(e, t.alert_entity))) return "alert";
-	if ($(N(e, t.door_entity)) || $(N(e, t.freezer_door_entity))) return "open";
+}, Gt = (e) => P(e) && F(e);
+function Kt(e, t) {
+	if (Gt(N(e, t.alert_entity))) return "alert";
+	if (Gt(N(e, t.door_entity)) || Gt(N(e, t.freezer_door_entity))) return "open";
 	let n = N(e, t.connected_entity);
 	return t.connected_entity && P(n) && !F(n) ? "offline" : [
 		t.connected_entity,
@@ -7212,13 +7241,13 @@ function Vt(e, t) {
 		t.freezer_door_entity
 	].filter((e) => !!e).some((t) => P(N(e, t))) ? "ok" : "unknown";
 }
-var Ht = {
+var qt = {
 	alert: ["Alerte du réfrigérateur", "mdi:alert-circle-outline"],
 	open: ["Porte ouverte", "mdi:door-open"],
 	offline: ["Hors ligne", "mdi:wifi-off"],
 	ok: ["Fonctionnement normal", "mdi:check-circle-outline"],
 	unknown: ["Données indisponibles", "mdi:help-circle-outline"]
-}, Ut = class extends M {
+}, Jt = class extends M {
 	constructor(...e) {
 		super(...e), this.actionError = "", this.busy = !1;
 	}
@@ -7418,7 +7447,7 @@ var Ht = {
 	renderDetails() {
 		let e = this.config, t = N(this.hass, e.mode_entity), n = Array.isArray(t?.attributes.options) ? t.attributes.options.filter((e) => typeof e == "string") : [];
 		return this.renderDialog(e.name || "Frigo connecté", "mdi:fridge-outline", E`<div class="dialog-body">
-      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${Ht[Vt(this.hass, e)][0]}</strong></div>
+      <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${qt[Kt(this.hass, e)][0]}</strong></div>
         <div class="dialog-stat"><strong>${this.temperature(e.fridge_temperature_entity)}</strong><small>réfrigérateur</small></div></div>
       <div class="detail-grid">
         ${this.detail("Réfrigérateur", "mdi:thermometer", e.fridge_temperature_entity, this.temperature(e.fridge_temperature_entity))}
@@ -7444,25 +7473,25 @@ var Ht = {
 	}
 	render() {
 		if (!this.config) return E``;
-		let e = this.config, t = Vt(this.hass, e);
+		let e = this.config, t = Kt(this.hass, e);
 		return E`<ha-card><div class=${`machine-shell fridge-shell ${this.machineGridClass()}`} style=${this.machineStyle("#83d7e9")}>
       <div class="machine-content"><header class="machine-header"><span class="fridge-icon"><ha-icon .icon=${e.icon || "mdi:fridge-outline"}></ha-icon></span>
-        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${Ht[t][1]}></ha-icon>${Ht[t][0]}</div></div></header>
+        <div><h2>${e.name}</h2><div class=${`fridge-status ${t}`}><ha-icon .icon=${qt[t][1]}></ha-icon>${qt[t][0]}</div></div></header>
         <div class="fridge-spacer"></div><section class="fridge-panel" aria-label="État du frigo connecté">
           <div class="temperature-grid">
             <div class="temperature"><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(e.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(e.fridge_target_entity)}</span></div>
             <div class="temperature"><small><ha-icon icon="mdi:snowflake"></ha-icon>Congélateur</small><strong>${this.temperature(e.freezer_temperature_entity)}</strong><span>Consigne ${this.temperature(e.freezer_target_entity)}</span></div>
           </div><div class="fridge-signals">
-            ${e.door_entity ? E`<span class=${`fridge-signal ${$(N(this.hass, e.door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Frigo ${this.doorLabel(e.door_entity).toLowerCase()}</span>` : O}
-            ${e.freezer_door_entity ? E`<span class=${`fridge-signal ${$(N(this.hass, e.freezer_door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Congélateur ${this.doorLabel(e.freezer_door_entity).toLowerCase()}</span>` : O}
+            ${e.door_entity ? E`<span class=${`fridge-signal ${Gt(N(this.hass, e.door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Frigo ${this.doorLabel(e.door_entity).toLowerCase()}</span>` : O}
+            ${e.freezer_door_entity ? E`<span class=${`fridge-signal ${Gt(N(this.hass, e.freezer_door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Congélateur ${this.doorLabel(e.freezer_door_entity).toLowerCase()}</span>` : O}
             ${e.mode_entity ? E`<span class="fridge-signal"><ha-icon icon="mdi:cog-outline"></ha-icon>${z(this.hass, e.mode_entity)}</span>` : O}
           </div><div class="fridge-footer"><small>${e.filter_entity ? `Filtre · ${z(this.hass, e.filter_entity)}` : "Suivi et commandes"}</small>
             <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
         </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : O}`;
 	}
-}, Wt = "0.14.2";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", kt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Mt), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Nt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Bt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Ut), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends kt {}), window.customCards = window.customCards || [];
-var Gt = [
+}, Yt = "0.14.2";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Ge), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", Ke), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", at), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ut), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", _t), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Nt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", It), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Lt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Wt), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Jt), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Ge {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends at {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ut {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends _t {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Nt {}), window.customCards = window.customCards || [];
+var Xt = [
 	{
 		type: "auralis-navbar-card",
 		name: "Auralis · Navigation",
@@ -7553,8 +7582,8 @@ var Gt = [
 		preview: !0
 	}
 ];
-for (let e of Gt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
-console.info(`%c AURALIS CARDS %c v${Wt} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
+for (let e of Xt) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
+console.info(`%c AURALIS CARDS %c v${Yt} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
 //#endregion
 
 //# sourceMappingURL=auralis-cards.js.map
