@@ -94,6 +94,13 @@ describe("Auralis navbar configuration", () => {
     expect(() => card.setConfig(config({ height_mobile: 48 }))).toThrow("height_mobile doit être");
   });
 
+  it("accepts hiding the native dashboard header", () => {
+    const card = new navbar.AuralisNavbarCard();
+    card.setConfig(config({ height_mobile: 56, compact: true, hide_native_header: true }));
+    expect(card.config?.hide_native_header).toBe(true);
+    expect(card.config?.height_mobile).toBe(56);
+  });
+
   it("accepts separate tablet and phone positions", () => {
     const card = new navbar.AuralisNavbarCard();
     card.setConfig(config({ position: "bottom", phone_position: "bottom", tablet_position: "right" }));

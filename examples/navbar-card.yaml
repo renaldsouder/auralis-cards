@@ -5,10 +5,11 @@ phone_position: bottom
 tablet_position: right  # tablette Android, portrait et paysage
 height_desktop: 76  # largeur > 1024 px
 height_tablet: 72   # largeur de 601 à 1024 px
-height_mobile: 72   # largeur <= 600 px
+height_mobile: 56   # largeur <= 600 px ; minimum 56
+hide_native_header: true  # masque l'en-tête natif hors mode édition
 accent_color: "#79D6F2"
 show_labels: true
-compact: false
+compact: true
 grid_options:
   rows: auto
 

@@ -14,6 +14,68 @@ const RIGHT_DOCK_STYLE = `
   }
 `;
 const rightDockOwners = new Map<ShadowRoot, { owners: Set<AuralisNavbarCard>; style: HTMLStyleElement }>();
+const LAYOUT_STYLE = `
+  :host([data-auralis-navbar-hide-header]) :not(.edit-mode) > .header { display: none !important; }
+  :host([data-auralis-navbar-hide-header]) :not(.edit-mode) > hui-view-container {
+    padding-top: calc(var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px)) !important;
+  }
+  :host([data-auralis-navbar-reserve-bottom]) :not(.edit-mode) > hui-view-container {
+    padding-bottom: calc(var(--view-container-inset-bottom, 0px) + var(--view-container-padding-bottom, 0px) + var(--auralis-navbar-bottom-height, 72px) + 16px) !important;
+  }
+  :host([data-auralis-navbar-reserve-top]) :not(.edit-mode) > hui-view-container {
+    padding-top: calc(var(--header-height, 56px) + var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px) + var(--auralis-navbar-top-height, 72px) + 16px) !important;
+  }
+  :host([data-auralis-navbar-reserve-top][data-auralis-navbar-hide-header]) :not(.edit-mode) > hui-view-container {
+    padding-top: calc(var(--safe-area-inset-top, 0px) + var(--view-container-padding-top, 0px) + var(--auralis-navbar-top-height, 72px) + 16px) !important;
+  }
+`;
+const layoutOwners = new Map<ShadowRoot, { owners: Map<AuralisNavbarCard, NavbarPosition>; style: HTMLStyleElement }>();
+
+function refreshLayout(root: ShadowRoot): void {
+  const entry = layoutOwners.get(root);
+  if (!entry) return;
+  const cards = [...entry.owners].filter(([card]) => card.isConnected && !card.preview && !card.editMode);
+  const host = root.host as HTMLElement;
+  const width = window.innerWidth;
+  const height = (card: AuralisNavbarCard): number => width <= 600
+    ? card.config?.height_mobile ?? 72 : width <= 1024
+      ? card.config?.height_tablet ?? 72 : card.config?.height_desktop ?? 76;
+  const bottom = cards.filter(([, position]) => position === "bottom").map(([card]) => card);
+  const top = cards.filter(([, position]) => position === "top").map(([card]) => card);
+  host.toggleAttribute("data-auralis-navbar-hide-header", cards.some(([card]) => card.config?.hide_native_header === true));
+  host.toggleAttribute("data-auralis-navbar-reserve-bottom", bottom.length > 0);
+  host.toggleAttribute("data-auralis-navbar-reserve-top", top.length > 0);
+  if (bottom.length) host.style.setProperty("--auralis-navbar-bottom-height", `${Math.max(...bottom.map(height))}px`);
+  else host.style.removeProperty("--auralis-navbar-bottom-height");
+  if (top.length) host.style.setProperty("--auralis-navbar-top-height", `${Math.max(...top.map(height))}px`);
+  else host.style.removeProperty("--auralis-navbar-top-height");
+}
+
+function reserveLayout(card: AuralisNavbarCard, root: ShadowRoot, position: NavbarPosition): void {
+  let entry = layoutOwners.get(root);
+  if (!entry) {
+    const style = document.createElement("style");
+    style.textContent = LAYOUT_STYLE;
+    root.append(style);
+    entry = { owners: new Map(), style };
+    layoutOwners.set(root, entry);
+  }
+  entry.owners.set(card, position);
+  if (!entry.style.isConnected) root.append(entry.style);
+  refreshLayout(root);
+}
+
+function releaseLayout(card: AuralisNavbarCard, root?: ShadowRoot): void {
+  if (!root) return;
+  const entry = layoutOwners.get(root);
+  if (!entry) return;
+  entry.owners.delete(card);
+  refreshLayout(root);
+  if (!entry.owners.size) {
+    entry.style.remove();
+    layoutOwners.delete(root);
+  }
+}
 
 export function navbarDevice(viewportWidth: number, screenShortSide: number, android: boolean): NavbarDevice {
   if (android) return Math.min(viewportWidth, screenShortSide || viewportWidth) < 600 ? "phone" : "tablet";
@@ -297,6 +359,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         }
         .navbar-shell { padding: 6px; }
         .nav-item { padding: 2px 6px; gap: 2px; }
+        .compact .nav-item { min-height: 0; padding: 2px 6px; }
         ha-icon { --mdc-icon-size: 20px; }
       }
     `,
@@ -310,6 +373,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
   private dashboardElement?: Element;
   private dashboardObserver?: ResizeObserver;
   private reservedRoot?: ShadowRoot;
+  private layoutRoot?: ShadowRoot;
   public preview = false;
   public editMode = false;
 
@@ -372,6 +436,12 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (this.reservedRoot !== root) releaseRight(this, this.reservedRoot);
     if (root) reserveRight(this, root);
     this.reservedRoot = root;
+    const layoutRoot = this.isConnected && this.config && !this.editing
+      && (position === "bottom" || position === "top" || this.config.hide_native_header)
+      ? lovelaceRoot(this) : undefined;
+    if (this.layoutRoot !== layoutRoot) releaseLayout(this, this.layoutRoot);
+    if (layoutRoot) reserveLayout(this, layoutRoot, position);
+    this.layoutRoot = layoutRoot;
     if (!this.config || position === "inline" || this.editing) {
       this.removeOverlay();
       return;
@@ -431,6 +501,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       window.visualViewport?.removeEventListener("scroll", this.updateOverlayGeometry);
       releaseRight(this, this.reservedRoot);
       this.reservedRoot = undefined;
+      releaseLayout(this, this.layoutRoot);
+      this.layoutRoot = undefined;
       this.removeOverlay();
     }
     super.disconnectedCallback();
@@ -483,6 +555,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       { name: "height_desktop", selector: { number: { min: 56, max: 160, mode: "box" } } },
       { name: "height_tablet", selector: { number: { min: 56, max: 160, mode: "box" } } },
       { name: "height_mobile", selector: { number: { min: 56, max: 160, mode: "box" } } },
+      { name: "hide_native_header", selector: { boolean: {} } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "compact", selector: { boolean: {} } },
       { name: "items", selector: { object: {} } },
