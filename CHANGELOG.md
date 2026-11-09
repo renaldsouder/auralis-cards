@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.7
+
+- Ferme la fenêtre ouverte d'une carte avec le geste retour Android ou le bouton retour du navigateur, sans quitter immédiatement le tableau de bord.
+- Retire l'étape temporaire de navigation quand la fenêtre est fermée avec son bouton ou en touchant l'arrière-plan.
+
 ## 0.14.6
 
 - Masque temporairement la barre de navigation Auralis quand une fenêtre d'une carte est ouverte, afin de laisser toute la fenêtre visible et accessible sur Android.

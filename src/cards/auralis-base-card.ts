@@ -92,12 +92,14 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   protected updated(): void {
     this.syncTheme();
-    setAuralisDialogOpen(this, this.dialog !== null && this.isConnected);
+    setAuralisDialogOpen(this, this.dialog !== null && this.isConnected, this.closeDialogOnBack);
   }
+
+  private readonly closeDialogOnBack = (): void => this.closeDialog();
 
   public connectedCallback(): void {
     super.connectedCallback();
-    if (this.dialog !== null) setAuralisDialogOpen(this, true);
+    if (this.dialog !== null) setAuralisDialogOpen(this, true, this.closeDialogOnBack);
   }
 
   public disconnectedCallback(): void {
