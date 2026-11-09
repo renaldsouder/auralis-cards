@@ -2,6 +2,7 @@ import { LitElement, html, type CSSResultGroup, type TemplateResult } from "lit"
 import type { BaseCardConfig, AuralisTheme } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
+import { setAuralisDialogOpen } from "../utils/dialog-visibility";
 
 interface ConfirmState {
   title: string;
@@ -91,6 +92,17 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   protected updated(): void {
     this.syncTheme();
+    setAuralisDialogOpen(this, this.dialog !== null && this.isConnected);
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    if (this.dialog !== null) setAuralisDialogOpen(this, true);
+  }
+
+  public disconnectedCallback(): void {
+    setAuralisDialogOpen(this, false);
+    super.disconnectedCallback();
   }
 
   protected openDialog(name: string): void {

@@ -2,6 +2,7 @@ import { css, html, nothing, type CSSResultGroup, type TemplateResult } from "li
 import { AuralisBaseCard } from "./auralis-base-card";
 import type { NavbarCardConfig, NavbarItemConfig } from "../types/config";
 import { sharedStyles } from "../styles/shared";
+import { hasOpenAuralisDialog } from "../utils/dialog-visibility";
 
 const UNAVAILABLE_STATES = new Set(["unknown", "unavailable", ""]);
 type NavbarPosition = NonNullable<NavbarCardConfig["position"]>;
@@ -186,6 +187,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         z-index: 1000;
         box-sizing: border-box;
       }
+      :host([data-portal][data-dialog-open]) { display: none; }
       :host([data-portal][data-position="top"]),
       :host([data-portal][data-position="bottom"]) {
         left: var(--auralis-navbar-center-x, 50vw);
@@ -450,6 +452,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       this.overlay = document.createElement("auralis-navbar-card") as AuralisNavbarCard;
       this.overlay.isPortal = true;
       this.overlay.setAttribute("data-portal", "");
+      this.overlay.toggleAttribute("data-dialog-open", hasOpenAuralisDialog());
       document.body.append(this.overlay);
     }
     if (this.overlayConfig !== this.config || this.overlayPosition !== position) {

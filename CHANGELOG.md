@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.6
+
+- Masque temporairement la barre de navigation Auralis quand une fenêtre d'une carte est ouverte, afin de laisser toute la fenêtre visible et accessible sur Android.
+- Rétablit la barre à la fermeture de la dernière fenêtre ouverte.
+
 ## 0.14.5
 
 - Corrige le défilement tactile des sous-menus de toutes les cartes sur Android, sans faire défiler le tableau de bord en arrière-plan.
