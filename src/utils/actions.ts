@@ -1,5 +1,5 @@
 import type { HomeAssistant } from "../types/home-assistant";
-import { domainOf, hexToRgb } from "./entities";
+import { canStopCover, domainOf, entity, hexToRgb } from "./entities";
 
 export async function activateEntity(hass: HomeAssistant, entityId?: string): Promise<void> {
   if (!entityId) return;
@@ -70,8 +70,9 @@ export async function coverCommand(
   entityIds: string[],
   command: "open" | "close" | "stop",
 ): Promise<void> {
-  if (!entityIds.length) return;
-  await hass.callService("cover", `${command}_cover`, {}, { entity_id: entityIds });
+  const targets = command === "stop" ? entityIds.filter((id) => canStopCover(entity(hass, id))) : entityIds;
+  if (!targets.length) return;
+  await hass.callService("cover", `${command}_cover`, {}, { entity_id: targets });
 }
 
 export function fireMoreInfo(element: HTMLElement, entityId?: string): void {

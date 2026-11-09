@@ -23,6 +23,12 @@ export function isAvailable(state?: HassEntity): boolean {
   return Boolean(state && state.state !== "unknown" && state.state !== "unavailable");
 }
 
+export function canStopCover(state?: HassEntity): boolean {
+  if (!isAvailable(state)) return false;
+  const features = state?.attributes.supported_features;
+  return typeof features !== "number" || (features & 8) !== 0;
+}
+
 export function isActive(state?: HassEntity): boolean {
   return Boolean(state && ACTIVE_STATES.has(state.state.toLowerCase()));
 }

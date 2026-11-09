@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.8
+
+- Désactive Stop pour les volets qui ne prennent pas en charge cette commande et explique pourquoi dans les fenêtres des cartes Pièce et Volets.
+- En commande groupée, arrête uniquement les volets compatibles afin qu'un volet incompatible ne bloque pas les autres.
+- Indique clairement quand aucun volet n'est configuré dans la fenêtre de la carte Pièce.
+
 ## 0.14.7
 
 - Ferme la fenêtre ouverte d'une carte avec le geste retour Android ou le bouton retour du navigateur, sans quitter immédiatement le tableau de bord.

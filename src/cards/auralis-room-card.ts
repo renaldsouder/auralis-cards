@@ -3,6 +3,7 @@ import { AuralisBaseCard } from "./auralis-base-card";
 import type { RoomBackgroundMode, RoomCardConfig, RoomOverlayPosition, RoomSceneConfig, RoomSideControlConfig } from "../types/config";
 import defaultSalonImage from "../assets/salon-default.jpg?inline";
 import {
+  canStopCover,
   coverPosition,
   displayState,
   entity,
@@ -1849,6 +1850,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   private renderCoversDialog(): TemplateResult {
     const ids = this.config?.covers || [];
     const states = ids.map((id) => entity(this.hass, id));
+    const availableIds = ids.filter((id) => isAvailable(entity(this.hass, id)));
+    const stopIds = availableIds.filter((id) => canStopCover(entity(this.hass, id)));
     const openCount = states.filter((state) => state?.state === "open" || state?.state === "opening").length;
     const movingCount = states.filter((state) => state?.state === "opening" || state?.state === "closing").length;
     const availableCount = states.filter((state) => isAvailable(state)).length;
@@ -1863,13 +1866,14 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
           </div>
           <div class="dialog-section-title">Commande groupée</div>
           <div class="group-bar">
-            <button class="action" @click=${() => coverCommand(this.hass!, ids, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-            <button class="action" @click=${() => coverCommand(this.hass!, ids, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-            <button class="action" @click=${() => coverCommand(this.hass!, ids, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
+            <button class="action" ?disabled=${!availableIds.length} @click=${() => coverCommand(this.hass!, availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
+            <button class="action" ?disabled=${!stopIds.length} title=${stopIds.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => coverCommand(this.hass!, stopIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+            <button class="action" ?disabled=${!availableIds.length} @click=${() => coverCommand(this.hass!, availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
           </div>
+          ${availableIds.length && !stopIds.length ? html`<p class="muted">Ces volets ne prennent pas en charge la commande Stop.</p>` : nothing}
           <div class="dialog-section-title">Volets</div>
           <div class="list">
-            ${ids.map((id) => {
+            ${ids.length ? ids.map((id) => {
               const state = entity(this.hass, id);
               const stateLabel = !isAvailable(state)
                 ? "Indisponible"
@@ -1891,12 +1895,12 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
                   </div>
                   <div class="cover-device-actions">
                     <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-                    <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+                    <button class="action" ?disabled=${!canStopCover(state)} title=${isAvailable(state) ? (canStopCover(state) ? "Arrêter" : "Arrêt non pris en charge par ce volet") : "Volet indisponible"} @click=${() => coverCommand(this.hass!, [id], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
                     <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
                   </div>
                 </div>
               `;
-            })}
+            }) : html`<div class="list-row">Aucun volet configuré dans cette carte.</div>`}
           </div>
         </div>
       `,

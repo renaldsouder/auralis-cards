@@ -6,6 +6,7 @@ export interface HassEntity {
     icon?: string;
     unit_of_measurement?: string;
     current_position?: number;
+    supported_features?: number;
     brightness?: number;
     rgb_color?: number[];
     supported_color_modes?: string[];

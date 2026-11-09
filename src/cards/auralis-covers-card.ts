@@ -4,7 +4,7 @@ import { AuralisBaseCard } from "./auralis-base-card";
 import type { CoversCardConfig, CoversGroupConfig } from "../types/config";
 import type { HassEntity } from "../types/home-assistant";
 import { coverCommand } from "../utils/actions";
-import { displayState, entity, friendlyName, isAvailable } from "../utils/entities";
+import { canStopCover, displayState, entity, friendlyName, isAvailable } from "../utils/entities";
 
 interface GroupStats {
   total: number;
@@ -341,6 +341,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
   private renderGroup(group: CoversGroupConfig, index: number): TemplateResult {
     const stats = this.groupStats(group);
+    const stopIds = stats.availableIds.filter((id) => canStopCover(entity(this.hass, id)));
     const status = this.groupStatus(stats);
     const customImage = group.background_image?.trim() || this.config?.background_image?.trim();
     const imagePosition = group.background_position?.trim();
@@ -362,7 +363,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         </button>
         <div class="group-controls" aria-label=${`Commandes du groupe ${name}`}>
           <button class="group-control" type="button" title="Monter" aria-label=${`Monter les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
-          <button class="group-control" type="button" title="Stop" aria-label=${`Arrêter les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon></button>
+          <button class="group-control" type="button" title=${stopIds.length ? "Stop" : "Aucun volet ne prend en charge l'arrêt"} aria-label=${`Arrêter les volets du groupe ${name}`} ?disabled=${!stopIds.length} @click=${() => coverCommand(this.hass!, stopIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon></button>
           <button class="group-control" type="button" title="Descendre" aria-label=${`Descendre les volets du groupe ${name}`} ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
         </div>
       </div>
@@ -391,6 +392,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   private renderGroupDialog(group: CoversGroupConfig): TemplateResult {
     const ids = [...new Set(group.covers)];
     const stats = this.groupStats(group);
+    const stopIds = stats.availableIds.filter((id) => canStopCover(entity(this.hass, id)));
     return this.renderDialog(
       group.name.trim(),
       group.icon || "mdi:blinds-horizontal",
@@ -407,9 +409,10 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
           <div class="dialog-section-title">Commande groupée</div>
           <div class="group-bar">
             <button class="action" ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-            <button class="action" ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+            <button class="action" ?disabled=${!stopIds.length} title=${stopIds.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => coverCommand(this.hass!, stopIds, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
             <button class="action" ?disabled=${!stats.available} @click=${() => coverCommand(this.hass!, stats.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
           </div>
+          ${stats.available && !stopIds.length ? html`<p class="muted">Ces volets ne prennent pas en charge la commande Stop.</p>` : nothing}
           <div class="dialog-section-title">Volets</div>
           <div class="list">
             ${ids.length ? ids.map((id) => {
@@ -423,7 +426,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
                   </div>
                   <div class="cover-device-actions">
                     <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-                    <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+                    <button class="action" ?disabled=${!canStopCover(state)} title=${isAvailable(state) ? (canStopCover(state) ? "Arrêter" : "Arrêt non pris en charge par ce volet") : "Volet indisponible"} @click=${() => coverCommand(this.hass!, [id], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
                     <button class="action" ?disabled=${!isAvailable(state)} @click=${() => coverCommand(this.hass!, [id], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
                   </div>
                 </div>

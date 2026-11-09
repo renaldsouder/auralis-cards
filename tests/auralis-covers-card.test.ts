@@ -65,7 +65,7 @@ describe("Auralis covers groups", () => {
     card.hass = {
       states: {
         "cover.baie": state("cover.baie", "open"),
-        "cover.fenetre": state("cover.fenetre", "closed"),
+        "cover.fenetre": { ...state("cover.fenetre", "closed"), attributes: { supported_features: 3 } },
         "cover.absent": state("cover.absent", "unavailable"),
       },
       callService,
@@ -80,7 +80,7 @@ describe("Auralis covers groups", () => {
     const template = internals.renderGroup(config.groups[0], 0);
     const markup = template.strings.join("");
     expect(markup).toContain('title="Monter"');
-    expect(markup).toContain('title="Stop"');
+    expect(template.values).toContain("Stop");
     expect(markup).toContain('title="Descendre"');
     expect(markup).not.toContain(">Monter</button>");
     expect(markup).not.toContain(">Stop</button>");
@@ -96,7 +96,7 @@ describe("Auralis covers groups", () => {
     await handlers[2]();
     await handlers[3]();
     expect(callService).toHaveBeenNthCalledWith(1, "cover", "open_cover", {}, { entity_id: ["cover.baie", "cover.fenetre"] });
-    expect(callService).toHaveBeenNthCalledWith(2, "cover", "stop_cover", {}, { entity_id: ["cover.baie", "cover.fenetre"] });
+    expect(callService).toHaveBeenNthCalledWith(2, "cover", "stop_cover", {}, { entity_id: ["cover.baie"] });
     expect(callService).toHaveBeenNthCalledWith(3, "cover", "close_cover", {}, { entity_id: ["cover.baie", "cover.fenetre"] });
     expect(internals.dialog).toBeNull();
   });
