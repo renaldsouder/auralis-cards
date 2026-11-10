@@ -11,7 +11,7 @@ import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
 import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
 
-const VERSION = "0.15.0";
+const VERSION = "0.15.1";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);

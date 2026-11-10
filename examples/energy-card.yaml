@@ -6,3 +6,7 @@ theme: carbon
 energy_entity: sensor.compteur_energie
 # Facultatif. L'unité affichée est celle du capteur, par exemple VA ou W.
 power_entity: sensor.compteur_puissance_apparente
+# Dans une vue Sections, occupe toute la largeur de la section.
+grid_options:
+  columns: full
+  rows: auto

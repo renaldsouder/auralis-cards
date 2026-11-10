@@ -21,5 +21,8 @@ describe("Auralis entrypoint", () => {
     ];
     expect([...definitions.keys()].filter((type) => type.startsWith("auralis-")).sort()).toEqual([...expected].sort());
     expect(cards.map((card) => card.type).sort()).toEqual([...expected].sort());
+
+    const { AuralisEnergyCard } = await import("../src/cards/auralis-energy-card");
+    expect(AuralisEnergyCard.prototype.getGridOptions()).toMatchObject({ columns: 12, min_columns: 6 });
   });
 });

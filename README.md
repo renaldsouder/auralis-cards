@@ -85,6 +85,8 @@ Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les au
 
 La [carte Énergie](examples/energy-card.yaml) compare les sept derniers jours aux mêmes jours de la semaine précédente. Renseignez `energy_entity` avec un capteur d’énergie cumulée qui alimente les statistiques Recorder, et `power_entity` pour afficher la puissance instantanée.
 
+Dans une vue Sections, la carte Énergie utilise 12 colonnes par défaut. Modifiez sa largeur dans l’onglet **Disposition** ou définissez `grid_options.columns: full` pour occuper toute la section.
+
 ## Exemple minimal — Navigation
 
 Une configuration autonome est disponible dans [`examples/navbar-card.yaml`](examples/navbar-card.yaml).

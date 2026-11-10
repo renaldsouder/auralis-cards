@@ -7680,13 +7680,62 @@ var on = {
     :host { container-type: inline-size; }
     @container (max-width: 280px) {
       .energy-shell { padding: 12px; }
-      .reading { gap: 4px; }
-      .reading ha-icon { --mdc-icon-size: 14px; }
+      .date-label { font-size: 9px; }
+      .reading ha-icon { display: none; }
+      .reading strong { font-size: 12px; }
     }
   `];
 	}
 	static getStubConfig() {
 		return { energy_entity: "sensor.compteur_energie" };
+	}
+	static getConfigForm() {
+		let e = {
+			name: "Titre",
+			icon: "Icône",
+			theme: "Thème",
+			energy_entity: "Capteur d’énergie cumulée",
+			power_entity: "Capteur de puissance instantanée"
+		};
+		return {
+			schema: [
+				{
+					name: "name",
+					selector: { text: {} }
+				},
+				{
+					name: "energy_entity",
+					required: !0,
+					selector: { entity: { filter: { domain: "sensor" } } }
+				},
+				{
+					name: "power_entity",
+					selector: { entity: { filter: { domain: "sensor" } } }
+				},
+				{
+					name: "theme",
+					selector: { select: { options: [
+						"auto",
+						"halo",
+						"carbon",
+						"mono",
+						"aurora"
+					] } }
+				},
+				{
+					name: "icon",
+					selector: { icon: {} }
+				}
+			],
+			computeLabel: ({ name: t }) => e[t]
+		};
+	}
+	getGridOptions() {
+		return {
+			...super.getGridOptions(),
+			columns: 12,
+			min_columns: 6
+		};
 	}
 	setConfig(e) {
 		if (!e.energy_entity?.trim()) throw Error("Le capteur d’énergie (energy_entity) est requis.");
@@ -7831,7 +7880,7 @@ var on = {
         ${this.renderReading(this.config.energy_entity, "Index compteur", "mdi:counter")}
       </ha-card>`;
 	}
-}, pn = "0.15.0";
+}, pn = "0.15.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", tt), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", nt), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", ht), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", xt), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", Ot), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Gt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", Jt), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Yt), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", nn), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", sn), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", fn), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends tt {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends ht {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends xt {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends Ot {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Gt {}), window.customCards = window.customCards || [];
 var mn = [
 	{

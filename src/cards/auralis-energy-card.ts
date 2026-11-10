@@ -126,8 +126,9 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     :host { container-type: inline-size; }
     @container (max-width: 280px) {
       .energy-shell { padding: 12px; }
-      .reading { gap: 4px; }
-      .reading ha-icon { --mdc-icon-size: 14px; }
+      .date-label { font-size: 9px; }
+      .reading ha-icon { display: none; }
+      .reading strong { font-size: 12px; }
     }
   `];
 
@@ -139,6 +140,30 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
 
   static getStubConfig(): Partial<EnergyCardConfig> {
     return { energy_entity: "sensor.compteur_energie" };
+  }
+
+  static getConfigForm() {
+    const labels: Record<string, string> = {
+      name: "Titre",
+      icon: "Icône",
+      theme: "Thème",
+      energy_entity: "Capteur d’énergie cumulée",
+      power_entity: "Capteur de puissance instantanée",
+    };
+    return {
+      schema: [
+        { name: "name", selector: { text: {} } },
+        { name: "energy_entity", required: true, selector: { entity: { filter: { domain: "sensor" } } } },
+        { name: "power_entity", selector: { entity: { filter: { domain: "sensor" } } } },
+        { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
+        { name: "icon", selector: { icon: {} } },
+      ],
+      computeLabel: ({ name }: { name: string }) => labels[name],
+    };
+  }
+
+  public getGridOptions(): Record<string, number> {
+    return { ...super.getGridOptions(), columns: 12, min_columns: 6 };
   }
 
   public setConfig(config: EnergyCardConfig): void {

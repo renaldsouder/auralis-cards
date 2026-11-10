@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.1
+
+- Affiche la carte Énergie sur 12 colonnes par défaut dans les vues Sections et améliore la lisibilité du bandeau en demi-largeur.
+- Ajoute l’éditeur visuel de la carte Énergie pour sélectionner les capteurs et modifier la présentation depuis Home Assistant.
+
 ## 0.15.0
 
 - Ajoute la carte Auralis Énergie avec un graphique interactif des sept derniers jours comparés aux mêmes jours de la semaine précédente.
