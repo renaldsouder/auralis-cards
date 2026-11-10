@@ -1,0 +1,8 @@
+# Carte individuelle Lovelace. Ressource JavaScript : auralis-cards.js.
+type: custom:auralis-energy-card
+name: Consommation électrique globale
+theme: carbon
+# Capteur d'énergie cumulée avec statistiques Recorder (total ou total_increasing).
+energy_entity: sensor.compteur_energie
+# Facultatif. L'unité affichée est celle du capteur, par exemple VA ou W.
+power_entity: sensor.compteur_puissance_apparente

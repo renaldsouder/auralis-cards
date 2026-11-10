@@ -9,8 +9,9 @@ import { AuralisLightsCard } from "./src/cards/auralis-lights-card";
 import { AuralisSwitchesCard } from "./src/cards/auralis-switches-card";
 import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
 import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
+import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
 
-const VERSION = "0.14.8";
+const VERSION = "0.15.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -22,6 +23,7 @@ if (!customElements.get("auralis-lights-card")) customElements.define("auralis-l
 if (!customElements.get("auralis-switches-card")) customElements.define("auralis-switches-card", AuralisSwitchesCard);
 if (!customElements.get("auralis-thermostat-card")) customElements.define("auralis-thermostat-card", AuralisThermostatCard);
 if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-fridge-card", AuralisFridgeCard);
+if (!customElements.get("auralis-energy-card")) customElements.define("auralis-energy-card", AuralisEnergyCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -110,6 +112,12 @@ const cards = [
     type: "auralis-fridge-card",
     name: "Auralis · Frigo connecté",
     description: "Températures, portes, alertes et commandes du réfrigérateur.",
+    preview: true,
+  },
+  {
+    type: "auralis-energy-card",
+    name: "Auralis · Énergie",
+    description: "Consommation électrique quotidienne comparée à J−7, puissance et index compteur.",
     preview: true,
   },
 ];

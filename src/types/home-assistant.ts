@@ -23,6 +23,7 @@ export interface HassEntity {
 
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
+  config?: { time_zone?: string };
   locale?: { language?: string };
   themes?: { darkMode?: boolean };
   callWS?<T>(message: Record<string, unknown>): Promise<T>;
@@ -56,6 +57,7 @@ declare global {
     "auralis-switches-card": HTMLElement;
     "auralis-thermostat-card": HTMLElement;
     "auralis-fridge-card": HTMLElement;
+    "auralis-energy-card": HTMLElement;
     "orbit-room-card": HTMLElement;
     "orbit-pc-card": HTMLElement;
     "orbit-unraid-card": HTMLElement;

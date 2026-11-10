@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0
+
+- Ajoute la carte Auralis Énergie avec un graphique interactif des sept derniers jours comparés aux mêmes jours de la semaine précédente.
+- Affiche la consommation d’aujourd’hui et de J−7, l’index du compteur et la puissance instantanée si elle est configurée.
+
 ## 0.14.8
 
 - Désactive Stop pour les volets qui ne prennent pas en charge cette commande et explique pourquoi dans les fenêtres des cartes Pièce et Volets.
