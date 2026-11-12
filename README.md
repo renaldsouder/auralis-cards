@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, météo, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -18,6 +18,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-fridge-card`
 - `custom:auralis-energy-card`
 - `custom:auralis-climate-card`
+- `custom:auralis-weather-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -101,6 +102,14 @@ rooms:
   - name: Extérieur
     temperature_entity: sensor.exterieur_temperature
     outdoor: true
+```
+
+La [carte Météo](examples/weather-card.yaml) sert d’en-tête : salutation, date, heure, temps actuel et bandeau de prévisions coloré, sur un fond qui suit le temps et passe en mode nuit. Un appui ouvre les mesures détaillées, la courbe des prochaines heures et les prochains jours. Voir le [guide Météo](docs/WEATHER_CARD.md).
+
+```yaml
+type: custom:auralis-weather-card
+entity: weather.forecast_maison
+temperature_entity: sensor.exterieur_temperature
 ```
 
 ## Exemple minimal — Navigation

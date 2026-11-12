@@ -11,8 +11,9 @@ import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
 import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
 import { AuralisClimateCard } from "./src/cards/auralis-climate-card";
+import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
 
-const VERSION = "0.16.0";
+const VERSION = "0.17.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -26,6 +27,7 @@ if (!customElements.get("auralis-thermostat-card")) customElements.define("aural
 if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-fridge-card", AuralisFridgeCard);
 if (!customElements.get("auralis-energy-card")) customElements.define("auralis-energy-card", AuralisEnergyCard);
 if (!customElements.get("auralis-climate-card")) customElements.define("auralis-climate-card", AuralisClimateCard);
+if (!customElements.get("auralis-weather-card")) customElements.define("auralis-weather-card", AuralisWeatherCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -127,6 +129,15 @@ const cards = [
     name: "Auralis · Climat des pièces",
     description: "Températures, humidité et batteries de plusieurs pièces, avec courbes colorées par palier.",
     preview: true,
+  },
+  {
+    type: "auralis-weather-card",
+    name: "Auralis · Météo",
+    description: "Horloge, conditions actuelles sur un ciel qui suit le temps, prévisions colorées et vigilance.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("weather.")
+      ? { config: { type: "custom:auralis-weather-card", entity: entityId } }
+      : null,
   },
 ];
 
