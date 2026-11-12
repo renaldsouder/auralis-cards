@@ -1,0 +1,31 @@
+# Remplacer les identifiants cover.* ci-dessous par ceux de votre Home Assistant.
+# Les quatre photos sont déjà intégrées à auralis-cards.js.
+type: custom:auralis-covers-card
+theme: carbon
+# group_columns: 1  # Facultatif : 1 à 4 ; un seul groupe utilise 1 par défaut.
+
+groups:
+  - name: Salon
+    covers:
+      - cover.volet_salon_1
+      - cover.volet_salon_2
+    # background_image: /local/auralis-cards/images/salon.jpg
+
+  - name: Salle à manger
+    covers:
+      - cover.volet_salle_a_manger_1
+      - cover.volet_salle_a_manger_2
+
+  - name: Bureau
+    covers:
+      - cover.volet_bureau_1
+
+  - name: Chambres
+    covers:
+      - cover.volet_chambre_1
+      - cover.volet_chambre_2
+
+# Noms affichés dans la pop-up (utiliser les mêmes identifiants que dans groups.covers).
+entity_labels:
+  cover.volet_salon_1: Volet salon côté allée
+  cover.volet_salle_a_manger_1: Volet salle à manger

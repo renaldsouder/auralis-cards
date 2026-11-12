@@ -1,0 +1,7 @@
+# Fins de ligne LF partout : le bundle construit sous Windows doit rester
+# identique à celui de la CI (vérifié par le workflow Quality).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pptx binary

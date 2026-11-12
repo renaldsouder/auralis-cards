@@ -9,9 +9,13 @@ Thumbs.db
 
 # Fichiers de conception et configurations propres à l'installation locale
 _Conception/
-auralis-pc-card.ts
+/auralis-pc-card.ts
 docs/UNRAID_SKYNET_ENTITY_ANALYSIS.md
 examples/pc-246-lap-pc-rso-card.yaml
 examples/pc-246-lap-pc-rso-helpers.yaml
+examples/pc-246-lap-pc-rso-lovelace.yaml
+examples/pc-236-vm-dev-linux.yaml
+examples/proxmox-domo-jarvis-card.yaml
 examples/salon-card-complete.yaml
 examples/skynet-unraid-card.yaml
+examples/dashboard-maison-rso.yaml
