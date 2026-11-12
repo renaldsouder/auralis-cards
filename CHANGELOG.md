@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.0
+
+- Ajoute la carte Auralis Climat des pièces : une tuile par pièce avec température colorée par palier de confort, humidité, batterie faible et courbe de la période.
+- Résume la moyenne intérieure, la pièce la plus fraîche, la plus chaude et la température extérieure.
+- Ouvre pour chaque pièce les courbes de température et d’humidité sur 24 heures ou 7 jours.
+- Permet de personnaliser les paliers de couleur intérieurs et extérieurs.
+
 ## 0.15.1
 
 - Affiche la carte Énergie sur 12 colonnes par défaut dans les vues Sections et améliore la lisibilité du bandeau en demi-largeur.

@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -17,6 +17,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-thermostat-card`
 - `custom:auralis-fridge-card`
 - `custom:auralis-energy-card`
+- `custom:auralis-climate-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -86,6 +87,21 @@ Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les au
 La [carte Énergie](examples/energy-card.yaml) compare les sept derniers jours aux mêmes jours de la semaine précédente. Renseignez `energy_entity` avec un capteur d’énergie cumulée qui alimente les statistiques Recorder, et `power_entity` pour afficher la puissance instantanée.
 
 Dans une vue Sections, la carte Énergie utilise 12 colonnes par défaut. Modifiez sa largeur dans l’onglet **Disposition** ou définissez `grid_options.columns: full` pour occuper toute la section.
+
+La [carte Climat des pièces](examples/climate-card.yaml) réunit les capteurs de température de la maison : une tuile par pièce avec température colorée par palier de confort, humidité, batterie faible et courbe sur 24 heures. Un appui ouvre les courbes de température et d’humidité sur 24 heures ou 7 jours. Voir le [guide Climat](docs/CLIMATE_CARD.md).
+
+```yaml
+type: custom:auralis-climate-card
+name: Températures
+rooms:
+  - name: Salon
+    temperature_entity: sensor.salon_temperature
+    humidity_entity: sensor.salon_humidite
+    battery_entity: sensor.salon_batterie
+  - name: Extérieur
+    temperature_entity: sensor.exterieur_temperature
+    outdoor: true
+```
 
 ## Exemple minimal — Navigation
 
