@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0
+
+- Ajoute la carte Auralis Actions : tuiles à un appui pour scripts, boutons, scènes, automatisations, interrupteurs, services libres et navigation.
+- Affiche sur chaque tuile la dernière utilisation ou l’état de l’entité, une roue pendant l’exécution puis « Fait » ou « Échec ».
+- Demande une confirmation, avec bouton rouge pour les actions sensibles, quand `confirm` est défini.
+- Propose une présentation en pastilles (`layout: compact`) et ouvre la fiche de l’entité par appui long.
+
 ## 0.17.0
 
 - Ajoute la carte Auralis Météo : salutation, date, heure, température et temps actuels, humidité, vent, risque de pluie et prochain lever ou coucher du soleil.
