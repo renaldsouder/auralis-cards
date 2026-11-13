@@ -13,6 +13,20 @@ export interface EnergyCardConfig extends BaseCardConfig {
   unit?: string;
   /** Nombre de décimales des consommations. */
   decimals?: number;
+  /** Prix par kWh (électricité), ou par unité affichée pour un autre compteur (m³ de gaz…). */
+  price?: number;
+  /** Capteur du prix actuel (`EUR/kWh`, `€/kWh`, `c€/kWh`, `EUR/MWh`, `€/m³`…), prioritaire sur `price`. */
+  price_entity?: string;
+  /** Symbole monétaire affiché, `€` par défaut. */
+  currency?: string;
+  /** Coût fixe ajouté à chaque jour (abonnement ramené à la journée). */
+  subscription_per_day?: number;
+  /** Affiche les coûts : vrai par défaut dès qu'un prix est configuré. */
+  show_cost?: boolean;
+  /** Prix des heures creuses, dans la même unité que `price`. */
+  offpeak_price?: number;
+  /** Plages des heures creuses, `["22:00-06:00"]` ou `"01:30-07:30, 12:30-14:30"`. */
+  offpeak_hours?: string[] | string;
 }
 
 export interface EnergyProfile {
@@ -74,6 +88,167 @@ export function meterReading(state: HassEntity | undefined, profile: Pick<Energy
 interface DailyStatistic {
   start: number;
   change?: number | null;
+}
+
+/** Plage horaire en minutes depuis minuit, fin exclue. */
+export type MinuteRange = readonly [number, number];
+
+const DAY_MINUTES = 1440;
+const CLOCK_RANGE = /^(\d{1,2})(?:[:h](\d{2}))?\s*[-–à]\s*(\d{1,2})(?:[:h](\d{2}))?$/i;
+
+/**
+ * Plages des heures creuses : `"22:00-06:00"` (liste ou texte séparé par des virgules).
+ * Une plage qui franchit minuit est coupée en deux ; une plage invalide est ignorée.
+ */
+export function parseOffpeakHours(value: unknown): MinuteRange[] {
+  const items = Array.isArray(value) ? value : typeof value === "string" ? value.split(/[,;\n]+/) : [];
+  return items.flatMap((item): MinuteRange[] => {
+    const match = typeof item === "string" ? CLOCK_RANGE.exec(item.trim()) : null;
+    if (!match) return [];
+    const [startHour, startMinute = "0", endHour, endMinute = "0"] = match.slice(1);
+    const start = Number(startHour) * 60 + Number(startMinute);
+    const end = Number(endHour) * 60 + Number(endMinute);
+    if (start >= DAY_MINUTES || end > DAY_MINUTES || Number(startMinute) > 59 || Number(endMinute) > 59 || start === end) return [];
+    return start < end ? [[start, end]] : [[start, DAY_MINUTES], ...(end > 0 ? [[0, end] as const] : [])];
+  });
+}
+
+/** Part (0 à 1) d'une heure commençant à `minute` (heure locale) passée en heures creuses. */
+export function offpeakShare(minute: number, ranges: readonly MinuteRange[]): number {
+  let covered = 0;
+  // Une heure commençant à 23:30 déborde sur le lendemain : ses deux morceaux sont comptés.
+  for (const [from, to] of [[minute, Math.min(minute + 60, DAY_MINUTES)], [0, Math.max(0, minute + 60 - DAY_MINUTES)]]) {
+    for (const [start, end] of ranges) covered += Math.max(0, Math.min(to, end) - Math.max(from, start));
+  }
+  return Math.min(1, covered / 60);
+}
+
+const clockFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Jour (minuit UTC de la date locale, comme les clés de l'historique) et minute locale d'un instant. */
+export function localClock(time: number, timeZone?: string): { day: number; minute: number } {
+  const key = timeZone ?? "";
+  let formatter = clockFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    });
+    clockFormatters.set(key, formatter);
+  }
+  const parts: Record<string, string> = {};
+  for (const { type, value } of formatter.formatToParts(time)) parts[type] = value;
+  return {
+    day: Date.parse(`${parts.year}-${parts.month}-${parts.day}`),
+    minute: (Number(parts.hour) % 24) * 60 + Number(parts.minute),
+  };
+}
+
+export interface DailyUsage {
+  total: number;
+  /** Part consommée en heures creuses. */
+  offpeak: number;
+}
+
+/**
+ * Regroupe des statistiques horaires par jour local (fuseau de Home Assistant) en séparant les
+ * heures creuses. Les jours de 23 ou 25 heures (changement d'heure) sont comptés tels quels.
+ */
+export function bucketHourly(stats: readonly DailyStatistic[], timeZone: string | undefined, ranges: readonly MinuteRange[]): Map<number, DailyUsage> {
+  const days = new Map<number, DailyUsage>();
+  for (const { start, change } of stats) {
+    if (typeof change !== "number" || !Number.isFinite(change) || change < 0 || !Number.isFinite(start)) continue;
+    const { day, minute } = localClock(start, timeZone);
+    const usage = days.get(day) ?? { total: 0, offpeak: 0 };
+    usage.total += change;
+    usage.offpeak += change * offpeakShare(minute, ranges);
+    days.set(day, usage);
+  }
+  return days;
+}
+
+const CENT_UNITS = /^(?:c|ct|cts|cent|cents|c€|ceur|centimes?)$/i;
+const PRICE_BASES = ["Wh", "kWh", "MWh", "GWh", "m³", "L", "mL"];
+
+/**
+ * Lit l'unité d'un capteur de prix (`EUR/kWh`, `€/kWh`, `c€/kWh`, `EUR/MWh`, `€/m3`…) :
+ * facteur monétaire (0,01 pour des centimes) et unité de consommation facturée.
+ */
+export function parsePriceUnit(unit: unknown): { factor: number; per?: string } {
+  if (typeof unit !== "string" || !unit.trim()) return { factor: 1 };
+  const [money, per] = unit.trim().split("/").map((part) => part.trim());
+  const normalized = per?.replace(/^m3$/i, "m³");
+  return {
+    factor: CENT_UNITS.test(money ?? "") ? 0.01 : 1,
+    per: PRICE_BASES.find((base) => base.toLowerCase() === normalized?.toLowerCase()),
+  };
+}
+
+export interface Tariff {
+  /** Unité de facturation : kWh pour un compteur d'énergie, sinon l'unité affichée. */
+  basis: string;
+  /** Nombre d'unités de facturation dans une unité affichée (0,001 kWh par Wh). */
+  factor: number;
+  rate: number;
+  offpeakRate?: number;
+  subscription: number;
+  currency: string;
+}
+
+const finiteNumber = (value: unknown): number | undefined => {
+  const number = typeof value === "string" && value.trim() ? Number(value.replace(",", ".")) : value;
+  return typeof number === "number" && Number.isFinite(number) ? number : undefined;
+};
+
+/**
+ * Tarif de la carte, ou `undefined` sans prix utilisable ou avec `show_cost: false`.
+ * `price_entity` donne le prix actuel : il s'applique à tout l'historique affiché.
+ */
+export function resolveTariff(
+  config: Pick<EnergyCardConfig, "price" | "price_entity" | "currency" | "subscription_per_day" | "show_cost" | "offpeak_price" | "offpeak_hours">,
+  priceState: HassEntity | undefined,
+  unit: string,
+): Tariff | undefined {
+  if (config.show_cost === false) return undefined;
+  const basis = unit in ENERGY_FACTORS ? "kWh" : unit;
+  let rate: number | undefined;
+  if (config.price_entity && priceState && priceState.state !== "unavailable" && priceState.state !== "unknown") {
+    const value = finiteNumber(priceState.state);
+    const { factor, per } = parsePriceUnit(priceState.attributes.unit_of_measurement);
+    // Prix ramené à l'unité de facturation : 201,6 EUR/MWh devient 0,2016 €/kWh.
+    const perBasis = per ? convertMeterValue(1, basis, per) ?? 1 : 1;
+    if (value !== undefined) rate = value * factor * perBasis;
+  }
+  rate ??= finiteNumber(config.price);
+  if (rate === undefined) return undefined;
+  const offpeakRate = finiteNumber(config.offpeak_price);
+  return {
+    basis,
+    factor: convertMeterValue(1, unit, basis) ?? 1,
+    rate,
+    offpeakRate: offpeakRate !== undefined && parseOffpeakHours(config.offpeak_hours).length ? offpeakRate : undefined,
+    subscription: finiteNumber(config.subscription_per_day) ?? 0,
+    currency: config.currency?.trim() || "€",
+  };
+}
+
+/** Coût d'une journée : heures pleines au prix de base, heures creuses à leur prix, plus l'abonnement. */
+export function dayCost(total: number | undefined, offpeak: number, tariff: Tariff): number | undefined {
+  if (total === undefined) return undefined;
+  const reduced = tariff.offpeakRate === undefined ? 0 : Math.min(total, Math.max(0, offpeak));
+  return ((total - reduced) * tariff.rate + reduced * (tariff.offpeakRate ?? tariff.rate)) * tariff.factor + tariff.subscription;
+}
+
+const costFormatter = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const rateFormatter = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+/** « 1,84 € » : virgule décimale, deux décimales, espace insécable avant la devise. */
+export function formatCost(value: number | undefined, currency = "€"): string {
+  return value === undefined || !Number.isFinite(value) ? "—" : `${costFormatter.format(value)} ${currency}`;
+}
+
+/** « 0,2016 €/kWh ». */
+export function formatRate(value: number, tariff: Pick<Tariff, "currency" | "basis">): string {
+  return `${rateFormatter.format(value)} ${tariff.currency}/${tariff.basis}`;
 }
 
 interface DayComparison {
@@ -155,6 +330,22 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     .total strong { display: block; font-size: clamp(20px, 7cqw, 28px); line-height: 1.12; letter-spacing: -.05em; }
     .total small { color: var(--auralis-muted); font-size: 11px; }
     .total .unit { margin-inline-start: 4px; color: var(--auralis-muted); font-size: 11px; font-weight: 600; letter-spacing: 0; }
+    .total .cost { display: block; margin-top: 1px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .cost-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--auralis-border);
+      border-radius: var(--auralis-radius-md);
+      background: var(--auralis-layer);
+    }
+    .cost-summary > div { display: grid; min-width: 0; gap: 2px; }
+    .cost-summary small { font-size: var(--auralis-text-xs); }
+    .cost-summary .cost-values { flex: 0 0 auto; justify-items: end; text-align: end; }
+    .cost-summary strong { color: var(--energy-current); font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
     .current { --series-color: var(--energy-current); }
     .previous { --series-color: var(--energy-previous); }
     .total strong, .tooltip-value strong { color: var(--series-color); }
@@ -220,6 +411,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
   `];
 
   private history?: Map<number, number>;
+  /** Consommation en heures creuses par jour, quand des heures creuses sont tarifées. */
+  private offpeakHistory?: Map<number, number>;
   private historyError = false;
   private activeDay?: number;
   private timer?: number;
@@ -244,6 +437,13 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       decimals: "Décimales",
       accent_color: "Couleur de la semaine en cours",
       card_background: "Fond de la carte",
+      price: "Prix par kWh (ou par unité affichée : m³…)",
+      price_entity: "Capteur du prix actuel (prioritaire sur le prix fixe)",
+      currency: "Devise (€ par défaut)",
+      subscription_per_day: "Abonnement par jour",
+      offpeak_price: "Prix des heures creuses",
+      offpeak_hours: "Heures creuses (ex. 22:00-06:00, 12:00-14:00)",
+      show_cost: "Afficher les coûts",
     };
     return {
       schema: [
@@ -252,6 +452,13 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         { name: "power_entity", selector: { entity: { filter: { domain: "sensor" } } } },
         { name: "unit", selector: { select: { options: ["kWh", "Wh", "MWh", "m³", "L"], custom_value: true } } },
         { name: "decimals", selector: { number: { min: 0, max: 3, step: 1, mode: "box" } } },
+        { name: "price", selector: { number: { min: 0, step: 0.0001, mode: "box" } } },
+        { name: "price_entity", selector: { entity: { filter: { domain: "sensor" } } } },
+        { name: "currency", selector: { text: {} } },
+        { name: "subscription_per_day", selector: { number: { min: 0, step: 0.01, mode: "box" } } },
+        { name: "offpeak_price", selector: { number: { min: 0, step: 0.0001, mode: "box" } } },
+        { name: "offpeak_hours", selector: { text: {} } },
+        { name: "show_cost", selector: { boolean: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "icon", selector: { icon: {} } },
         { name: "accent_color", selector: { text: {} } },
@@ -297,12 +504,16 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     const id = this.config?.energy_entity;
     if (!this.isConnected || !hass?.callWS || !id) return;
     const date = this.dayFormatter;
+    const timeZone = date.resolvedOptions().timeZone;
     const profile = this.profile();
-    const key = `${id}/${date.resolvedOptions().timeZone}/${profile.unit}`;
+    // Heures creuses : statistiques horaires, pour classer chaque heure dans sa plage tarifaire.
+    const ranges = this.offpeakRanges();
+    const key = `${id}/${timeZone}/${profile.unit}/${ranges.length ? ranges.map((range) => range.join("-")).join(",") : "day"}`;
     const time = Date.now();
     if (this.request?.key === key && time - this.request.time < historyRetryDelay(this.failures)) return;
     if (this.request?.key !== key) {
       this.history = undefined;
+      this.offpeakHistory = undefined;
       this.historyError = false;
       this.activeDay = undefined;
       this.updatedAt = undefined;
@@ -317,15 +528,22 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         // Recorder aligns daily bins to the Home Assistant timezone. Include a buffer before J−13.
         start_time: new Date(time - 15 * DAY).toISOString(),
         statistic_ids: [id],
-        period: "day",
+        period: ranges.length ? "hour" : "day",
         types: ["change"],
         ...(profile.units ? { units: profile.units } : {}),
       });
       if (this.request !== request) return;
-      this.history = new Map((result[id] ?? []).flatMap(({ start, change }) =>
-        typeof change === "number" && Number.isFinite(change) && change >= 0 && Number.isFinite(start)
-          ? [[Date.parse(date.format(start)), change] as const]
-          : []));
+      if (ranges.length) {
+        const days = bucketHourly(result[id] ?? [], timeZone, ranges);
+        this.offpeakHistory = new Map([...days].map(([day, usage]) => [day, usage.offpeak]));
+        this.history = new Map([...days].map(([day, usage]) => [day, usage.total]));
+      } else {
+        this.offpeakHistory = undefined;
+        this.history = new Map((result[id] ?? []).flatMap(({ start, change }) =>
+          typeof change === "number" && Number.isFinite(change) && change >= 0 && Number.isFinite(start)
+            ? [[Date.parse(date.format(start)), change] as const]
+            : []));
+      }
       this.historyError = false;
       this.failures = 0;
       this.updatedAt = time;
@@ -342,15 +560,60 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     return energyProfile(entity(this.hass, this.config?.energy_entity), this.config ?? {});
   }
 
-  private renderTotal(label: string, series: string, value?: number) {
+  private parsedRanges?: { config: EnergyCardConfig; ranges: MinuteRange[] };
+
+  /** Plages des heures creuses, seulement quand un prix d'heures creuses les rend utiles. */
+  private offpeakRanges(): MinuteRange[] {
+    const config = this.config;
+    if (!config || config.show_cost === false || finiteNumber(config.offpeak_price) === undefined) return [];
+    if (this.parsedRanges?.config !== config) this.parsedRanges = { config, ranges: parseOffpeakHours(config.offpeak_hours) };
+    return this.parsedRanges.ranges;
+  }
+
+  private tariff(profile: EnergyProfile): Tariff | undefined {
+    if (!this.config) return undefined;
+    return resolveTariff(this.config, entity(this.hass, this.config.price_entity), profile.unit);
+  }
+
+  /** Coût d'un jour de l'historique, `undefined` sans consommation connue. */
+  private costOf(tariff: Tariff, date: number, amount: number | undefined): number | undefined {
+    return dayCost(amount, this.offpeakHistory?.get(date) ?? 0, tariff);
+  }
+
+  private renderTotal(label: string, series: string, value?: number, cost?: string) {
     const { unit, decimals } = this.profile();
     return html`<div class="total ${series}">
       <strong>${value === undefined ? "—" : html`${formatNumber(value, decimals)}<span class="unit">${unit}</span>`}</strong>
+      ${cost === undefined ? nothing : html`<span class="cost">${cost}</span>`}
       <small>${label}</small>
     </div>`;
   }
 
-  private renderChart(days: DayComparison[]) {
+  /** « Coût sur 7 jours », comparé aux 7 jours précédents, et le tarif appliqué. */
+  private renderCostSummary(tariff: Tariff, days: DayComparison[]) {
+    const sum = (series: "current" | "previous") => {
+      const costs = days.flatMap((day) => {
+        const cost = this.costOf(tariff, series === "current" ? day.date : day.date - 7 * DAY, day[series]);
+        return cost === undefined ? [] : [cost];
+      });
+      return costs.length ? costs.reduce((total, cost) => total + cost, 0) : undefined;
+    };
+    const previous = sum("previous");
+    const rates = [
+      `${tariff.offpeakRate === undefined ? "Tarif" : "Heures pleines"} ${formatRate(tariff.rate, tariff)}`,
+      tariff.offpeakRate === undefined ? "" : `heures creuses ${formatRate(tariff.offpeakRate, tariff)}`,
+      tariff.subscription ? `abonnement ${formatCost(tariff.subscription, tariff.currency)}/jour` : "",
+    ].filter(Boolean).join(" · ");
+    return html`<div class="cost-summary">
+      <div><span class="eyebrow">Coût sur 7 jours</span><small class="muted">${rates}</small></div>
+      <div class="cost-values">
+        <strong>${formatCost(sum("current"), tariff.currency)}</strong>
+        ${previous === undefined ? nothing : html`<small class="muted">J−7 : ${formatCost(previous, tariff.currency)}</small>`}
+      </div>
+    </div>`;
+  }
+
+  private renderChart(days: DayComparison[], tariff?: Tariff) {
     if (!days.some(({ current, previous }) => current !== undefined || previous !== undefined)) {
       const message = this.historyError ? "Historique indisponible" : this.history ? "Aucune statistique de consommation" : "Chargement de l’historique…";
       return html`<p class="empty-chart" role="status">${message}</p>`;
@@ -361,6 +624,11 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     const active = days.find(({ date }) => date === this.activeDay);
     const { unit, decimals } = this.profile();
     const value = (number?: number) => number === undefined ? "—" : `${formatNumber(number, decimals)} ${unit}`;
+    // Détail d'un jour : consommation, puis son coût quand un prix est configuré.
+    const detail = (date: number, number?: number) => {
+      const cost = tariff && number !== undefined ? this.costOf(tariff, date, number) : undefined;
+      return cost === undefined ? value(number) : `${value(number)} · ${formatCost(cost, tariff!.currency)}`;
+    };
     const bar = (series: string, amount?: number) => html`<span class="bar ${series}"
       aria-hidden="true" ?hidden=${amount === undefined} style=${`height:${((amount ?? 0) / ceiling) * 100}%`}></span>`;
 
@@ -372,7 +640,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         </div>`)}
         <div class="day-grid controls" role="group" aria-label=${`Consommation journalière en ${unit}`}>
           ${days.map((day) => html`<button type="button" class="chart-day"
-            aria-label=${`${fullDate.format(day.date)} : ${value(day.current)}. ${fullDate.format(day.date - 7 * DAY)} : ${value(day.previous)}`}
+            aria-label=${`${fullDate.format(day.date)} : ${detail(day.date, day.current)}. ${fullDate.format(day.date - 7 * DAY)} : ${detail(day.date - 7 * DAY, day.previous)}`}
             aria-expanded=${day.date === this.activeDay}
             @pointerenter=${(event: PointerEvent) => { if (event.pointerType === "mouse") this.activeDay = day.date; }}
             @focus=${() => { this.activeDay = day.date; }}
@@ -386,8 +654,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         <span class="date-label">${index % 2 === 0 ? shortDate.format(date) : nothing}</span>`)}
       </div>
       ${active ? html`<div class="tooltip" aria-hidden="true">
-        <div class="tooltip-value current"><span>${fullDate.format(active.date)}</span><strong>${value(active.current)}</strong></div>
-        <div class="tooltip-value previous"><span>${fullDate.format(active.date - 7 * DAY)} · J−7</span><strong>${value(active.previous)}</strong></div>
+        <div class="tooltip-value current"><span>${fullDate.format(active.date)}</span><strong>${detail(active.date, active.current)}</strong></div>
+        <div class="tooltip-value previous"><span>${fullDate.format(active.date - 7 * DAY)} · J−7</span><strong>${detail(active.date - 7 * DAY, active.previous)}</strong></div>
       </div>` : nothing}
     </div>`;
   }
@@ -413,6 +681,9 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       return { date, current: this.history?.get(date), previous: this.history?.get(date - 7 * DAY) };
     });
     const asOf = this.updatedAt === undefined ? undefined : cachedFormatter("time", this.hass?.config?.time_zone).format(this.updatedAt);
+    const tariff = this.tariff(profile);
+    const cost = (date: number, amount?: number) =>
+      tariff ? formatCost(this.costOf(tariff, date, amount), tariff.currency) : undefined;
     return html`
       <ha-card>
         <div class="energy-shell">
@@ -421,14 +692,15 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
             <div class="title-wrap"><p class="eyebrow">${profile.eyebrow}</p><h2>${this.config.name || profile.title}</h2></div>
           </header>
           <div class="totals">
-            ${this.renderTotal("Aujourd’hui", "current", days[6].current)}
-            ${this.renderTotal("Il y a 7 jours", "previous", days[6].previous)}
+            ${this.renderTotal("Aujourd’hui", "current", days[6].current, cost(days[6].date, days[6].current))}
+            ${this.renderTotal("Il y a 7 jours", "previous", days[6].previous, cost(days[6].date - 7 * DAY, days[6].previous))}
           </div>
           <div class="chart-heading">
             <span class="eyebrow">7 jours comparés</span>
             <span class="muted" title="Les consommations viennent des statistiques horaires de Home Assistant : l’heure en cours n’est pas encore comptée.">${this.historyError && this.history ? "Actualisation indisponible" : asOf ? `${profile.unit} · relevé ${asOf}` : profile.unit}</span>
           </div>
-          ${this.renderChart(days)}
+          ${this.renderChart(days, tariff)}
+          ${tariff ? this.renderCostSummary(tariff, days) : nothing}
           <div class="readings">
             ${this.config.power_entity ? this.renderReading(this.config.power_entity, profile.rateLabel, profile.rateIcon) : nothing}
             ${this.renderReading(this.config.energy_entity, "Index compteur", "mdi:counter", profile)}
