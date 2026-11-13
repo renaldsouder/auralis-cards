@@ -1,9 +1,10 @@
-import { css, html, nothing, type TemplateResult } from "lit";
-import { AuralisBaseCard } from "./auralis-base-card";
+import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
+import { AuralisBaseCard, configuredAccent } from "./auralis-base-card";
+import { cardHeaderStyles } from "./auralis-actions-card";
 import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
-import { fireMoreInfo } from "../utils/actions";
 import { entity, friendlyName, isAvailable } from "../utils/entities";
+import { bounded, safeColor } from "../utils/validate";
 
 export type MediaKind = "speaker" | "tv" | "receiver";
 
@@ -47,11 +48,16 @@ export const FEATURE = {
 } as const;
 
 const PLAYER_ID = /^media_player\.[a-z0-9_]+$/;
-const SAFE_COLOR = /^[#\w(),.%\s-]+$/;
-const KINDS: Record<MediaKind, { icon: string; tone: string; label: string }> = {
-  speaker: { icon: "mdi:speaker", tone: "#b79cff", label: "Enceinte" },
-  tv: { icon: "mdi:television", tone: "#5b9dff", label: "Télévision" },
-  receiver: { icon: "mdi:audio-video", tone: "#ffb454", label: "Ampli" },
+/** Après une action, le lecteur affiché ne change pas tout seul pendant cette durée. */
+export const PIN_WINDOW = 8_000;
+/** Valeur d'un curseur gardée à l'écran le temps que l'appareil confirme. */
+const SETTLE_DELAY = 1_500;
+/** Glissement le plus long pris en compte : au-delà, l'appareil reprend la main. */
+const MAX_DRAG = 10_000;
+const KINDS: Record<MediaKind, { icon: string; tone: string; label: string; off: string }> = {
+  speaker: { icon: "mdi:speaker", tone: "#b79cff", label: "Enceinte", off: "éteinte" },
+  tv: { icon: "mdi:television", tone: "#5b9dff", label: "Télévision", off: "éteinte" },
+  receiver: { icon: "mdi:audio-video", tone: "#ffb454", label: "Ampli", off: "éteint" },
 };
 const SOURCE_ICONS: Array<[RegExp, string]> = [
   [/\b(tv|télé|television|télévision|arc)\b/i, "mdi:television"],
@@ -71,6 +77,12 @@ const SOURCE_ICONS: Array<[RegExp, string]> = [
 const STATE_LABELS: Record<string, string> = {
   playing: "Lecture", paused: "En pause", idle: "Inactif", on: "Allumé", off: "Éteint", standby: "En veille",
   buffering: "Chargement…", unavailable: "Indisponible", unknown: "État inconnu",
+};
+/** Commandes de la carte : libellé des messages d'échec. */
+const CONTROL_LABELS: Record<string, string> = {
+  power: "Marche/arrêt", play: "Lecture/pause", previous: "Piste précédente", next: "Piste suivante", volume: "Volume",
+  mute: "Sourdine", source: "Changement de source", sound_mode: "Mode sonore", seek: "Déplacement dans la lecture",
+  shuffle: "Lecture aléatoire", repeat: "Répétition",
 };
 
 /** Fonction prise en charge. Sans `supported_features`, tout est proposé et Home Assistant tranchera. */
@@ -93,6 +105,15 @@ export function isPowered(state?: HassEntity): boolean {
 export function playerStateLabel(state?: HassEntity): string {
   if (!state) return "Introuvable";
   return STATE_LABELS[state.state] ?? state.state;
+}
+
+/** Phrase du panneau « éteint », alignée sur le libellé d'état affiché au-dessus. */
+export function offLabel(kind: MediaKind, state?: HassEntity): string {
+  if (!state) return "Entité introuvable.";
+  if (state.state === "unavailable") return "Lecteur indisponible.";
+  if (state.state === "unknown") return `${KINDS[kind].label} : état inconnu.`;
+  if (state.state === "standby") return `${KINDS[kind].label} en veille.`;
+  return `${KINDS[kind].label} ${KINDS[kind].off}.`;
 }
 
 function text(value: unknown): string | undefined {
@@ -186,29 +207,104 @@ export function pickPlayer(views: Array<Pick<PlayerView, "playing" | "powered">>
   return powered >= 0 ? powered : 0;
 }
 
+/** Le choix manuel d'un lecteur tombe quand ce lecteur s'éteint pendant qu'un autre joue. */
+export function releasesChoice(views: Array<Pick<PlayerView, "playing" | "powered">>, chosen?: number): boolean {
+  if (chosen === undefined) return false;
+  const view = views[chosen];
+  if (!view) return true;
+  return !view.powered && views.some((other, index) => index !== chosen && other.playing);
+}
+
+/**
+ * Lecteur affiché :
+ * 1. celui choisi à la main (puce), tant qu'il n'est pas éteint pendant qu'un autre joue ;
+ * 2. sinon, celui déjà affiché tant que la carte est « épinglée » (fenêtre ouverte, ou action
+ *    de l'utilisateur il y a moins de PIN_WINDOW) : l'appareil ne change pas sous le doigt ;
+ * 3. sinon, celui qui joue, puis celui qui est allumé, puis le premier.
+ */
+export function resolvePlayer(
+  views: Array<Pick<PlayerView, "playing" | "powered">>,
+  options: { chosen?: number; shown?: number; pinned: boolean },
+): number {
+  if (!views.length) return 0;
+  if (options.chosen !== undefined && views[options.chosen] && !releasesChoice(views, options.chosen)) return options.chosen;
+  if (options.pinned && options.shown !== undefined && views[options.shown]) return options.shown;
+  return pickPlayer(views);
+}
+
+/**
+ * Valeur d'un curseur (volume, position) gardée à l'écran pendant le glissement puis le temps
+ * que l'appareil confirme, pour que la mise à jour de Home Assistant ne ramène pas le curseur.
+ * Le relâchement passe par `change`, `pointerup` ou `pointercancel`, avec une durée maximale.
+ */
+export class HeldValue {
+  private current?: { id: string; value: number };
+  private timer?: ReturnType<typeof setTimeout>;
+
+  constructor(private readonly onChange: () => void, private readonly settle = SETTLE_DELAY, private readonly maxHold = MAX_DRAG) {}
+
+  get(id: string): number | undefined {
+    return this.current?.id === id ? this.current.value : undefined;
+  }
+
+  get dragging(): boolean {
+    return this.current !== undefined;
+  }
+
+  /** Pendant le glissement : la valeur du curseur l'emporte, au plus `maxHold`. */
+  drag(id: string, value: number): void {
+    this.current = { id, value };
+    this.arm(this.maxHold);
+    this.onChange();
+  }
+
+  /** Valeur envoyée à l'appareil : gardée le temps qu'il confirme. */
+  hold(id: string, value: number): void {
+    this.current = { id, value };
+    this.arm(this.settle);
+    this.onChange();
+  }
+
+  /** Doigt levé (même sans `change`) : on rend la main après le délai de confirmation. */
+  release(): void {
+    if (this.current) this.arm(this.settle);
+  }
+
+  clear(): void {
+    clearTimeout(this.timer);
+    if (!this.current) return;
+    this.current = undefined;
+    this.onChange();
+  }
+
+  private arm(delay: number): void {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.current = undefined;
+      this.onChange();
+    }, delay);
+  }
+}
+
 export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
   static properties = {
     ...AuralisBaseCard.properties,
     chosen: { state: true },
     now: { state: true },
-    dragVolume: { state: true },
     failed: { state: true },
   };
 
-  static styles = [AuralisBaseCard.styles, css`
+  static styles = [AuralisBaseCard.styles, cardHeaderStyles, css`
     .media-shell, .media-content { min-height:0; }
-    .media-shell { padding:16px; isolation:isolate; }
+    .media-shell { padding:16px; isolation:isolate; --header-badge-bg:rgba(12,19,27,.72); --header-badge-border:rgba(255,255,255,.2); --header-muted:#c7d0dc; }
+    .media-shell .header { margin-bottom:0; }
     .backdrop { position:absolute; z-index:0; inset:-30px; background:var(--art) center / cover no-repeat; filter:blur(34px) saturate(1.5) brightness(.55); opacity:.75; pointer-events:none; transform:scale(1.1); transition:opacity .5s ease; }
     .backdrop.empty { background:radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--tone) 34%,transparent),transparent 46%),radial-gradient(circle at 88% 90%,color-mix(in srgb,var(--tone) 18%,transparent),transparent 50%); filter:none; opacity:1; transform:none; inset:0; }
     .media-content { display:grid; gap:14px; }
-    .m-header { display:flex; align-items:center; gap:11px; }
-    .m-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
-    .m-header .badge ha-icon { --mdc-icon-size:22px; }
-    .m-header h2 { overflow:hidden; font-size:19px; text-overflow:ellipsis; white-space:nowrap; }
-    .m-header .machine-status { margin-top:4px; }
     .players { display:flex; gap:7px; margin:0 -2px; padding:2px; overflow-x:auto; scrollbar-width:none; }
     .players::-webkit-scrollbar { display:none; }
-    .player { --t:var(--chip-tone); display:inline-flex; flex:0 0 auto; align-items:center; gap:7px; padding:6px 12px 6px 7px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,.62); color:#d6dee8; cursor:pointer; font:inherit; font-size:12px; font-weight:680; backdrop-filter:blur(10px); }
+    .player { --t:var(--chip-tone); display:inline-flex; flex:0 0 auto; min-height:var(--auralis-target); align-items:center; gap:7px; padding:6px 12px 6px 9px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,.62); color:#d6dee8; cursor:pointer; font:inherit; font-size:var(--auralis-text-sm); font-weight:680; backdrop-filter:blur(10px); }
+    .player:focus-visible { outline:2px solid var(--t); outline-offset:2px; }
     .player ha-icon { --mdc-icon-size:16px; display:grid; width:24px; height:24px; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--t) 18%,transparent); color:var(--t); }
     .player.current { border-color:color-mix(in srgb,var(--t) 70%,transparent); background:color-mix(in srgb,var(--t) 20%,rgba(9,14,20,.7)); color:#fff; }
     .player.off { opacity:.62; }
@@ -224,13 +320,13 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     .eq i:nth-child(2) { animation-delay:-.35s; }
     .eq i:nth-child(3) { animation-delay:-.7s; }
     .now { display:grid; min-width:0; flex:1; gap:4px; }
-    .eyebrow { overflow:hidden; color:color-mix(in srgb,var(--tone) 70%,#c7d0dc); font-size:11px; font-weight:700; letter-spacing:.04em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+    .eyebrow { overflow:hidden; color:color-mix(in srgb,var(--tone) 70%,#c7d0dc); font-size:var(--auralis-text-xs); font-weight:700; letter-spacing:.04em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
     .title { display:-webkit-box; overflow:hidden; color:#fff; font-size:19px; font-weight:760; letter-spacing:-.02em; line-height:1.2; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
-    .m-subtitle { overflow:hidden; color:#b9c5d3; font-size:12.5px; text-overflow:ellipsis; white-space:nowrap; }
+    .m-subtitle { overflow:hidden; color:#b9c5d3; font-size:var(--auralis-text-sm); text-overflow:ellipsis; white-space:nowrap; }
     .meta { display:flex; flex-wrap:wrap; gap:5px; margin-top:3px; }
-    .m-pill { display:inline-flex; max-width:100%; align-items:center; gap:4px; padding:2px 8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.08); color:#d6dee8; font-size:10.5px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+    .m-pill { display:inline-flex; max-width:100%; align-items:center; gap:4px; padding:2px 8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.08); color:#d6dee8; font-size:var(--auralis-text-xs); font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
     .m-pill ha-icon { --mdc-icon-size:12px; color:var(--tone); }
-    .round { display:grid; width:40px; height:40px; flex:0 0 auto; place-items:center; padding:0; border:1px solid rgba(255,255,255,.16); border-radius:50%; background:rgba(9,14,20,.62); color:#e8eef5; cursor:pointer; backdrop-filter:blur(10px); }
+    .round { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; padding:0; border:1px solid rgba(255,255,255,.16); border-radius:50%; background:rgba(9,14,20,.62); color:#e8eef5; cursor:pointer; backdrop-filter:blur(10px); }
     .round:hover:not(:disabled) { border-color:color-mix(in srgb,var(--tone) 70%,transparent); color:#fff; }
     .round:focus-visible { outline:2px solid var(--tone); outline-offset:2px; }
     .round:disabled { cursor:not-allowed; opacity:.4; }
@@ -243,31 +339,31 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     .m-progress { display:grid; gap:5px; }
     .bar { position:relative; height:5px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.12); }
     .bar span { position:absolute; inset:0 auto 0 0; width:var(--p); border-radius:inherit; background:linear-gradient(90deg,color-mix(in srgb,var(--tone) 55%,#fff),var(--tone)); }
-    .times { display:flex; justify-content:space-between; color:#a7b4c2; font-size:10.5px; font-variant-numeric:tabular-nums; }
+    .times { display:flex; justify-content:space-between; color:#a7b4c2; font-size:var(--auralis-text-xs); font-variant-numeric:tabular-nums; }
     .transport { display:flex; align-items:center; justify-content:center; gap:14px; }
-    .volume { display:flex; align-items:center; gap:8px; }
-    .vol { --fill:0%; flex:1; min-width:0; height:28px; margin:0; background:transparent; cursor:pointer; -webkit-appearance:none; appearance:none; }
+    .volume { display:flex; align-items:center; gap:6px; }
+    .vol { --fill:0%; flex:1; min-width:0; height:var(--auralis-target); margin:0; background:transparent; cursor:pointer; -webkit-appearance:none; appearance:none; touch-action:pan-y; }
     .vol::-webkit-slider-runnable-track { height:8px; border-radius:999px; background:linear-gradient(90deg,var(--tone) var(--fill),rgba(255,255,255,.13) var(--fill)); }
     .vol::-moz-range-track { height:8px; border-radius:999px; background:linear-gradient(90deg,var(--tone) var(--fill),rgba(255,255,255,.13) var(--fill)); }
     .vol::-webkit-slider-thumb { width:20px; height:20px; margin-top:-6px; border:3px solid var(--tone); border-radius:50%; background:#fff; -webkit-appearance:none; appearance:none; box-shadow:0 2px 8px rgba(0,0,0,.4); }
     .vol::-moz-range-thumb { width:14px; height:14px; border:3px solid var(--tone); border-radius:50%; background:#fff; }
     .vol:disabled { cursor:not-allowed; opacity:.45; }
     .vol:focus-visible { outline:2px solid var(--tone); outline-offset:3px; border-radius:999px; }
-    .volume .round { width:34px; height:34px; }
     .volume .round ha-icon { --mdc-icon-size:18px; }
-    .vol-value { min-width:46px; color:#fff; font-size:14px; font-weight:760; font-variant-numeric:tabular-nums; text-align:end; }
+    .vol-value { min-width:42px; color:#fff; font-size:14px; font-weight:760; font-variant-numeric:tabular-nums; text-align:end; }
     .vol-value.muted { color:#a7b4c2; text-decoration:line-through; }
     .sources { display:flex; gap:7px; margin:0 -2px; padding:2px; overflow-x:auto; scrollbar-width:none; }
     .sources::-webkit-scrollbar { display:none; }
     .sources.wrap { flex-wrap:wrap; overflow:visible; }
-    .src { display:inline-flex; flex:0 0 auto; align-items:center; gap:6px; padding:7px 12px; border:1px solid rgba(195,211,229,.15); border-radius:13px; background:rgba(9,14,20,.58); color:#d6dee8; cursor:pointer; font:inherit; font-size:12px; font-weight:650; backdrop-filter:blur(10px); }
+    .src { display:inline-flex; flex:0 0 auto; min-height:var(--auralis-target); align-items:center; gap:6px; padding:7px 12px; border:1px solid rgba(195,211,229,.15); border-radius:13px; background:rgba(9,14,20,.58); color:#d6dee8; cursor:pointer; font:inherit; font-size:var(--auralis-text-sm); font-weight:650; backdrop-filter:blur(10px); }
     .src ha-icon { --mdc-icon-size:17px; color:color-mix(in srgb,var(--tone) 75%,#c7d0dc); }
     .src:hover:not(:disabled) { border-color:color-mix(in srgb,var(--tone) 60%,transparent); }
     .src.current { border-color:var(--tone); background:color-mix(in srgb,var(--tone) 26%,rgba(9,14,20,.7)); color:#fff; }
     .src.current ha-icon { color:var(--tone); }
+    /* Changement de source en cours. */
     .src:disabled { cursor:wait; opacity:.6; }
-    .off-panel { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px dashed rgba(195,211,229,.2); border-radius:16px; color:#a7b4c2; font-size:12.5px; }
-    .wake { display:inline-flex; align-items:center; gap:7px; padding:9px 16px; border:0; border-radius:999px; background:var(--tone); color:#10161e; cursor:pointer; font:inherit; font-size:13px; font-weight:760; }
+    .off-panel { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px dashed rgba(195,211,229,.2); border-radius:16px; color:#a7b4c2; font-size:var(--auralis-text-sm); }
+    .wake { display:inline-flex; min-height:var(--auralis-target); align-items:center; gap:7px; padding:0 16px; border:0; border-radius:999px; background:var(--tone); color:#10161e; cursor:pointer; font:inherit; font-size:var(--auralis-text-md); font-weight:760; }
     .wake ha-icon { --mdc-icon-size:18px; }
     .wake:disabled { cursor:not-allowed; opacity:.5; }
     .m-dialog .dialog-body { display:grid; gap:16px; }
@@ -283,18 +379,24 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
       .cover { width:72px; height:72px; border-radius:16px; }
       .cover > ha-icon { --mdc-icon-size:34px; }
       .title { font-size:16px; }
-      .transport { gap:10px; }
-      .round.power { width:34px; height:34px; }
+      .transport { gap:8px; }
+      .volume { gap:4px; }
     }
   `];
 
   private chosen?: number;
   private now = Date.now();
-  private dragVolume?: { id: string; value: number };
   private failed?: string;
   private ticker?: number;
-  private dragTimer?: number;
   private failTimer?: number;
+  private pinTimer?: number;
+  /** Lecteur dessiné au dernier rendu : gardé tant que la carte est épinglée. */
+  private shown?: number;
+  private lastInteraction = 0;
+  /** Pochettes qui n'ont pas pu être chargées : on affiche l'icône de l'appareil à la place. */
+  private brokenArt = new Set<string>();
+  private readonly volumeHold = new HeldValue(() => this.requestUpdate());
+  private readonly seekHold = new HeldValue(() => this.requestUpdate());
 
   static getStubConfig(hass?: HomeAssistant): Partial<MediaCardConfig> {
     const ids = Object.keys(hass?.states ?? {}).filter((id) => id.startsWith("media_player.")).slice(0, 3);
@@ -304,7 +406,8 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", entity: "Lecteur (un seul)", players: "Lecteurs (entity, name, device_class, sources, max_volume…)",
-      show_sources: "Afficher les sources", show_progress: "Afficher la progression", show_header: "Afficher l’en-tête",
+      show_sources: "Afficher les sources", show_progress: "Afficher la progression",
+      show_header: "Afficher l’en-tête (par défaut avec un titre et plusieurs lecteurs)",
       theme: "Thème", accent_color: "Couleur d’accent", card_background: "Fond de la carte",
     };
     return {
@@ -335,21 +438,18 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     if (!players.length || invalid) {
       throw new Error("Configurez un lecteur : entity: media_player.xxx, ou players: - entity: media_player.xxx.");
     }
-    const bounded = (value: unknown, min: number, max: number, fallback: number): number => {
-      const number = Number(value);
-      return value !== undefined && value !== null && value !== "" && Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
-    };
     this.config = {
       ...config,
       theme: config.theme || "carbon",
       players: players.map((player) => ({
         ...player,
-        volume_step: bounded(player.volume_step, 1, 20, 2),
-        max_volume: bounded(player.max_volume, 5, 100, 100),
-        volume_scale: player.volume_scale === undefined ? undefined : bounded(player.volume_scale, 1, 1000, 100),
+        volume_step: bounded(player.volume_step, 1, 20) ?? 2,
+        max_volume: bounded(player.max_volume, 5, 100) ?? 100,
+        volume_scale: player.volume_scale === undefined ? undefined : bounded(player.volume_scale, 1, 1000) ?? 100,
       })),
     };
     if (this.chosen !== undefined && this.chosen >= players.length) this.chosen = undefined;
+    if (this.shown !== undefined && this.shown >= players.length) this.shown = undefined;
   }
 
   public connectedCallback(): void {
@@ -366,8 +466,33 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearInterval(this.ticker);
-    window.clearTimeout(this.dragTimer);
     window.clearTimeout(this.failTimer);
+    window.clearTimeout(this.pinTimer);
+    this.volumeHold.clear();
+    this.seekHold.clear();
+  }
+
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    // Lecteur choisi éteint pendant qu'un autre joue : la carte revient au choix automatique.
+    if (this.chosen !== undefined && releasesChoice(this.views(), this.chosen)) this.chosen = undefined;
+  }
+
+  protected closeDialog(): void {
+    super.closeDialog();
+    // Le lecteur reste celui de la fenêtre encore quelques secondes.
+    this.interact();
+  }
+
+  /** Une action de l'utilisateur épingle le lecteur affiché pendant PIN_WINDOW. */
+  private interact(): void {
+    this.lastInteraction = Date.now();
+    window.clearTimeout(this.pinTimer);
+    this.pinTimer = window.setTimeout(() => this.requestUpdate(), PIN_WINDOW + 50);
+  }
+
+  private pinned(): boolean {
+    return this.dialog === "media" || Date.now() - this.lastInteraction < PIN_WINDOW;
   }
 
   private view(player: MediaPlayerConfig, index: number): PlayerView {
@@ -383,8 +508,8 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     const title = rawSource && playing.title === rawSource ? sourceLabel! : playing.title;
     const subtitle = rawSource && playing.subtitle === rawSource ? sourceLabel! : playing.subtitle;
     const volume = typeof a.volume_level === "number" ? a.volume_level : undefined;
-    const color = player.color?.trim() || this.config?.accent_color?.trim();
     const powered = isPowered(state);
+    const artwork = powered ? text(a.entity_picture) : undefined;
     return {
       index,
       player,
@@ -393,14 +518,14 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
       kind,
       label,
       icon: player.icon || (typeof a.icon === "string" ? a.icon : style.icon),
-      tone: color && SAFE_COLOR.test(color) ? color : style.tone,
+      tone: safeColor(player.color) ?? configuredAccent(this.config) ?? style.tone,
       available: Boolean(state) && state!.state !== "unavailable",
       powered,
       playing: state?.state === "playing",
       title,
       subtitle,
-      artwork: powered ? text(a.entity_picture) : undefined,
-      volume: this.dragVolume?.id === player.entity ? this.dragVolume.value : volume,
+      artwork: artwork && !this.brokenArt.has(artwork) ? artwork : undefined,
+      volume: this.volumeHold.get(player.entity) ?? volume,
       muted: a.is_volume_muted === true,
       source: text(a.source),
       soundMode: text(a.sound_mode),
@@ -415,76 +540,104 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
 
   private currentView(views = this.views()): PlayerView | undefined {
     if (!views.length) return undefined;
-    return views[this.chosen ?? pickPlayer(views)] ?? views[0];
+    return views[resolvePlayer(views, { chosen: this.chosen, shown: this.shown, pinned: this.pinned() })] ?? views[0];
   }
 
-  private async call(view: PlayerView, service: string, data: Record<string, unknown> = {}): Promise<void> {
-    if (!this.hass) return;
-    try {
-      await this.hass.callService("media_player", service, data, { entity_id: view.id });
-    } catch (error) {
-      this.failed = `${view.id}:${service}`;
+  private choose(index: number): void {
+    this.chosen = index;
+    this.interact();
+  }
+
+  /**
+   * Commande envoyée au lecteur, avec état « en cours » et message d'échec visibles. Le bouton
+   * concerné (`control`) clignote en rouge quelques secondes si l'appareil refuse.
+   */
+  private async call(view: PlayerView, service: string, data: Record<string, unknown> = {}, control = service): Promise<boolean> {
+    const hass = this.hass;
+    const key = `${view.id}:${control}`;
+    if (!hass || this.isPending(key)) return false;
+    this.interact();
+    const ok = await this.runCommand(key, () => hass.callService("media_player", service, data, { entity_id: view.id }), {
+      errorMessage: `${CONTROL_LABELS[control] ?? "La commande"} : échec sur ${view.label}.`,
+    });
+    if (!ok) {
+      this.failed = key;
       window.clearTimeout(this.failTimer);
       this.failTimer = window.setTimeout(() => { this.failed = undefined; }, 2_500);
-      console.warn("Auralis Média : échec de la commande", service, error);
     }
+    return ok;
   }
 
-  private togglePower(view: PlayerView): Promise<void> {
-    return this.call(view, view.powered ? "turn_off" : "turn_on");
+  private togglePower(view: PlayerView): Promise<boolean> {
+    return this.call(view, view.powered ? "turn_off" : "turn_on", {}, "power");
   }
 
-  private playPause(view: PlayerView): Promise<void> {
-    if (view.playing) return this.call(view, supports(view.state, FEATURE.PAUSE) ? "media_pause" : "media_stop");
-    return this.call(view, supports(view.state, FEATURE.PLAY) ? "media_play" : "media_play_pause");
+  private playPause(view: PlayerView): Promise<boolean> {
+    if (view.playing) return this.call(view, supports(view.state, FEATURE.PAUSE) ? "media_pause" : "media_stop", {}, "play");
+    return this.call(view, supports(view.state, FEATURE.PLAY) ? "media_play" : "media_play_pause", {}, "play");
   }
 
   /** Volume réglé au pas configuré, sans dépasser le maximum ; à défaut, les commandes − et + de l'appareil. */
-  private stepVolume(view: PlayerView, direction: 1 | -1): Promise<void> {
+  private stepVolume(view: PlayerView, direction: 1 | -1): Promise<boolean> {
     if (view.volume !== undefined && supports(view.state, FEATURE.VOLUME_SET)) {
       return this.setVolume(view, nextVolume(view.volume, direction * view.step, view.maxVolume));
     }
-    if (direction > 0 && view.volume !== undefined && view.volume * 100 >= view.maxVolume) return Promise.resolve();
-    return this.call(view, direction > 0 ? "volume_up" : "volume_down");
+    if (direction > 0 && view.volume !== undefined && view.volume * 100 >= view.maxVolume) return Promise.resolve(false);
+    return this.call(view, direction > 0 ? "volume_up" : "volume_down", {}, "volume");
   }
 
-  private setVolume(view: PlayerView, level: number): Promise<void> {
+  private setVolume(view: PlayerView, level: number): Promise<boolean> {
     const value = Math.min(view.maxVolume / 100, Math.max(0, level));
-    this.holdVolume(view.id, value);
-    return this.call(view, "volume_set", { volume_level: Math.round(value * 100) / 100 });
-  }
-
-  /** Garde la valeur choisie à l'écran le temps que l'appareil confirme. */
-  private holdVolume(id: string, value: number): void {
-    this.dragVolume = { id, value };
-    window.clearTimeout(this.dragTimer);
-    this.dragTimer = window.setTimeout(() => { this.dragVolume = undefined; }, 1_500);
+    this.volumeHold.hold(view.id, value);
+    return this.call(view, "volume_set", { volume_level: Math.round(value * 100) / 100 }, "volume");
   }
 
   private onVolumeInput(view: PlayerView, event: Event): void {
-    this.dragVolume = { id: view.id, value: Number((event.target as HTMLInputElement).value) / 100 };
-    window.clearTimeout(this.dragTimer);
+    this.interact();
+    this.volumeHold.drag(view.id, Number((event.target as HTMLInputElement).value) / 100);
   }
 
   private onVolumeChange(view: PlayerView, event: Event): void {
     void this.setVolume(view, Number((event.target as HTMLInputElement).value) / 100);
   }
 
-  private selectSource(view: PlayerView, source: string): Promise<void> {
-    return this.call(view, "select_source", { source });
+  private onSeekInput(view: PlayerView, event: Event): void {
+    this.interact();
+    this.seekHold.drag(view.id, Number((event.target as HTMLInputElement).value));
+  }
+
+  private onSeekChange(view: PlayerView, event: Event): void {
+    const position = Number((event.target as HTMLInputElement).value);
+    this.seekHold.hold(view.id, position);
+    void this.call(view, "media_seek", { seek_position: position }, "seek");
+  }
+
+  private selectSource(view: PlayerView, source: string): Promise<boolean> {
+    return this.call(view, "select_source", { source }, "source");
   }
 
   private eq(): TemplateResult {
     return html`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>`;
   }
 
-  private failedClass(view: PlayerView, service: string): string {
-    return this.failed === `${view.id}:${service}` ? "failed" : "";
+  private failedClass(view: PlayerView, control: string): string {
+    return this.failed === `${view.id}:${control}` ? "failed" : "";
+  }
+
+  private busy(view: PlayerView, control: string): "true" | "false" {
+    return this.isPending(`${view.id}:${control}`) ? "true" : "false";
+  }
+
+  private artworkFailed(url: string): void {
+    if (this.brokenArt.has(url)) return;
+    this.brokenArt = new Set(this.brokenArt).add(url);
+    this.requestUpdate();
   }
 
   private renderCover(view: PlayerView): TemplateResult {
+    const artwork = view.artwork;
     return html`<button class="cover" type="button" aria-label=${`Ouvrir ${view.label}`} @click=${() => this.openDialog("media")}>
-      ${view.artwork ? html`<img src=${view.artwork} alt="" decoding="async" />` : html`<ha-icon .icon=${view.icon}></ha-icon>`}
+      ${artwork ? html`<img src=${artwork} alt="" decoding="async" @error=${() => this.artworkFailed(artwork)} />` : html`<ha-icon .icon=${view.icon}></ha-icon>`}
       ${view.playing ? this.eq() : nothing}
     </button>`;
   }
@@ -502,8 +655,9 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
           ${view.soundMode && view.subtitle !== view.soundMode ? html`<span class="m-pill"><ha-icon icon="mdi:surround-sound"></ha-icon>${view.soundMode}</span>` : nothing}
         </span>` : nothing}
       </div>
-      ${dialog ? nothing : html`<button class="round power ${view.powered ? "on" : ""} ${this.failedClass(view, view.powered ? "turn_off" : "turn_on")}" type="button"
-        aria-label=${view.powered ? `Éteindre ${view.label}` : `Allumer ${view.label}`} ?disabled=${!view.available || !powerSupported}
+      ${dialog ? nothing : html`<button class="round power ${view.powered ? "on" : ""} ${this.failedClass(view, "power")}" type="button"
+        aria-label=${view.powered ? `Éteindre ${view.label}` : `Allumer ${view.label}`} aria-busy=${this.busy(view, "power")}
+        ?disabled=${!view.available || !powerSupported}
         @click=${() => this.togglePower(view)}><ha-icon icon="mdi:power"></ha-icon></button>`}
     </div>`;
   }
@@ -514,14 +668,18 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
 
   private renderProgress(view: PlayerView, seekable: boolean): TemplateResult | typeof nothing {
     if (this.config?.show_progress === false) return nothing;
-    const position = mediaPosition(view.state, this.now);
+    const live = mediaPosition(view.state, this.now);
     const duration = Number(view.state?.attributes.media_duration);
-    if (position === undefined) return nothing;
+    if (live === undefined) return nothing;
+    // Pendant le glissement, le curseur garde la position choisie malgré le défilement de la lecture.
+    const position = Math.min(duration, this.seekHold.get(view.id) ?? live);
     const percent = `${Math.round((position / duration) * 1000) / 10}%`;
     return html`<div class="m-progress" style=${`--p:${percent}`}>
       ${seekable && supports(view.state, FEATURE.SEEK)
         ? html`<input class="vol seek" type="range" min="0" max=${Math.round(duration)} step="1" .value=${String(Math.round(position))}
-            aria-label="Position de lecture" @change=${(event: Event) => this.call(view, "media_seek", { seek_position: Number((event.target as HTMLInputElement).value) })} />`
+            aria-label="Position de lecture" aria-valuetext=${formatDuration(position)}
+            @input=${(event: Event) => this.onSeekInput(view, event)} @change=${(event: Event) => this.onSeekChange(view, event)}
+            @pointerup=${() => this.seekHold.release()} @pointercancel=${() => this.seekHold.release()} />`
         : html`<div class="bar"><span></span></div>`}
       <div class="times"><span>${formatDuration(position)}</span><span>−${formatDuration(duration - position)}</span></div>
     </div>`;
@@ -535,13 +693,16 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     const repeatNext: Record<string, string> = { off: "all", all: "one", one: "off" };
     const canPlay = supports(s, FEATURE.PLAY) || supports(s, FEATURE.PAUSE);
     return html`<div class="transport">
-      ${full && supports(s, FEATURE.SHUFFLE) && s?.attributes.shuffle !== undefined ? html`<button class="round ${shuffle ? "active" : ""}" type="button" aria-label="Lecture aléatoire" aria-pressed=${shuffle ? "true" : "false"}
-        @click=${() => this.call(view, "shuffle_set", { shuffle: !shuffle })}><ha-icon icon=${shuffle ? "mdi:shuffle" : "mdi:shuffle-disabled"}></ha-icon></button>` : nothing}
-      ${supports(s, FEATURE.PREVIOUS) ? html`<button class="round ${this.failedClass(view, "media_previous_track")}" type="button" aria-label="Précédent" @click=${() => this.call(view, "media_previous_track")}><ha-icon icon="mdi:skip-previous"></ha-icon></button>` : nothing}
-      ${canPlay ? html`<button class="round main ${this.failedClass(view, view.playing ? "media_pause" : "media_play")}" type="button" aria-label=${view.playing ? "Pause" : "Lecture"} @click=${() => this.playPause(view)}><ha-icon icon=${view.playing ? "mdi:pause" : "mdi:play"}></ha-icon></button>` : nothing}
-      ${supports(s, FEATURE.NEXT) ? html`<button class="round ${this.failedClass(view, "media_next_track")}" type="button" aria-label="Suivant" @click=${() => this.call(view, "media_next_track")}><ha-icon icon="mdi:skip-next"></ha-icon></button>` : nothing}
-      ${full && supports(s, FEATURE.REPEAT) && s?.attributes.repeat !== undefined ? html`<button class="round ${repeat !== "off" ? "active" : ""}" type="button" aria-label="Répétition"
-        @click=${() => this.call(view, "repeat_set", { repeat: repeatNext[repeat] ?? "off" })}><ha-icon icon=${repeat === "one" ? "mdi:repeat-once" : repeat === "all" ? "mdi:repeat" : "mdi:repeat-off"}></ha-icon></button>` : nothing}
+      ${full && supports(s, FEATURE.SHUFFLE) && s?.attributes.shuffle !== undefined ? html`<button class="round ${shuffle ? "active" : ""} ${this.failedClass(view, "shuffle")}" type="button" aria-label="Lecture aléatoire" aria-pressed=${shuffle ? "true" : "false"}
+        aria-busy=${this.busy(view, "shuffle")} @click=${() => this.call(view, "shuffle_set", { shuffle: !shuffle }, "shuffle")}><ha-icon icon=${shuffle ? "mdi:shuffle" : "mdi:shuffle-disabled"}></ha-icon></button>` : nothing}
+      ${supports(s, FEATURE.PREVIOUS) ? html`<button class="round ${this.failedClass(view, "previous")}" type="button" aria-label="Précédent" aria-busy=${this.busy(view, "previous")}
+        @click=${() => this.call(view, "media_previous_track", {}, "previous")}><ha-icon icon="mdi:skip-previous"></ha-icon></button>` : nothing}
+      ${canPlay ? html`<button class="round main ${this.failedClass(view, "play")}" type="button" aria-label=${view.playing ? "Pause" : "Lecture"} aria-busy=${this.busy(view, "play")}
+        @click=${() => this.playPause(view)}><ha-icon icon=${view.playing ? "mdi:pause" : "mdi:play"}></ha-icon></button>` : nothing}
+      ${supports(s, FEATURE.NEXT) ? html`<button class="round ${this.failedClass(view, "next")}" type="button" aria-label="Suivant" aria-busy=${this.busy(view, "next")}
+        @click=${() => this.call(view, "media_next_track", {}, "next")}><ha-icon icon="mdi:skip-next"></ha-icon></button>` : nothing}
+      ${full && supports(s, FEATURE.REPEAT) && s?.attributes.repeat !== undefined ? html`<button class="round ${repeat !== "off" ? "active" : ""} ${this.failedClass(view, "repeat")}" type="button" aria-label="Répétition"
+        aria-busy=${this.busy(view, "repeat")} @click=${() => this.call(view, "repeat_set", { repeat: repeatNext[repeat] ?? "off" }, "repeat")}><ha-icon icon=${repeat === "one" ? "mdi:repeat-once" : repeat === "all" ? "mdi:repeat" : "mdi:repeat-off"}></ha-icon></button>` : nothing}
     </div>`;
   }
 
@@ -553,13 +714,14 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     const level = view.volume ?? 0;
     const fill = `${Math.min(100, (level * 100 / view.maxVolume) * 100)}%`;
     return html`<div class="volume">
-      ${supports(s, FEATURE.VOLUME_MUTE) ? html`<button class="round ${view.muted ? "active" : ""}" type="button" aria-label=${view.muted ? "Rétablir le son" : "Couper le son"} aria-pressed=${view.muted ? "true" : "false"}
-        @click=${() => this.call(view, "volume_mute", { is_volume_muted: !view.muted })}><ha-icon icon=${view.muted ? "mdi:volume-off" : level < 0.34 ? "mdi:volume-low" : level < 0.67 ? "mdi:volume-medium" : "mdi:volume-high"}></ha-icon></button>` : nothing}
-      ${canStep ? html`<button class="round" type="button" aria-label="Baisser le volume" ?disabled=${level <= 0 && view.volume !== undefined} @click=${() => this.stepVolume(view, -1)}><ha-icon icon="mdi:minus"></ha-icon></button>` : nothing}
+      ${supports(s, FEATURE.VOLUME_MUTE) ? html`<button class="round ${view.muted ? "active" : ""} ${this.failedClass(view, "mute")}" type="button" aria-label=${view.muted ? "Rétablir le son" : "Couper le son"} aria-pressed=${view.muted ? "true" : "false"}
+        @click=${() => this.call(view, "volume_mute", { is_volume_muted: !view.muted }, "mute")}><ha-icon icon=${view.muted ? "mdi:volume-off" : level < 0.34 ? "mdi:volume-low" : level < 0.67 ? "mdi:volume-medium" : "mdi:volume-high"}></ha-icon></button>` : nothing}
+      ${canStep ? html`<button class="round ${this.failedClass(view, "volume")}" type="button" aria-label="Baisser le volume" ?disabled=${level <= 0 && view.volume !== undefined} @click=${() => this.stepVolume(view, -1)}><ha-icon icon="mdi:minus"></ha-icon></button>` : nothing}
       ${view.volume !== undefined ? html`<input class="vol" type="range" min="0" max=${view.maxVolume} step="1" style=${`--fill:${fill}`}
-        .value=${String(Math.round(level * 100))} ?disabled=${!canSet} aria-label="Volume"
-        @input=${(event: Event) => this.onVolumeInput(view, event)} @change=${(event: Event) => this.onVolumeChange(view, event)} />` : html`<span style="flex:1"></span>`}
-      ${canStep ? html`<button class="round" type="button" aria-label="Monter le volume" ?disabled=${view.volume !== undefined && level * 100 >= view.maxVolume} @click=${() => this.stepVolume(view, 1)}><ha-icon icon="mdi:plus"></ha-icon></button>` : nothing}
+        .value=${String(Math.round(level * 100))} ?disabled=${!canSet} aria-label="Volume" aria-valuetext=${volumeLabel(level, view.player.volume_scale)}
+        @input=${(event: Event) => this.onVolumeInput(view, event)} @change=${(event: Event) => this.onVolumeChange(view, event)}
+        @pointerup=${() => this.volumeHold.release()} @pointercancel=${() => this.volumeHold.release()} />` : html`<span style="flex:1"></span>`}
+      ${canStep ? html`<button class="round ${this.failedClass(view, "volume")}" type="button" aria-label="Monter le volume" ?disabled=${view.volume !== undefined && level * 100 >= view.maxVolume} @click=${() => this.stepVolume(view, 1)}><ha-icon icon="mdi:plus"></ha-icon></button>` : nothing}
       ${view.volume !== undefined ? html`<span class="vol-value ${view.muted ? "muted" : ""}">${volumeLabel(level, view.player.volume_scale)}</span>` : nothing}
     </div>`;
   }
@@ -574,8 +736,9 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
       sources.forEach((item, index) => { sources[index] = favorites.get(item.source) ?? item; });
     }
     if (!sources.length) return nothing;
-    return html`<div class="sources ${wrap ? "wrap" : ""}" role="group" aria-label="Sources">
-      ${sources.map((item) => html`<button class="src ${item.source === view.source ? "current" : ""}" type="button"
+    const pending = this.isPending(`${view.id}:source`);
+    return html`<div class="sources ${wrap ? "wrap" : ""}" role="group" aria-label="Sources" aria-busy=${pending ? "true" : "false"}>
+      ${sources.map((item) => html`<button class="src ${item.source === view.source ? "current" : ""}" type="button" ?disabled=${pending}
         aria-pressed=${item.source === view.source ? "true" : "false"} @click=${() => this.selectSource(view, item.source)}>
         <ha-icon .icon=${item.icon}></ha-icon>${item.name}</button>`)}
     </div>`;
@@ -584,10 +747,11 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
   private renderSoundModes(view: PlayerView): TemplateResult | typeof nothing {
     const list = view.state?.attributes.sound_mode_list;
     if (!supports(view.state, FEATURE.SOUND_MODE) || !Array.isArray(list) || !list.length) return nothing;
+    const pending = this.isPending(`${view.id}:sound_mode`);
     return html`<div class="dialog-section-title">Mode sonore</div>
       <div class="sources wrap" role="group" aria-label="Mode sonore">
-        ${list.filter((mode): mode is string => typeof mode === "string").map((mode) => html`<button class="src ${mode === view.soundMode ? "current" : ""}" type="button"
-          aria-pressed=${mode === view.soundMode ? "true" : "false"} @click=${() => this.call(view, "select_sound_mode", { sound_mode: mode })}>
+        ${list.filter((mode): mode is string => typeof mode === "string").map((mode) => html`<button class="src ${mode === view.soundMode ? "current" : ""}" type="button" ?disabled=${pending}
+          aria-pressed=${mode === view.soundMode ? "true" : "false"} @click=${() => this.call(view, "select_sound_mode", { sound_mode: mode }, "sound_mode")}>
           <ha-icon icon="mdi:surround-sound"></ha-icon>${mode}</button>`)}
       </div>`;
   }
@@ -595,16 +759,29 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
   private renderOff(view: PlayerView): TemplateResult {
     const canWake = view.available && supports(view.state, FEATURE.TURN_ON);
     return html`<div class="off-panel">
-      <span>${view.available ? `${KINDS[view.kind].label} ${view.state?.state === "standby" ? "en veille" : view.kind === "receiver" ? "éteint" : "éteinte"}.` : "Lecteur indisponible."}</span>
-      ${canWake ? html`<button class="wake" type="button" @click=${() => this.call(view, "turn_on")}><ha-icon icon="mdi:power"></ha-icon>Allumer</button>` : nothing}
+      <span>${offLabel(view.kind, view.state)}</span>
+      ${canWake ? html`<button class="wake" type="button" ?disabled=${this.isPending(`${view.id}:power`)} aria-busy=${this.busy(view, "power")}
+        @click=${() => this.call(view, "turn_on", {}, "power")}><ha-icon icon="mdi:power"></ha-icon>Allumer</button>` : nothing}
     </div>`;
+  }
+
+  /** Onglets des lecteurs : flèches gauche/droite, Début et Fin, comme un `tablist` standard. */
+  private async onPlayersKey(event: KeyboardEvent, views: PlayerView[], current: PlayerView): Promise<void> {
+    const moves: Record<string, number> = { ArrowLeft: current.index - 1, ArrowRight: current.index + 1, Home: 0, End: views.length - 1 };
+    if (!(event.key in moves)) return;
+    event.preventDefault();
+    const index = ((moves[event.key] % views.length) + views.length) % views.length;
+    this.choose(index);
+    await this.updateComplete;
+    this.renderRoot.querySelector<HTMLElement>(`.player[data-index="${index}"]`)?.focus();
   }
 
   private renderPlayers(views: PlayerView[], current: PlayerView): TemplateResult | typeof nothing {
     if (views.length < 2) return nothing;
-    return html`<div class="players" role="tablist" aria-label="Lecteurs">
+    return html`<div class="players" role="tablist" aria-label="Lecteurs" @keydown=${(event: KeyboardEvent) => this.onPlayersKey(event, views, current)}>
       ${views.map((view) => html`<button class="player ${view.index === current.index ? "current" : ""} ${view.powered ? "" : "off"}" type="button" role="tab"
-        aria-selected=${view.index === current.index ? "true" : "false"} style=${`--chip-tone:${view.tone}`} @click=${() => { this.chosen = view.index; }}>
+        data-index=${view.index} tabindex=${view.index === current.index ? "0" : "-1"}
+        aria-selected=${view.index === current.index ? "true" : "false"} style=${`--chip-tone:${view.tone}`} @click=${() => this.choose(view.index)}>
         <ha-icon .icon=${view.icon}></ha-icon>${view.label}${view.playing ? html`<span style=${`color:${view.tone}`}>${this.eq()}</span>` : nothing}</button>`)}
     </div>`;
   }
@@ -619,8 +796,9 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
         ${supports(view.state, FEATURE.SELECT_SOURCE) && Array.isArray(view.state?.attributes.source_list) ? html`<div class="dialog-section-title">Sources</div>${this.renderSources(view, true, true)}` : nothing}
         ${this.renderSoundModes(view)}` : this.renderOff(view)}
       <div class="actions">
-        ${view.powered && supports(view.state, FEATURE.TURN_OFF) ? html`<button class="action danger" type="button" @click=${() => this.call(view, "turn_off")}><ha-icon icon="mdi:power"></ha-icon>Éteindre</button>` : nothing}
-        <button class="action" type="button" @click=${() => fireMoreInfo(this, view.id)}><ha-icon icon="mdi:information-outline"></ha-icon>Fiche</button>
+        ${view.powered && supports(view.state, FEATURE.TURN_OFF) ? html`<button class="action danger" type="button" aria-busy=${this.busy(view, "power")}
+          @click=${() => this.call(view, "turn_off", {}, "power")}><ha-icon icon="mdi:power"></ha-icon>Éteindre</button>` : nothing}
+        <button class="action" type="button" @click=${() => this.moreInfo(view.id)}><ha-icon icon="mdi:information-outline"></ha-icon>Fiche</button>
       </div>
     </div>`, "m-dialog");
   }
@@ -631,6 +809,7 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     const views = this.views();
     const current = this.currentView(views);
     if (!current) return nothing;
+    this.shown = current.index;
     const playing = views.filter((view) => view.playing).length;
     const powered = views.filter((view) => view.powered).length;
     const showHeader = config.show_header ?? (Boolean(config.name) && !config.entity);
@@ -641,10 +820,10 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     return html`<ha-card><div class="machine-shell media-shell ${this.machineGridClass()}" style=${`${this.machineStyle(current.tone)};--tone:${current.tone}`}>
       <div class="backdrop ${current.artwork ? "" : "empty"}" style=${current.artwork ? `--art:url("${current.artwork.replaceAll('"', "%22")}")` : ""}></div>
       <div class="machine-content media-content">
-        ${showHeader ? html`<header class="m-header">
+        ${showHeader ? html`<header class="header">
           <span class="badge"><ha-icon .icon=${config.icon || "mdi:music-box-multiple-outline"}></ha-icon></span>
           <div class="title-wrap"><h2>${config.name || "Multimédia"}</h2>
-            <div class="machine-status"><span class="dot ${playing ? "healthy" : powered ? "warning" : ""}"></span>${summary}</div></div>
+            <div class="status-line"><span class="dot ${playing ? "healthy" : powered ? "warning" : ""}"></span>${summary}</div></div>
         </header>` : nothing}
         ${this.renderPlayers(views, current)}
         ${this.renderHero(current)}
