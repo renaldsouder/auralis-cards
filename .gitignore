@@ -19,3 +19,6 @@ examples/proxmox-domo-jarvis-card.yaml
 examples/salon-card-complete.yaml
 examples/skynet-unraid-card.yaml
 examples/dashboard-maison-rso.yaml
+
+# Copies de travail temporaires des agents
+.claude/
