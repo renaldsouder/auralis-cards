@@ -381,16 +381,8 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
       }
 
       .covers-header .tile-icon {
-        flex: 0 0 auto;
-        width: var(--auralis-target);
-        height: var(--auralis-target);
         background: color-mix(in srgb, var(--covers-accent) 18%, var(--auralis-layer));
-        color: var(--covers-accent);
-      }
-
-      .covers-header .tile-icon ha-icon {
-        --mdc-icon-size: 24px;
-        color: inherit;
+        color: color-mix(in oklab, var(--covers-accent), #000 var(--auralis-shade));
       }
 
       .groups-grid {

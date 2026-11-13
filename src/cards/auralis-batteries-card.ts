@@ -532,9 +532,8 @@ export class AuralisBatteriesCard extends AuralisBaseCard<BatteriesCardConfig> {
       }
 
       .header .tile-icon {
-        flex: 0 0 auto;
         background: color-mix(in srgb, var(--batteries-accent) 14%, transparent);
-        color: var(--batteries-accent);
+        color: color-mix(in oklab, var(--batteries-accent), #000 var(--auralis-shade));
       }
 
       .header .tile-icon ha-icon {
@@ -591,16 +590,16 @@ export class AuralisBatteriesCard extends AuralisBaseCard<BatteriesCardConfig> {
       }
 
       .row.sev-critical {
-        --row-color: var(--auralis-danger);
+        --row-color: var(--auralis-danger-ink);
         border-color: color-mix(in srgb, var(--auralis-danger) 32%, var(--auralis-border));
       }
 
       .row.sev-warning {
-        --row-color: var(--auralis-active);
+        --row-color: var(--auralis-active-ink);
       }
 
       .row.ok {
-        --row-color: var(--auralis-healthy);
+        --row-color: var(--auralis-healthy-ink);
       }
 
       .row-icon {
@@ -680,7 +679,7 @@ export class AuralisBatteriesCard extends AuralisBaseCard<BatteriesCardConfig> {
       .all-good ha-icon {
         --mdc-icon-size: 26px;
         flex: 0 0 auto;
-        color: var(--auralis-healthy);
+        color: var(--auralis-healthy-ink);
       }
 
       .more {

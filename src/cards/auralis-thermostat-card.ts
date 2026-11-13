@@ -201,10 +201,11 @@ export class AuralisThermostatCard extends AuralisBaseCard<ThermostatCardConfig>
     /* Fond et texte suivent le thème ; une image de fond garde un voile sombre et un texte clair. */
     .thermostat-shell { --machine-accent:#ffbd78; background:var(--auralis-card-background,var(--auralis-card)); color:var(--auralis-text); }
     .thermostat-shell:not(.has-image)::before { display:none; }
-    .thermostat-shell.has-image { --auralis-text:#f4f8fc; --auralis-muted:#a7b4c2; --auralis-border:rgba(195,211,229,.18); --auralis-layer:rgba(9,14,20,var(--machine-glass-alpha,.84)); --auralis-card:rgba(11,17,24,.93); background:var(--auralis-card-background,#090d12); }
+    /* Jetons sombres de la façade photo : voir .machine-shell dans les styles partagés. */
+    .thermostat-shell.has-image { background:var(--auralis-card-background,#090d12); }
     .thermostat-shell, .thermostat-content { min-height:0; }
     .thermostat-header { padding-right:52px; }
-    .thermostat-header .badge { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--machine-accent) 14%,var(--auralis-layer)); color:var(--machine-accent); }
+    .thermostat-header .badge { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--machine-accent) 14%,var(--auralis-layer)); color:color-mix(in oklab,var(--machine-accent),#000 var(--auralis-shade)); }
     .thermostat-header .badge ha-icon { --mdc-icon-size:23px; }
     .thermostat-header h2 { overflow:hidden; color:inherit; font-size:var(--auralis-title-size); text-overflow:ellipsis; white-space:nowrap; }
     .thermostat-header .machine-status { margin-top:5px; color:var(--auralis-muted); }
@@ -230,7 +231,7 @@ export class AuralisThermostatCard extends AuralisBaseCard<ThermostatCardConfig>
     .stepper button { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:13px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; font-size:24px; line-height:1; }
     .stepper button:hover, .mode-button:hover, .info-button:hover { border-color:var(--machine-accent); }
     .stepper button:disabled, .mode-button:disabled { cursor:not-allowed; opacity:.42; }
-    .stepper output { min-width:58px; color:var(--machine-accent); font-size:21px; font-weight:750; text-align:center; white-space:nowrap; }
+    .stepper output { min-width:58px; color:color-mix(in oklab,var(--machine-accent),#000 var(--auralis-shade)); font-size:21px; font-weight:750; text-align:center; white-space:nowrap; }
     .stepper output.pending { opacity:.8; }
     .metrics { display:flex; flex-wrap:wrap; gap:7px 18px; padding-top:13px; margin-top:13px; border-top:1px solid var(--auralis-border); }
     .metrics span { color:var(--auralis-muted); font-size:var(--auralis-text-xs); }

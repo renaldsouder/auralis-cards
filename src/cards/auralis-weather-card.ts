@@ -306,7 +306,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .slot.current { background:color-mix(in srgb,var(--weather-accent,#fff) 9%,transparent); }
     .slot-label { color:#c9d3df; font-size:var(--auralis-text-xs); font-weight:680; white-space:nowrap; }
     .slot ha-icon { --mdc-icon-size:25px; color:var(--condition); filter:drop-shadow(0 0 8px color-mix(in srgb,var(--condition) 35%,transparent)); }
-    .slot-rain { min-height:13px; color:#86c4ff; font-size:var(--auralis-text-xs); font-weight:750; white-space:nowrap; }
+    .slot-rain { min-height:13px; color:color-mix(in oklab,#86c4ff,#000 var(--auralis-shade)); font-size:var(--auralis-text-xs); font-weight:750; white-space:nowrap; }
     .slot-high { color:var(--band); font-size:14px; font-weight:760; }
     .slot-low { color:#8fa0b4; font-size:11px; font-weight:600; }
     .track { position:relative; width:6px; height:44px; border-radius:999px; background:rgba(255,255,255,.08); }
@@ -335,39 +335,43 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
 
     .d-hero { --condition:#c3cfdc; --band:#fff; }
     .d-hero .now-main { gap:12px; }
-    .d-hero ha-icon { --mdc-icon-size:48px; color:var(--condition); }
-    .d-hero strong { color:var(--band); font-size:30px; letter-spacing:-.05em; }
+    /* Fenêtre : couleurs de condition et de température assombries sur fond clair (--auralis-shade). */
+    .d-hero ha-icon { --mdc-icon-size:48px; color:color-mix(in oklab,var(--condition),#000 var(--auralis-shade)); }
+    .d-hero strong { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-size:30px; letter-spacing:-.05em; }
     .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(98px,1fr)); gap:8px; }
     .stat-grid .dialog-stat { min-width:0; }
     .stat-grid .dialog-stat strong { display:block; overflow:hidden; font-size:15px; text-overflow:ellipsis; white-space:nowrap; }
     .stat-grid .dialog-stat ha-icon { --mdc-icon-size:16px; color:var(--auralis-muted); }
     .tabs button { color:var(--auralis-muted); }
     .tabs button.active { color:var(--auralis-text); }
-    .chart { margin:0; padding:12px 12px 8px; border:1px solid var(--auralis-border); border-radius:18px; background:rgba(255,255,255,.03); }
+    .chart { margin:0; padding:12px 12px 8px; border:1px solid var(--auralis-border); border-radius:18px; background:color-mix(in srgb,var(--auralis-text) 3%,transparent); }
     .plot { position:relative; height:132px; }
-    .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+    .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; filter:brightness(calc(100% - var(--auralis-shade))); }
     .plot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); }
-    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:rgba(11,17,24,.7); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:color-mix(in srgb,var(--auralis-surface) 70%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .plot .axis.top { top:2px; }
     .plot .axis.bottom { bottom:2px; }
     .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .legend { display:flex; gap:12px; padding-top:6px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .legend i { display:inline-block; width:9px; height:9px; margin-inline-end:5px; border-radius:3px; vertical-align:-1px; }
     .hours { display:grid; grid-auto-columns:62px; grid-auto-flow:column; gap:6px; margin-top:10px; padding-bottom:4px; overflow-x:auto; }
-    .hour { --condition:#c3cfdc; --band:#fff; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; border:1px solid var(--auralis-border); border-radius:14px; background:rgba(255,255,255,.03); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
-    .hour ha-icon { --mdc-icon-size:22px; color:var(--condition); }
-    .hour strong { color:var(--band); font-size:13px; }
-    .hour .amount { min-height:13px; color:#86c4ff; white-space:nowrap; }
+    .hour { --condition:#c3cfdc; --band:#fff; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--auralis-text) 3%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .hour ha-icon { --mdc-icon-size:22px; color:color-mix(in oklab,var(--condition),#000 var(--auralis-shade)); }
+    .hour strong { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-size:13px; }
+    .hour .amount { min-height:13px; color:color-mix(in oklab,#86c4ff,#000 var(--auralis-shade)); white-space:nowrap; }
     .days { display:grid; gap:6px; }
-    .day-row { --condition:#c3cfdc; display:grid; grid-template-columns:64px 24px minmax(0,1fr) 34px minmax(54px,1.3fr) 34px; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--auralis-border); border-radius:14px; background:rgba(255,255,255,.03); font-size:12px; }
+    .day-row { --condition:#c3cfdc; display:grid; grid-template-columns:64px 24px minmax(0,1fr) 34px minmax(54px,1.3fr) 34px; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--auralis-text) 3%,transparent); font-size:12px; }
     .day-row > strong { font-size:12px; }
-    .day-row ha-icon { --mdc-icon-size:22px; color:var(--condition); }
+    .day-row ha-icon { --mdc-icon-size:22px; color:color-mix(in oklab,var(--condition),#000 var(--auralis-shade)); }
     .day-cond { overflow:hidden; color:var(--auralis-muted); text-overflow:ellipsis; white-space:nowrap; }
-    .day-cond b { color:#86c4ff; font-weight:700; }
+    .day-cond b { color:color-mix(in oklab,#86c4ff,#000 var(--auralis-shade)); font-weight:700; }
     .day-low { color:var(--auralis-muted); text-align:end; }
-    .day-high { font-weight:760; }
-    .hbar { position:relative; height:6px; border-radius:999px; background:rgba(255,255,255,.08); }
-    .hbar span { position:absolute; inset-block:0; min-width:6px; border-radius:999px; background:var(--range); }
+    .day-high { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-weight:760; }
+    .hbar { position:relative; height:6px; border-radius:999px; background:color-mix(in srgb,var(--auralis-text) 8%,transparent); }
+    .hbar span { position:absolute; inset-block:0; min-width:6px; border-radius:999px; background:var(--range); filter:brightness(calc(100% - var(--auralis-shade))); }
+    /* Vigilance dans la fenêtre : pastille plane, plus le verre sombre de la façade. */
+    .dialog .chip.alert { border-color:color-mix(in srgb,var(--band) 45%,transparent); background:color-mix(in srgb,var(--band) 12%,var(--auralis-layer)); color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); backdrop-filter:none; }
+    .dialog .chip.alert ha-icon { color:inherit; }
     .muted-note { margin:0; color:var(--auralis-muted); font-size:12px; text-align:center; }
     @media (max-width:520px) {
       .day-row { grid-template-columns:52px 24px auto 30px minmax(40px,1fr) 30px; gap:6px; padding:9px 10px; }
@@ -857,7 +861,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
           <span class="day-cond"><span class="text">${style.label}</span>${entry.probability !== undefined && entry.probability >= 20 ? html` <b>${formatNumber(entry.probability)} %</b>` : nothing}</span>
           <span class="day-low">${entry.low === undefined ? "" : this.degrees(entry.low)}</span>
           <span class="hbar" aria-hidden="true">${position ? html`<span style=${`left:${position.start}%;width:${position.size}%;--range:${rangeGradient(thresholds, low!, high!)}`}></span>` : nothing}</span>
-          <span class="day-high" style=${`color:${this.bandColor(high)}`}>${this.degrees(high)}</span>
+          <span class="day-high" style=${`--band:${this.bandColor(high)}`}>${this.degrees(high)}</span>
         </div>`;
       })}
     </div>`;

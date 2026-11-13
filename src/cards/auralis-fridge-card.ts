@@ -168,14 +168,14 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
     .detail-tile small, .detail-tile strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .detail-tile small { color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .detail-tile strong { margin-top:3px; font-size:13px; }
-    .detail-tile.sev-critical strong, .sev-text.sev-critical { color:var(--auralis-danger); }
+    .detail-tile.sev-critical strong, .sev-text.sev-critical { color:var(--auralis-danger-ink); }
     .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
     .control-row { display:flex; align-items:center; gap:9px; padding:10px; margin-top:8px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); }
     .control-row > span { min-width:0; flex:1; font-size:12px; font-weight:650; }
     .control-row button { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
     .control-row button:disabled, .control-row select:disabled { opacity:.45; cursor:not-allowed; }
     .control-row output { min-width:49px; font-size:13px; text-align:center; }
-    .control-row output.optimistic { color:var(--auralis-info); }
+    .control-row output.optimistic { color:var(--auralis-info-ink); }
     .control-row select { max-width:55%; min-height:var(--auralis-target); padding:7px; border:1px solid var(--auralis-border); border-radius:9px; background:var(--auralis-card); color:var(--auralis-text); }
     @container (max-width:330px) { .fridge-shell { padding:13px; } .fridge-panel { padding:11px; } .temperature strong { font-size:24px; } .fridge-spacer { min-height:90px; } }
   `];

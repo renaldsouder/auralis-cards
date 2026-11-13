@@ -566,21 +566,20 @@ export class AuralisIrrigationCard extends AuralisBaseCard<IrrigationCardConfig>
     }
     :host([data-background]) ha-card, :host([data-background]) .shell { background: var(--auralis-card-background); }
     .header { margin-bottom: 14px; }
-    .header .tile-icon { width: 42px; height: 42px; flex: 0 0 auto; background: color-mix(in srgb, var(--water) 16%, var(--auralis-layer)); color: var(--water); }
-    .header .tile-icon ha-icon { --mdc-icon-size: 24px; color: inherit; }
+    .header .tile-icon { width: 42px; height: 42px; background: color-mix(in srgb, var(--water) 16%, var(--auralis-layer)); color: color-mix(in oklab, var(--water), #000 var(--auralis-shade)); }
     .header h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .status-line { color: var(--auralis-muted); font-size: var(--auralis-text-sm); }
     .status-line .dot { box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot-color) 16%, transparent); }
     .dot.water { --dot-color: var(--water); }
     .hint { display: flex; align-items: center; gap: 8px; padding: 9px 12px; margin-bottom: 12px; border: 1px solid color-mix(in srgb, var(--water) 32%, transparent); border-radius: var(--auralis-radius-md); background: color-mix(in srgb, var(--water) 9%, var(--auralis-layer)); color: var(--water-text); font-size: var(--auralis-text-md); font-weight: 650; }
-    .hint ha-icon { --mdc-icon-size: 18px; flex: 0 0 auto; color: var(--water); }
+    .hint ha-icon { --mdc-icon-size: 18px; flex: 0 0 auto; color: color-mix(in oklab, var(--water), #000 var(--auralis-shade)); }
     .zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
     .zone { display: grid; gap: 10px; transition: border-color 200ms ease, background 200ms ease; }
     .zone.running { border-color: color-mix(in srgb, var(--water) 55%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--water) 14%, var(--auralis-layer)), var(--auralis-layer) 72%); }
     .zone.unavailable { opacity: 0.7; }
     .zone-top { display: flex; align-items: center; gap: 8px; }
     .zone-head { display: flex; min-width: 0; min-height: var(--auralis-target); flex: 1; align-items: center; gap: 11px; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: start; }
-    .zone-head .tile-icon { flex: 0 0 auto; background: color-mix(in srgb, var(--water) 14%, var(--auralis-card)); color: var(--water); }
+    .zone-head .tile-icon { flex: 0 0 auto; background: color-mix(in srgb, var(--water) 14%, var(--auralis-card)); color: color-mix(in oklab, var(--water), #000 var(--auralis-shade)); }
     .zone.running .zone-head .tile-icon { background: var(--water); color: #fff; animation: water-pulse 2.4s ease-in-out infinite; }
     .zone-copy { display: grid; min-width: 0; gap: 3px; }
     .zone-copy strong, .zone-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -595,8 +594,8 @@ export class AuralisIrrigationCard extends AuralisBaseCard<IrrigationCardConfig>
     .line { display: flex; min-height: 28px; align-items: center; gap: 8px; color: var(--auralis-muted); font-size: var(--auralis-text-md); }
     .line > ha-icon { --mdc-icon-size: 17px; flex: 0 0 auto; }
     .line > span { min-width: 0; flex: 1; }
-    .line.error { color: var(--auralis-danger); font-weight: 650; }
-    .line.paused { color: var(--auralis-active); font-weight: 650; }
+    .line.error { color: var(--auralis-danger-ink); font-weight: 650; }
+    .line.paused { color: var(--auralis-active-ink); font-weight: 650; }
     .line .small-action { flex: 0 0 auto; min-height: var(--auralis-target); padding: 0 12px; font-size: var(--auralis-text-sm); }
     .durations { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { min-width: var(--auralis-target); min-height: var(--auralis-target); flex: 1 1 0; padding: 0 10px; border: 1px solid var(--auralis-border); border-radius: 999px; background: var(--auralis-card); color: var(--auralis-text); cursor: pointer; font-size: var(--auralis-text-md); font-weight: 650; white-space: nowrap; }

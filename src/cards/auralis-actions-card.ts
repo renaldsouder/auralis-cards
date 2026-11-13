@@ -278,7 +278,7 @@ export class LongPress {
  */
 export const cardHeaderStyles = css`
   .header { gap:11px; margin-bottom:14px; }
-  .header .badge { display:grid; width:40px; height:40px; flex:0 0 auto; place-items:center; border:1px solid var(--header-badge-border, var(--auralis-border)); border-radius:14px; background:var(--header-badge-bg, var(--auralis-layer)); color:var(--machine-accent, var(--auralis-info)); }
+  .header .badge { display:grid; width:40px; height:40px; flex:0 0 auto; place-items:center; border:1px solid var(--header-badge-border, var(--auralis-border)); border-radius:14px; background:var(--header-badge-bg, var(--auralis-layer)); color:color-mix(in oklab,var(--machine-accent, var(--auralis-info)),#000 var(--auralis-shade)); }
   .header .badge ha-icon { --mdc-icon-size:22px; color:inherit; }
   .header h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .header .status-line { margin-top:4px; color:var(--header-muted, var(--auralis-muted)); font-size:var(--auralis-text-xs); }
@@ -307,15 +307,15 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     .act.error { --tone:var(--auralis-danger); }
     .act[aria-disabled="true"] { cursor:not-allowed; opacity:.5; }
     .act[aria-disabled="true"]:active { transform:none; }
-    .act-icon { position:relative; display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border-radius:14px; background:color-mix(in srgb,var(--tone) 18%,var(--auralis-layer)); color:var(--tone); }
+    .act-icon { position:relative; display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border-radius:14px; background:color-mix(in srgb,var(--tone) 18%,var(--auralis-layer)); color:color-mix(in oklab,var(--tone),#000 var(--auralis-shade)); }
     .act.on .act-icon { background:var(--tone); color:var(--act-on-ink,#111820); box-shadow:0 0 18px color-mix(in srgb,var(--tone) 55%,transparent); }
     .act-icon ha-icon { --mdc-icon-size:23px; }
     .act-icon .spinner { position:absolute; inset:3px; border:2px solid color-mix(in srgb,var(--tone) 25%,transparent); border-top-color:var(--tone); border-radius:12px; animation:spin .8s linear infinite; }
     .act-text { display:grid; min-width:0; gap:3px; }
     .act-name { display:-webkit-box; overflow:hidden; font-size:var(--auralis-text-md); font-weight:720; line-height:1.25; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
     .act-caption { overflow:hidden; color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-overflow:ellipsis; white-space:nowrap; }
-    .act.on .act-caption, .act.done .act-caption, .act.error .act-caption { color:var(--tone); }
-    .act-flag { margin-inline-end:4px; color:color-mix(in srgb,var(--tone) 70%,var(--auralis-muted)); vertical-align:-2px; --mdc-icon-size:13px; }
+    .act.on .act-caption, .act.done .act-caption, .act.error .act-caption { color:color-mix(in oklab,var(--tone),#000 var(--auralis-shade)); }
+    .act-flag { margin-inline-end:4px; color:color-mix(in oklab,color-mix(in srgb,var(--tone) 70%,var(--auralis-muted)),#000 var(--auralis-shade)); vertical-align:-2px; --mdc-icon-size:13px; }
     .act-row .act-name { display:block; white-space:nowrap; }
     .act-row { display:flex; flex-wrap:wrap; gap:8px; }
     .act-row .act { min-height:var(--auralis-target); gap:8px; padding:6px 14px 6px 6px; border-radius:999px; }
