@@ -1,0 +1,47 @@
+# Carte Actions Auralis — à coller dans l'éditeur YAML d'une carte.
+# Remplacez les identifiants d'entités par les vôtres.
+type: custom:auralis-actions-card
+name: Actions rapides
+icon: mdi:lightning-bolt-outline
+actions:
+  # Script : « En cours » pendant l'exécution, sinon « Lancé il y a … ».
+  - entity: script.wake_skynet
+    name: Réveiller Skynet
+    icon: mdi:nas
+    color: "#FF8055"
+    # Facultatif : affiche si la machine répond plutôt que l'état du script.
+    # state_entity: binary_sensor.skynet_online
+
+  # Bouton avec confirmation rouge.
+  - entity: button.reboot_freebox
+    name: Redémarrer la Freebox
+    icon: mdi:web-box
+    color: "#FF6B74"
+    danger: true
+    confirm: Redémarrer la Freebox ? La connexion Internet sera coupée quelques minutes.
+
+  # Scène.
+  - entity: scene.salon_cinema
+    icon: mdi:movie-open-outline
+
+  # Service libre.
+  - name: Prévenir la famille
+    icon: mdi:bell-ring-outline
+    service: notify.famille
+    data:
+      message: À table !
+
+  # Navigation vers une autre vue.
+  - name: Caméras
+    icon: mdi:cctv
+    navigation_path: /dashboard-maison/cameras
+
+grid_options:
+  columns: full
+
+# Variante en pastilles, pour une rangée de scènes :
+# type: custom:auralis-actions-card
+# layout: compact
+# actions:
+#   - entity: scene.salon_soiree
+#   - entity: scene.salon_cinema

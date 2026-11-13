@@ -19,6 +19,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-energy-card`
 - `custom:auralis-climate-card`
 - `custom:auralis-weather-card`
+- `custom:auralis-actions-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -110,6 +111,18 @@ La [carte Météo](examples/weather-card.yaml) sert d’en-tête : salutation, d
 type: custom:auralis-weather-card
 entity: weather.forecast_maison
 temperature_entity: sensor.exterieur_temperature
+```
+
+La [carte Actions](examples/actions-card.yaml) réunit des tuiles à un appui : scripts, boutons, scènes, automatisations, interrupteurs, services libres ou navigation. Chaque tuile affiche la dernière utilisation ou l’état, une roue pendant l’exécution puis « Fait » ou « Échec ». Une confirmation est possible pour les actions sensibles. Voir le [guide Actions](docs/ACTIONS_CARD.md).
+
+```yaml
+type: custom:auralis-actions-card
+actions:
+  - entity: script.wake_skynet
+    name: Réveiller Skynet
+  - entity: button.reboot_freebox
+    confirm: Redémarrer la Freebox ?
+    danger: true
 ```
 
 ## Exemple minimal — Navigation

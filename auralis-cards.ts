@@ -12,8 +12,9 @@ import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
 import { AuralisClimateCard } from "./src/cards/auralis-climate-card";
 import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
+import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
 
-const VERSION = "0.17.0";
+const VERSION = "0.18.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -28,6 +29,7 @@ if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-f
 if (!customElements.get("auralis-energy-card")) customElements.define("auralis-energy-card", AuralisEnergyCard);
 if (!customElements.get("auralis-climate-card")) customElements.define("auralis-climate-card", AuralisClimateCard);
 if (!customElements.get("auralis-weather-card")) customElements.define("auralis-weather-card", AuralisWeatherCard);
+if (!customElements.get("auralis-actions-card")) customElements.define("auralis-actions-card", AuralisActionsCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -137,6 +139,15 @@ const cards = [
     preview: true,
     getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("weather.")
       ? { config: { type: "custom:auralis-weather-card", entity: entityId } }
+      : null,
+  },
+  {
+    type: "auralis-actions-card",
+    name: "Auralis · Actions",
+    description: "Tuiles à un appui pour scripts, boutons, scènes et interrupteurs, avec confirmation et retour d’exécution.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => /^(script|button|input_button|scene)\./.test(entityId)
+      ? { config: { type: "custom:auralis-actions-card", actions: [{ entity: entityId }] } }
       : null,
   },
 ];

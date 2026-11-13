@@ -182,6 +182,14 @@ const states = [
     next_rising: new Date(Date.now() + 16 * 3_600_000).toISOString(),
   }),
   e("sensor.vigilance_meteo", "Jaune", { friendly_name: "Vigilance vent" }),
+  e("script.wake_skynet", "off", { friendly_name: "Réveiller Skynet", last_triggered: new Date(Date.now() - 3 * 3_600_000).toISOString() }),
+  e("binary_sensor.skynet_online", "off", { friendly_name: "Skynet en ligne" }),
+  e("button.reboot_freebox", new Date(Date.now() - 2 * 86_400_000).toISOString(), { friendly_name: "Redémarrer la Freebox" }),
+  e("button.reboot_ha", "unknown", { friendly_name: "Redémarrer Home Assistant" }),
+  e("scene.salon_cinema", new Date(Date.now() - 20 * 60_000).toISOString(), { friendly_name: "Cinéma" }),
+  e("scene.salon_soiree", "unknown", { friendly_name: "Soirée" }),
+  e("automation.volets_soir", "on", { friendly_name: "Volets du soir", last_triggered: new Date(Date.now() - 86_400_000).toISOString() }),
+  e("switch.mode_invites", "on", { friendly_name: "Mode invités" }),
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -228,6 +236,31 @@ const hass: HomeAssistant = {
       return () => undefined;
     },
   },
+};
+
+const actionsCard = {
+  type: "custom:auralis-actions-card",
+  name: "Actions rapides",
+  icon: "mdi:lightning-bolt-outline",
+  actions: [
+    { entity: "script.wake_skynet", name: "Réveiller Skynet", icon: "mdi:nas", color: "#FF8055", state_entity: "binary_sensor.skynet_online" },
+    { entity: "button.reboot_freebox", name: "Redémarrer la Freebox", icon: "mdi:web-box", color: "#FF6B74", danger: true,
+      confirm: "Redémarrer la Freebox ? La connexion Internet sera coupée quelques minutes." },
+    { entity: "button.reboot_ha", name: "Redémarrer HA", icon: "mdi:home-assistant", confirm: true, danger: true },
+    { entity: "automation.volets_soir" },
+    { entity: "switch.mode_invites", icon: "mdi:account-group-outline", color: "#B79CFF" },
+    { navigation_path: "/cameras", name: "Caméras", icon: "mdi:cctv" },
+  ],
+};
+
+const scenesCard = {
+  type: "custom:auralis-actions-card",
+  layout: "compact",
+  actions: [
+    { entity: "scene.salon_cinema", icon: "mdi:movie-open-outline" },
+    { entity: "scene.salon_soiree", icon: "mdi:weather-night" },
+    { entity: "switch.mode_invites", name: "Invités", icon: "mdi:account-group-outline", color: "#B79CFF" },
+  ],
 };
 
 const weather = {
@@ -482,6 +515,8 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
 
 mount("auralis-navbar-card", navbar);
 mount("auralis-weather-card", weather);
+mount("auralis-actions-card", actionsCard);
+mount("auralis-actions-card", scenesCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);
