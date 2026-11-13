@@ -18,6 +18,7 @@ import { AuralisMediaCard } from "./src/cards/auralis-media-card";
 import { AuralisTabsCard } from "./src/cards/auralis-tabs-card";
 import { AuralisScreensaverCard } from "./src/cards/auralis-screensaver-card";
 import { AuralisBatteriesCard } from "./src/cards/auralis-batteries-card";
+import { AuralisIrrigationCard } from "./src/cards/auralis-irrigation-card";
 
 const VERSION = "0.22.2";
 
@@ -40,6 +41,7 @@ if (!customElements.get("auralis-media-card")) customElements.define("auralis-me
 if (!customElements.get("auralis-tabs-card")) customElements.define("auralis-tabs-card", AuralisTabsCard);
 if (!customElements.get("auralis-screensaver-card")) customElements.define("auralis-screensaver-card", AuralisScreensaverCard);
 if (!customElements.get("auralis-batteries-card")) customElements.define("auralis-batteries-card", AuralisBatteriesCard);
+if (!customElements.get("auralis-irrigation-card")) customElements.define("auralis-irrigation-card", AuralisIrrigationCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -69,6 +71,15 @@ const cards = [
     name: "Auralis · Batteries et alertes",
     description: "Liste les piles faibles et les appareils indisponibles de la maison, découverts automatiquement.",
     preview: false,
+  },
+  {
+    type: "auralis-irrigation-card",
+    name: "Auralis · Arrosage",
+    description: "Vannes d’arrosage : état, temps restant, prochain arrosage, arrosage minuté sûr, pile, erreurs et pluie prévue.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => /^(switch|valve)\.[a-z0-9_]*(arros|irrig)/.test(entityId)
+      ? { config: { type: "custom:auralis-irrigation-card", valve_entity: entityId } }
+      : null,
   },
   {
     type: "auralis-navbar-card",
