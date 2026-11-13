@@ -7,6 +7,10 @@ import { fireMoreInfo } from "../utils/actions";
 
 export interface FridgeCardConfig extends BaseCardConfig {
   type: "custom:auralis-fridge-card";
+  /** Thermostat climate.* du réfrigérateur : température, consigne et mode. */
+  climate_entity?: string;
+  /** Thermostat climate.* du congélateur. */
+  freezer_climate_entity?: string;
   connected_entity?: string;
   fridge_temperature_entity?: string;
   freezer_temperature_entity?: string;
@@ -26,6 +30,32 @@ export interface FridgeCardConfig extends BaseCardConfig {
 
 export type FridgeHealth = "alert" | "open" | "offline" | "ok" | "unknown";
 const active = (state?: HassEntity): boolean => isAvailable(state) && isActive(state);
+const isClimate = (id?: string): boolean => Boolean(id?.startsWith("climate."));
+
+/** Température lue sur un capteur, un réglage number.* ou un thermostat climate.* (mesure ou consigne). */
+export function fridgeTemperature(state: HassEntity | undefined, role: "current" | "target" = "current"): number | undefined {
+  if (!state || !isAvailable(state)) return undefined;
+  if (state.entity_id.startsWith("climate.")) {
+    const value = Number(role === "target" ? state.attributes.temperature : state.attributes.current_temperature);
+    return Number.isFinite(value) ? value : undefined;
+  }
+  const value = numericState(state, Number.NaN);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+/** Les thermostats remplissent les champs de température et de consigne laissés vides. */
+export function normalizeFridgeConfig(config: FridgeCardConfig): FridgeCardConfig {
+  const fridge = isClimate(config.climate_entity) ? config.climate_entity : undefined;
+  const freezer = isClimate(config.freezer_climate_entity) ? config.freezer_climate_entity : undefined;
+  return {
+    ...config,
+    fridge_temperature_entity: config.fridge_temperature_entity || fridge,
+    fridge_target_entity: config.fridge_target_entity || fridge,
+    freezer_temperature_entity: config.freezer_temperature_entity || freezer,
+    freezer_target_entity: config.freezer_target_entity || freezer,
+    mode_entity: config.mode_entity || fridge,
+  };
+}
 
 export function fridgeHealth(hass: HomeAssistant | undefined, config: FridgeCardConfig): FridgeHealth {
   if (active(entity(hass, config.alert_entity))) return "alert";
@@ -92,7 +122,10 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
   private busy = false;
 
   public setConfig(config: FridgeCardConfig): void {
-    this.config = { ...config, name: config.name || "Frigo connecté", theme: config.theme || "carbon" };
+    for (const key of ["climate_entity", "freezer_climate_entity"] as const) {
+      if (config[key] && !isClimate(config[key])) throw new Error(`${key} doit être une entité climate.*.`);
+    }
+    this.config = { ...normalizeFridgeConfig(config), name: config.name || "Frigo connecté", theme: config.theme || "carbon" };
   }
   static getStubConfig(): Partial<FridgeCardConfig> {
     return { name: "Frigo connecté", theme: "carbon", fridge_temperature_entity: "sensor.frigo_temperature" };
@@ -102,6 +135,8 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
     return { schema: [
       { name: "name", selector: { text: {} } },
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
+      { name: "climate_entity", selector: { entity: { filter: { domain: "climate" } } } },
+      { name: "freezer_climate_entity", selector: { entity: { filter: { domain: "climate" } } } },
       field("connected_entity"), field("fridge_temperature_entity"), field("freezer_temperature_entity"),
       field("fridge_target_entity"), field("freezer_target_entity"), field("door_entity"),
       field("freezer_door_entity"), field("alert_entity"), field("filter_entity"), field("energy_entity"),
@@ -116,12 +151,22 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
   public getCardSize(): number { return 7; }
   public getGridOptions(): Record<string, number> { return { rows: 7, min_rows: 5, columns: 6, min_columns: 3 }; }
 
-  private temperature(id?: string): string {
+  private temperature(id?: string, role: "current" | "target" = "current"): string {
     const state = entity(this.hass, id);
     if (!state || !isAvailable(state)) return "—";
-    const value = numericState(state, Number.NaN);
-    const unit = typeof state.attributes.unit_of_measurement === "string" ? state.attributes.unit_of_measurement : "°C";
-    return Number.isFinite(value) ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value)} ${unit}` : displayState(this.hass, id);
+    const value = fridgeTemperature(state, role);
+    const unit = typeof state.attributes.unit_of_measurement === "string" ? state.attributes.unit_of_measurement
+      : this.hass?.config?.unit_system?.temperature || "°C";
+    if (value !== undefined) return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value)} ${unit}`;
+    return isClimate(id) ? "—" : displayState(this.hass, id);
+  }
+  /** Mode affiché : l'option choisie, ou le préréglage d'un thermostat (rien s'il n'en a pas). */
+  private modeLabel(): string {
+    const id = this.config?.mode_entity;
+    if (!id) return "";
+    if (!isClimate(id)) return displayState(this.hass, id);
+    const preset = entity(this.hass, id)?.attributes.preset_mode;
+    return typeof preset === "string" && preset !== "none" ? preset : "";
   }
   private doorLabel(id?: string): string {
     const state = entity(this.hass, id);
@@ -136,17 +181,20 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
   }
   private async adjustTarget(id: string, direction: -1 | 1): Promise<void> {
     const state = entity(this.hass, id);
-    if (!state || !isAvailable(state) || !id.startsWith("number.")) return;
-    const current = numericState(state, Number.NaN);
+    const climate = isClimate(id);
+    if (!state || !isAvailable(state) || !(id.startsWith("number.") || climate)) return;
+    const current = fridgeTemperature(state, "target") ?? Number.NaN;
     if (!Number.isFinite(current)) return;
-    const stepValue = Number(state.attributes.step);
-    const step = Number.isFinite(stepValue) && stepValue > 0 ? stepValue : 1;
-    const minValue = Number(state.attributes.min);
-    const maxValue = Number(state.attributes.max);
+    const stepValue = Number(climate ? state.attributes.target_temp_step : state.attributes.step);
+    const step = Number.isFinite(stepValue) && stepValue > 0 ? stepValue : climate ? 0.5 : 1;
+    const minValue = Number(climate ? state.attributes.min_temp : state.attributes.min);
+    const maxValue = Number(climate ? state.attributes.max_temp : state.attributes.max);
     const min = Number.isFinite(minValue) ? minValue : -100;
     const max = Number.isFinite(maxValue) ? maxValue : 100;
     const value = Math.min(max, Math.max(min, Number((current + direction * step).toFixed(3))));
-    if (value !== current) await this.call("number", "set_value", id, { value });
+    if (value === current) return;
+    if (climate) await this.call("climate", "set_temperature", id, { temperature: value });
+    else await this.call("number", "set_value", id, { value });
   }
   private async quickAction(id: string): Promise<void> {
     const state = entity(this.hass, id);
@@ -163,10 +211,10 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
   private target(label: string, id?: string): TemplateResult {
     if (!id) return html``;
     const state = entity(this.hass, id);
-    const enabled = id.startsWith("number.") && isAvailable(state) && Number.isFinite(numericState(state, Number.NaN));
+    const enabled = (id.startsWith("number.") || isClimate(id)) && fridgeTemperature(state, "target") !== undefined;
     return html`<div class="control-row"><span>${label}</span>
       <button type="button" aria-label=${`Baisser ${label}`} ?disabled=${!enabled || this.busy} @click=${() => this.adjustTarget(id, -1)}><ha-icon icon="mdi:minus"></ha-icon></button>
-      <output>${this.temperature(id)}</output>
+      <output>${this.temperature(id, "target")}</output>
       <button type="button" aria-label=${`Augmenter ${label}`} ?disabled=${!enabled || this.busy} @click=${() => this.adjustTarget(id, 1)}><ha-icon icon="mdi:plus"></ha-icon></button></div>`;
   }
   private quick(label: string, icon: string, id?: string): TemplateResult {
@@ -180,7 +228,10 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
   private renderDetails(): TemplateResult {
     const c = this.config!;
     const mode = entity(this.hass, c.mode_entity);
-    const options = Array.isArray(mode?.attributes.options) ? mode.attributes.options.filter((item): item is string => typeof item === "string") : [];
+    const climateMode = isClimate(c.mode_entity);
+    const rawOptions = climateMode ? mode?.attributes.preset_modes : mode?.attributes.options;
+    const options = Array.isArray(rawOptions) ? rawOptions.filter((item): item is string => typeof item === "string") : [];
+    const currentMode = climateMode ? mode?.attributes.preset_mode : mode?.state;
     return this.renderDialog(c.name || "Frigo connecté", "mdi:fridge-outline", html`<div class="dialog-body">
       <div class="dialog-overview"><div><span class="eyebrow">État du réfrigérateur</span><strong>${STATUS[fridgeHealth(this.hass, c)][0]}</strong></div>
         <div class="dialog-stat"><strong>${this.temperature(c.fridge_temperature_entity)}</strong><small>réfrigérateur</small></div></div>
@@ -195,10 +246,14 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
         ${(c.extra_entities || []).map((id) => this.detail(entity(this.hass, id)?.attributes.friendly_name || id, "mdi:information-outline", id))}
       </div>
       ${c.fridge_target_entity || c.freezer_target_entity ? html`<div class="section-caption">Consignes</div>${this.target("Réfrigérateur", c.fridge_target_entity)}${this.target("Congélateur", c.freezer_target_entity)}` : nothing}
-      ${c.mode_entity && ["select.", "input_select."].some((prefix) => c.mode_entity!.startsWith(prefix)) && options.length ? html`<div class="section-caption">Mode</div><label class="control-row"><span>Mode de fonctionnement</span>
+      ${c.mode_entity && ["select.", "input_select.", "climate."].some((prefix) => c.mode_entity!.startsWith(prefix)) && options.length ? html`<div class="section-caption">Mode</div><label class="control-row"><span>Mode de fonctionnement</span>
         <select aria-label="Mode de fonctionnement" ?disabled=${!isAvailable(mode) || this.busy}
-          @change=${(event: Event) => this.call(c.mode_entity!.split(".")[0], "select_option", c.mode_entity!, { option: (event.target as HTMLSelectElement).value })}>
-          ${options.map((option) => html`<option value=${option} ?selected=${option === mode?.state}>${option}</option>`)}</select></label>` : nothing}
+          @change=${(event: Event) => {
+            const option = (event.target as HTMLSelectElement).value;
+            if (climateMode) void this.call("climate", "set_preset_mode", c.mode_entity!, { preset_mode: option });
+            else void this.call(c.mode_entity!.split(".")[0], "select_option", c.mode_entity!, { option });
+          }}>
+          ${options.map((option) => html`<option value=${option} ?selected=${option === currentMode}>${option}</option>`)}</select></label>` : nothing}
       ${c.quick_cool_entity || c.quick_freeze_entity || c.lock_entity ? html`<div class="section-caption">Fonctions rapides</div>
         ${this.quick("Refroidissement rapide", "mdi:snowflake", c.quick_cool_entity)}
         ${this.quick("Congélation rapide", "mdi:snowflake-alert", c.quick_freeze_entity)}
@@ -215,12 +270,12 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
         <div><h2>${c.name}</h2><div class=${`fridge-status ${health}`}><ha-icon .icon=${STATUS[health][1]}></ha-icon>${STATUS[health][0]}</div></div></header>
         <div class="fridge-spacer"></div><section class="fridge-panel" aria-label="État du frigo connecté">
           <div class="temperature-grid">
-            <div class="temperature"><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(c.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(c.fridge_target_entity)}</span></div>
-            <div class="temperature"><small><ha-icon icon="mdi:snowflake"></ha-icon>Congélateur</small><strong>${this.temperature(c.freezer_temperature_entity)}</strong><span>Consigne ${this.temperature(c.freezer_target_entity)}</span></div>
+            <div class="temperature" style=${c.freezer_temperature_entity || c.freezer_target_entity || !c.climate_entity ? "" : "grid-column:1 / -1"}><small><ha-icon icon="mdi:fridge-outline"></ha-icon>Réfrigérateur</small><strong>${this.temperature(c.fridge_temperature_entity)}</strong><span>Consigne ${this.temperature(c.fridge_target_entity, "target")}</span></div>
+            ${c.freezer_temperature_entity || c.freezer_target_entity || !c.climate_entity ? html`<div class="temperature"><small><ha-icon icon="mdi:snowflake"></ha-icon>Congélateur</small><strong>${this.temperature(c.freezer_temperature_entity)}</strong><span>Consigne ${this.temperature(c.freezer_target_entity, "target")}</span></div>` : nothing}
           </div><div class="fridge-signals">
             ${c.door_entity ? html`<span class=${`fridge-signal ${active(entity(this.hass, c.door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Frigo ${this.doorLabel(c.door_entity).toLowerCase()}</span>` : nothing}
             ${c.freezer_door_entity ? html`<span class=${`fridge-signal ${active(entity(this.hass, c.freezer_door_entity)) ? "warning" : ""}`}><ha-icon icon="mdi:door"></ha-icon>Congélateur ${this.doorLabel(c.freezer_door_entity).toLowerCase()}</span>` : nothing}
-            ${c.mode_entity ? html`<span class="fridge-signal"><ha-icon icon="mdi:cog-outline"></ha-icon>${displayState(this.hass, c.mode_entity)}</span>` : nothing}
+            ${this.modeLabel() ? html`<span class="fridge-signal"><ha-icon icon="mdi:cog-outline"></ha-icon>${this.modeLabel()}</span>` : nothing}
           </div><div class="fridge-footer"><small>${c.filter_entity ? `Filtre · ${displayState(this.hass, c.filter_entity)}` : "Suivi et commandes"}</small>
             <button class="machine-accent-action" type="button" aria-label="Détails du frigo" aria-haspopup="dialog" @click=${() => this.openDialog("details")}>Détails <ha-icon icon="mdi:arrow-right"></ha-icon></button></div>
         </section></div></div></ha-card>${this.dialog === "details" ? this.renderDetails() : nothing}`;

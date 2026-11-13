@@ -1,8 +1,13 @@
-import { LitElement, html, type CSSResultGroup, type TemplateResult } from "lit";
+import { LitElement, html, nothing, type CSSResultGroup, type TemplateResult } from "lit";
 import type { BaseCardConfig, AuralisTheme } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
 import { setAuralisDialogOpen } from "../utils/dialog-visibility";
+import { activateEntity } from "../utils/actions";
+import { entity } from "../utils/entities";
+
+/** Durée pendant laquelle un réveil demandé reste affiché « en cours ». */
+export const WAKE_WINDOW = 180_000;
 
 interface ConfirmState {
   title: string;
@@ -17,6 +22,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     config: { state: true },
     dialog: { state: true },
     confirmState: { state: true },
+    wakeRequestedAt: { state: true },
   };
 
   static styles: CSSResultGroup = sharedStyles;
@@ -25,6 +31,8 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   config?: TConfig;
   protected dialog: string | null = null;
   protected confirmState: ConfirmState | null = null;
+  protected wakeRequestedAt?: number;
+  private wakeTimer?: number;
 
   protected get theme(): Exclude<AuralisTheme, "auto"> {
     const configured = this.config?.theme || "auto";
@@ -104,7 +112,33 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   public disconnectedCallback(): void {
     setAuralisDialogOpen(this, false);
+    window.clearTimeout(this.wakeTimer);
     super.disconnectedCallback();
+  }
+
+  /** Réveil d'une machine éteinte : script, bouton Wake-on-LAN ou interrupteur. */
+  protected async requestWake(entityId?: string): Promise<void> {
+    if (!this.hass || !entityId) return;
+    this.wakeRequestedAt = Date.now();
+    window.clearTimeout(this.wakeTimer);
+    this.wakeTimer = window.setTimeout(() => { this.wakeRequestedAt = undefined; }, WAKE_WINDOW);
+    try {
+      await activateEntity(this.hass, entityId);
+    } catch (error) {
+      this.wakeRequestedAt = undefined;
+      console.warn("Auralis : échec du réveil", entityId, error);
+    }
+  }
+
+  /** Bouton de réveil, affiché seulement quand la machine n'est pas en ligne. */
+  protected renderWakeButton(online: boolean, entityId: string | undefined, label: string, className = "machine-wake"): TemplateResult | typeof nothing {
+    if (online || !entityId) return nothing;
+    const state = entity(this.hass, entityId);
+    // Un bouton jamais utilisé est « unknown » : il reste utilisable.
+    const usable = Boolean(state) && state!.state !== "unavailable";
+    const pending = this.wakeRequestedAt !== undefined && Date.now() - this.wakeRequestedAt < WAKE_WINDOW;
+    return html`<button class=${className} type="button" ?disabled=${!usable || pending} @click=${() => this.requestWake(entityId)}>
+      <ha-icon .icon=${pending ? "mdi:timer-sand" : "mdi:power"}></ha-icon>${pending ? "Démarrage demandé…" : label}</button>`;
   }
 
   protected openDialog(name: string): void {

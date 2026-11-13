@@ -248,6 +248,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
         { name: "backup_action_entity", selector: { entity: {} } },
         { name: "restart_entity", selector: { entity: {} } },
         { name: "shutdown_entity", selector: { entity: {} } },
+        { name: "wake_entity", selector: { entity: {} } },
         { name: "background_image", selector: { text: {} } },
         { name: "background_position", selector: { text: {} } },
         { name: "accent_color", selector: { text: {} } },
@@ -292,6 +293,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
           <div class="machine-content">
             <header class="machine-header"><div><h2>${this.config.name}</h2>
               <div class="machine-status"><span class="dot ${availability === "online" ? "healthy" : availability === "offline" ? "danger" : ""}"></span>${statusLabel}</div>
+              ${this.renderWakeButton(availability === "online", this.config.wake_entity, "Démarrer le nœud")}
             </div></header>
             <div class="machine-rail">
               <button class="rail-button" @click=${() => this.openDialog("cluster")} title="Détails du nœud" aria-label="Détails du nœud"><ha-icon icon="mdi:information-outline"></ha-icon></button>
@@ -562,6 +564,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
           <div class="tile-head"><span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span><strong>${displayState(this.hass, id)}</strong></div>
           <div style="margin-top:10px">${label}</div>
         </div>`)}</div>
+        ${!online && config.wake_entity ? html`<div class="dialog-section"><div class="actions">${this.renderWakeButton(online, config.wake_entity, "Démarrer le nœud", "action primary")}</div></div>` : nothing}
         ${config.backup_action_entity ? html`<div class="dialog-section"><button class="action"
           ?disabled=${!online || !proxmoxActionAvailable(this.hass, config.backup_action_entity)}
           @click=${() => activateEntity(this.hass!, config.backup_action_entity)}>

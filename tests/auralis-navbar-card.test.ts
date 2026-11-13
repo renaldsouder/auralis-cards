@@ -35,6 +35,18 @@ describe("Auralis navbar routes", () => {
     expect(navbar.navbarItemActive({ ...item, exact: true }, "/auralis/pieces/salon")).toBe(false);
   });
 
+  it("shows only a short counter in the badge", () => {
+    expect(navbar.navbarBadge("3")).toBe("3");
+    expect(navbar.navbarBadge("0")).toBeUndefined();
+    expect(navbar.navbarBadge("2.0")).toBe("2");
+    expect(navbar.navbarBadge("150")).toBe("99+");
+    expect(navbar.navbarBadge("on")).toBe("!");
+    expect(navbar.navbarBadge("off")).toBeUndefined();
+    expect(navbar.navbarBadge("notifications")).toBeUndefined();
+    expect(navbar.navbarBadge("unavailable")).toBeUndefined();
+    expect(navbar.navbarBadge(undefined)).toBeUndefined();
+  });
+
   it("supports secondary active paths", () => {
     expect(navbar.navbarItemActive({ label: "Systèmes", path: "/auralis/systemes", active_paths: ["/auralis/proxmox"] }, "/auralis/proxmox/nova")).toBe(true);
   });

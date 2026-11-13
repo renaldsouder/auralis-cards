@@ -222,3 +222,27 @@ describe("AuralisUnraidCard configuration and commands", () => {
     expect(internals.confirmState).toBeNull();
   });
 });
+
+describe("Wake button for a stopped server", () => {
+  it("shows the wake button only when offline and starts the configured script once", async () => {
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
+    const { nothing } = await import("lit");
+    const callService = vi.fn(async () => undefined);
+    const card = new unraidCard.AuralisUnraidCard();
+    card.setConfig(config({ wake_entity: "script.wake_skynet" }));
+    card.hass = { states: { "script.wake_skynet": state("script.wake_skynet", "off") }, callService } as HomeAssistant;
+    const internals = card as unknown as {
+      wakeRequestedAt?: number;
+      renderWakeButton(online: boolean, entityId: string | undefined, label: string): unknown;
+      requestWake(entityId?: string): Promise<void>;
+    };
+    expect(internals.renderWakeButton(true, "script.wake_skynet", "Réveiller")).toBe(nothing);
+    expect(internals.renderWakeButton(false, undefined, "Réveiller")).toBe(nothing);
+    expect(internals.renderWakeButton(false, "script.wake_skynet", "Réveiller")).not.toBe(nothing);
+    await internals.requestWake("script.wake_skynet");
+    expect(callService).toHaveBeenCalledWith("script", "turn_on", {}, { entity_id: "script.wake_skynet" });
+    expect(internals.wakeRequestedAt).toBeTypeOf("number");
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+});

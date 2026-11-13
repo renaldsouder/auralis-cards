@@ -8,13 +8,15 @@ La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette
 
 ## Configuration
 
-- `groups` : groupes de lumières. Chaque groupe comporte `name` et une liste `lights` d'entités `light.*`.
+- `groups` : groupes de lumières. Chaque groupe comporte `name` et une liste `lights` d'entités `light.*` ou `switch.*`.
 - `lights` : liste simple, utilisée comme groupe unique si `groups` est absent.
 - `show_lights: true` : affiche aussi les noms et boutons marche/arrêt individuels sur la façade du groupe.
 - `image` : image facultative de la tuile du groupe, URL `/local/...`, `/hacsfiles/...` ou `https://...`.
 - `scenes` : scènes Home Assistant de la carte, ou par groupe pour les remplacer. Les scènes pilotent les entités définies dans Home Assistant, selon leur propre configuration.
 - `preset_colors` : liste facultative de `{ name, color }`, avec couleur au format `#RRGGBB`. Sans option, sept couleurs sont proposées.
 - `entity_labels` : noms affichés pour les lumières.
+
+Les éclairages commandés par un relais (`switch.*`) n'ont que la marche et l'arrêt : un groupe qui ne contient que des interrupteurs n'affiche ni intensité ni couleur. Dans un groupe mixte, l'intensité et la couleur ne s'appliquent qu'aux lampes `light.*`.
 
 Les commandes de couleur sont proposées uniquement aux lampes qui annoncent un mode couleur compatible. Les lampes indisponibles ne reçoivent aucune commande. Les boutons ne contiennent que des icônes ; leurs libellés restent accessibles aux lecteurs d'écran.
 

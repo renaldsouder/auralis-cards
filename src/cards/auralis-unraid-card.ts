@@ -393,6 +393,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         { name: "array_stop_entity", selector: { entity: {} } },
         { name: "restart_entity", selector: { entity: {} } },
         { name: "shutdown_entity", selector: { entity: {} } },
+        { name: "wake_entity", selector: { entity: {} } },
         { name: "background_image", selector: { text: {} } },
         { name: "background_position", selector: { text: {} } },
         { name: "image_opacity", selector: { number: { min: 0, max: 100, step: 1, mode: "slider" } } },
@@ -446,7 +447,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${machineStyle}>
           <div class="machine-content">
-            <header class="machine-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${online ? "healthy" : "danger"}"></span>UNRAID · ${statusLabel}</div></div></header>
+            <header class="machine-header"><div><h2>${this.config.name}</h2><div class="machine-status"><span class="dot ${online ? "healthy" : "danger"}"></span>UNRAID · ${statusLabel}</div>${this.renderWakeButton(online, this.config.wake_entity, "Réveiller le serveur")}</div></header>
             <div class="machine-rail">
               <button class="rail-button" @click=${() => this.openDialog("server")} aria-label="Détails du serveur"><ha-icon icon="mdi:information-outline"></ha-icon></button>
               <button class="rail-button ${activeDocker ? "has-active" : ""}" @click=${() => this.openServices("docker")} aria-label="Docker"><ha-icon icon="mdi:cube-outline"></ha-icon></button>
@@ -902,6 +903,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
           <div class="dialog-section">
             <div class="dialog-section-title">Services</div>
             <div class="actions">
+              ${this.renderWakeButton(online, this.config?.wake_entity, "Démarrer le serveur", "action primary")}
               ${this.config?.array_start_entity ? html`<button class="action primary" ?disabled=${!unraidActionAvailable(this.hass, this.config.array_start_entity)} @click=${() => activateEntity(this.hass!, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : nothing}
               ${serverUrl ? html`<button class="action primary" @click=${() => window.open(serverUrl, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:open-in-new"></ha-icon>Ouvrir UNRAID</button>` : nothing}
             </div>

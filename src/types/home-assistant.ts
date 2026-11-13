@@ -23,7 +23,7 @@ export interface HassEntity {
 
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
-  config?: { time_zone?: string };
+  config?: { time_zone?: string; unit_system?: { temperature?: string } };
   locale?: { language?: string };
   themes?: { darkMode?: boolean };
   callWS?<T>(message: Record<string, unknown>): Promise<T>;

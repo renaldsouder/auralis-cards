@@ -210,6 +210,15 @@ const states = [
   { ...e("binary_sensor.jardin_mouvement", "off", { friendly_name: "Mouvement jardin" }), last_changed: new Date(Date.now() - 25 * 60_000).toISOString() },
   e("light.projecteur_allee", "off", { friendly_name: "Projecteur allée" }),
   e("button.sirene_exterieure", "unknown", { friendly_name: "Sirène extérieure" }),
+  e("switch.porche", "on", { friendly_name: "Porche" }),
+  e("switch.allee", "off", { friendly_name: "Allée" }),
+  e("switch.terrasse", "on", { friendly_name: "Terrasse" }),
+  e("switch.meuble_tv", "on", { friendly_name: "Meuble TV" }),
+  e("light.ruban_salon", "on", { friendly_name: "Ruban du salon", brightness: 150, rgb_color: [255, 120, 60], supported_color_modes: ["rgb"] }),
+  e("climate.refrigerateur", "cool", { friendly_name: "Réfrigérateur", current_temperature: 4.4, temperature: 4, target_temp_step: 1, min_temp: 1, max_temp: 7, preset_modes: ["normal", "eco", "vacances"], preset_mode: "eco" }),
+  e("sensor.compteur_gaz", "8423.61", { friendly_name: "Compteur de gaz", unit_of_measurement: "m³", device_class: "gas" }),
+  e("sensor.debit_gaz", "0.42", { friendly_name: "Débit de gaz", unit_of_measurement: "m³/h" }),
+  e("script.wake_skynet_demo", "off", { friendly_name: "Réveiller le serveur" }),
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -222,6 +231,15 @@ const hass: HomeAssistant = {
   },
   // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
   callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
+    // Statistiques journalières simulées : 14 jours de consommation pour la carte Énergie.
+    if (message.type === "recorder/statistics_during_period") {
+      const day = 86_400_000;
+      const today = new Date().setHours(0, 0, 0, 0);
+      return Object.fromEntries((message.statistic_ids as string[]).map((id) => [id, Array.from({ length: 14 }, (_, index) => ({
+        start: today - (13 - index) * day,
+        change: Math.round((4.2 + 1.6 * Math.sin(index * 0.9) + (index % 7 === 5 ? 1.8 : 0)) * 100) / 100,
+      }))])) as T;
+    }
     if (message.type !== "history/history_during_period") throw new Error("Commande WebSocket non simulée");
     const start = Date.parse(String(message.start_time));
     const end = Date.parse(String(message.end_time));
@@ -292,6 +310,28 @@ function simulateMedia(id: string, service: string, data: Record<string, unknown
     for (const card of mounted) card.hass = next;
   }, 250);
 }
+
+const lightsCard = {
+  type: "custom:auralis-lights-card",
+  name: "Éclairages",
+  groups: [
+    { name: "Extérieur", icon: "mdi:outdoor-lamp", show_lights: true, lights: ["switch.porche", "switch.allee", "switch.terrasse"] },
+    { name: "Salon", icon: "mdi:sofa-outline", show_lights: true, lights: ["light.ruban_salon", "switch.meuble_tv"] },
+  ],
+};
+
+const fridgeCard = {
+  type: "custom:auralis-fridge-card",
+  name: "Réfrigérateur",
+  background_image: "/images/frigo-connecte.jpg",
+  climate_entity: "climate.refrigerateur",
+};
+
+const gasCard = {
+  type: "custom:auralis-energy-card",
+  energy_entity: "sensor.compteur_gaz",
+  power_entity: "sensor.debit_gaz",
+};
 
 const mediaCard = {
   type: "custom:auralis-media-card",
@@ -484,6 +524,7 @@ const unraid: UnraidCardConfig = {
   background_position: "51% center",
   accent_color: "#ff8055",
   status_entity: "binary_sensor.unraid_online",
+  wake_entity: "script.wake_skynet_demo",
   uptime_entity: "sensor.unraid_uptime",
   array_usage_entity: "sensor.unraid_array_usage",
   array_label_entity: "sensor.unraid_array_label",
@@ -551,6 +592,7 @@ const proxmox: ProxmoxCardConfig = {
   background_position: "47% center",
   accent_color: "#50d59b",
   status_entity: "binary_sensor.proxmox_online",
+  wake_entity: "script.wake_skynet_demo",
   version_entity: "sensor.proxmox_version",
   quorum_entity: "sensor.proxmox_quorum",
   cluster_usage_entity: "sensor.proxmox_usage",
@@ -605,6 +647,9 @@ mount("auralis-actions-card", actionsCard);
 mount("auralis-actions-card", scenesCard);
 mount("auralis-cameras-card", camerasCard);
 mount("auralis-media-card", mediaCard);
+mount("auralis-lights-card", lightsCard);
+mount("auralis-fridge-card", fridgeCard);
+mount("auralis-energy-card", gasCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);

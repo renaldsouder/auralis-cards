@@ -62,3 +62,6 @@ array_start_entity: button.unraid_array_start
 array_stop_entity: button.unraid_array_stop
 restart_entity: button.unraid_restart
 shutdown_entity: button.unraid_shutdown
+# Démarre le serveur éteint (script, bouton Wake-on-LAN ou interrupteur).
+# Le bouton « Réveiller le serveur » n'apparaît que lorsque le serveur est hors ligne.
+wake_entity: button.unraid_wake_on_lan
