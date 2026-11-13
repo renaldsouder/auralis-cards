@@ -48,7 +48,7 @@ export const ACTION_ITEM_FIELDS: Record<string, FormListField> = {
   data: { label: "Données du service (YAML)", selector: YAML },
   target: { label: "Cible du service (YAML)", selector: YAML },
   navigation_path: { label: "Vue à ouvrir (/chemin)", selector: TEXT },
-  confirm: { label: "Demander confirmation (question personnalisée en YAML)", selector: BOOLEAN },
+  confirm: { label: "Confirmation : question à poser (vide = aucune, « oui » = question par défaut)", selector: TEXT },
   danger: { label: "Bouton de confirmation rouge", selector: BOOLEAN },
 };
 
@@ -92,7 +92,11 @@ export function isValidActionItem(item: ActionItemConfig | null | undefined): bo
 
 /** Entrée nettoyée : couleur acceptée seulement si elle est sûre à injecter dans un style. */
 export function normalizeActionItem(item: ActionItemConfig): ActionItemConfig {
-  return { ...item, color: safeColor(item.color) };
+  // L'éditeur visuel saisit la confirmation comme un texte : « non » ou un champ vide la retirent.
+  const confirm = typeof item.confirm === "string" && /^(\s*|false|non|no|faux)$/i.test(item.confirm.trim())
+    ? false
+    : item.confirm;
+  return { ...item, color: safeColor(item.color), confirm };
 }
 
 /** Action exécutée par un appui : service explicite, navigation, action par défaut du domaine, ou fiche de l'entité. */
@@ -188,7 +192,7 @@ export function actionUnavailable(item: ActionItemConfig, hass?: HomeAssistant):
 export function actionConfirmation(item: ActionItemConfig, label: string, action: () => Promise<unknown> | void): ConfirmState {
   return {
     title: label,
-    message: typeof item.confirm === "string" && item.confirm.trim() ? item.confirm.trim() : `Lancer « ${label} » ?`,
+    message: confirmQuestion(item.confirm) ?? `Lancer « ${label} » ?`,
     confirmLabel: "Confirmer",
     danger: item.danger === true,
     action,
@@ -228,6 +232,16 @@ export async function runActionItem(host: ActionHost, key: string, item: ActionI
 }
 
 /** Retour « Fait » / « Échec » affiché quelques secondes sur un bouton d'action. */
+/**
+ * Question personnalisée d'une confirmation. `true`, ou un texte saisi comme « oui » / « true »
+ * dans l'éditeur visuel, garde la question par défaut.
+ */
+export function confirmQuestion(confirm: unknown): string | undefined {
+  if (typeof confirm !== "string") return undefined;
+  const text = confirm.trim();
+  return text && !/^(true|oui|yes|vrai)$/i.test(text) ? text : undefined;
+}
+
 export class StatusFlash {
   private status = new Map<string, "done" | "error">();
   private timers = new Map<string, ReturnType<typeof setTimeout>>();

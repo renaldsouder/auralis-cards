@@ -186,3 +186,15 @@ describe("Auralis actions card", () => {
     vi.useRealTimers();
   });
 });
+
+describe("confirmation typed in the visual editor", () => {
+  it("keeps a custom question, the default one for yes, and none for no or empty", async () => {
+    const actions = await import("../src/cards/auralis-actions-card");
+    expect(actions.confirmQuestion("Couper le courant ?")).toBe("Couper le courant ?");
+    expect(actions.confirmQuestion("oui")).toBeUndefined();
+    expect(actions.confirmQuestion(true)).toBeUndefined();
+    expect(actions.normalizeActionItem({ entity: "script.x", confirm: "non" }).confirm).toBe(false);
+    expect(actions.normalizeActionItem({ entity: "script.x", confirm: "" }).confirm).toBe(false);
+    expect(actions.normalizeActionItem({ entity: "script.x", confirm: "oui" }).confirm).toBe("oui");
+  });
+});
