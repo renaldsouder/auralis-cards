@@ -1110,10 +1110,10 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     if (resolution.status === "unavailable") return "Les zones de Home Assistant ne sont pas disponibles (Home Assistant 2023.x ou plus récent requis).";
     if (resolution.status === "not-found") return `Zone « ${resolution.area} » introuvable.`;
     const room = this.room;
-    if (!room?.lights?.length && !room?.covers?.length && !room?.temperature_entity && !room?.humidity_entity) {
-      return `La zone « ${resolution.name} » ne contient ni lumière, ni volet, ni capteur.`;
-    }
-    return undefined;
+    // Un thermostat, un lecteur ou une télévision suffisent : la carte les affiche sans lumière ni volet.
+    const usable = room?.lights?.length || room?.covers?.length || room?.temperature_entity || room?.humidity_entity
+      || room?.climate_entity || room?.media_player_entity || room?.right_controls?.length;
+    return usable ? undefined : `La zone « ${resolution.name} » ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur.`;
   }
 
   /**

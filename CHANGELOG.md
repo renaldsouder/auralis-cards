@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.1
+
+- **Pièce** : avec `area`, une zone qui ne contient qu'un thermostat, un lecteur ou une télévision s'affiche au lieu du message « zone vide ».
+
 ## 0.23.0
 
 ### Nouvelles cartes
