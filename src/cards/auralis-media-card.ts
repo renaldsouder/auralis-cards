@@ -5,6 +5,7 @@ import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, isAvailable } from "../utils/entities";
 import { bounded, safeColor } from "../utils/validate";
+import { entitySelector, ICON, listSelector, numberSelector, TEXT, YAML } from "../utils/form";
 
 export type MediaKind = "speaker" | "tv" | "receiver";
 
@@ -410,7 +411,7 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", entity: "Lecteur (un seul)", players: "Lecteurs (entity, name, device_class, sources, max_volume…)",
+      name: "Titre", icon: "Icône", entity: "Lecteur (un seul)", players: "Lecteurs",
       show_sources: "Afficher les sources", show_progress: "Afficher la progression",
       show_header: "Afficher l’en-tête (par défaut avec un titre et plusieurs lecteurs)",
       theme: "Thème", accent_color: "Couleur d’accent", card_background: "Fond de la carte",
@@ -419,8 +420,20 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
-        { name: "entity", selector: { entity: { filter: { domain: "media_player" } } } },
-        { name: "players", selector: { object: {} } },
+        { name: "entity", selector: entitySelector("media_player") },
+        { name: "players", selector: listSelector({
+          entity: { label: "Lecteur", required: true, selector: entitySelector("media_player") },
+          name: { label: "Nom", selector: TEXT },
+          icon: { label: "Icône", selector: ICON },
+          device_class: { label: "Type d’appareil (déduit si vide)", selector: { select: { mode: "dropdown", options: [
+            { value: "speaker", label: "Enceinte" }, { value: "tv", label: "Téléviseur" }, { value: "receiver", label: "Amplificateur" },
+          ] } } },
+          color: { label: "Couleur (#RRGGBB)", selector: TEXT },
+          sources: { label: "Sources favorites (YAML)", selector: YAML },
+          volume_step: { label: "Pas du volume (%)", selector: numberSelector(1, 20, 1, "%") },
+          max_volume: { label: "Volume maximal (%)", selector: numberSelector(5, 100, 1, "%") },
+          volume_scale: { label: "Échelle du volume affiché", selector: numberSelector(1, 1000) },
+        }, { label: "entity", description: "name" }) },
         { name: "show_sources", selector: { boolean: {} } },
         { name: "show_progress", selector: { boolean: {} } },
         { name: "show_header", selector: { boolean: {} } },

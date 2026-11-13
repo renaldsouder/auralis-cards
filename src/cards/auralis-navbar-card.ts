@@ -5,6 +5,7 @@ import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
 import { hasOpenAuralisDialog } from "../utils/dialog-visibility";
 import { navigate } from "../utils/navigation";
+import { BOOLEAN, ENTITY, ICON, listSelector, TEXT, TEXT_LIST } from "../utils/form";
 
 const UNAVAILABLE_STATES = new Set(["unknown", "unavailable", ""]);
 type NavbarPosition = NonNullable<NavbarCardConfig["position"]>;
@@ -770,7 +771,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       theme: "Thème", accent_color: "Couleur d’accent", position: "Position", phone_position: "Position sur téléphone",
       tablet_position: "Position sur tablette", height_desktop: "Hauteur sur ordinateur (px)", height_tablet: "Hauteur sur tablette (px)",
       height_mobile: "Hauteur sur téléphone (px)", hide_native_header: "Masquer l’en-tête Home Assistant (sauf administrateurs)",
-      show_labels: "Afficher les libellés", compact: "Présentation compacte", items: "Destinations (label, icon, path, badge_entity…)",
+      show_labels: "Afficher les libellés", compact: "Présentation compacte", items: "Destinations",
     };
     return {
       schema: [
@@ -785,7 +786,14 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         { name: "hide_native_header", selector: { boolean: {} } },
         { name: "show_labels", selector: { boolean: {} } },
         { name: "compact", selector: { boolean: {} } },
-        { name: "items", selector: { object: {} } },
+        { name: "items", selector: listSelector({
+          label: { label: "Libellé", required: true, selector: TEXT },
+          icon: { label: "Icône", selector: ICON },
+          path: { label: "Chemin de la vue (/tableau/vue)", selector: TEXT },
+          badge_entity: { label: "Entité de la pastille", selector: ENTITY },
+          exact: { label: "Actif seulement sur ce chemin exact", selector: BOOLEAN },
+          active_paths: { label: "Autres chemins actifs", selector: TEXT_LIST },
+        }, { label: "label", description: "path" }) },
       ],
       computeLabel: ({ name }: { name: string }) => labels[name],
     };

@@ -8,7 +8,7 @@ Elle évite les vues trop longues sur une tablette : une seule zone de l'écran,
 
 La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette ressource comme indiqué dans le [README](../README.md), puis adaptez [l'exemple YAML](../examples/tabs-card.yaml).
 
-Les cartes des onglets s'écrivent en YAML : l'éditeur visuel règle les options de la carte, et le champ « Onglets et cartes » ouvre l'éditeur YAML des onglets.
+Dans l'éditeur visuel, le champ « Onglets » liste les onglets : chacun se nomme, reçoit une icône, une pastille et un nombre de colonnes, et ses cartes s'écrivent en YAML dans le champ « Cartes de l’onglet ».
 
 ## Configuration
 

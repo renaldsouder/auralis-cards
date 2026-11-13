@@ -763,7 +763,7 @@ export class AuralisScreensaverCard extends AuralisBaseCard<ScreensaverCardConfi
       schema: [
         { name: "timeout", selector: { number: { min: MIN_TIMEOUT, max: MAX_TIMEOUT, step: 15, mode: "box", unit_of_measurement: "s" } } },
         { name: "weather_entity", selector: { entity: { domain: "weather" } } },
-        { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
+        { name: "temperature_entity", selector: { entity: { domain: "sensor", device_class: "temperature" } } },
         { name: "entities", selector: { entity: { multiple: true } } },
         { name: "alert_entity", selector: { entity: {} } },
         { name: "show_clock", selector: { boolean: {} } },

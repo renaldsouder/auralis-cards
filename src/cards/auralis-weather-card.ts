@@ -1,8 +1,9 @@
 import { css, html, nothing, svg, type TemplateResult } from "lit";
 import { AuralisBaseCard, configuredAccent } from "./auralis-base-card";
 import {
-  chartPaths, chartRange, gradientStops, normalizeThresholds, OUTDOOR_THRESHOLDS, temperatureBand, type ClimateThreshold,
+  chartPaths, chartRange, gradientStops, normalizeThresholds, OUTDOOR_THRESHOLDS, temperatureBand, THRESHOLD_FIELDS, type ClimateThreshold,
 } from "./auralis-climate-card";
+import { listSelector } from "../utils/form";
 import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { entity, formatNumber, friendlyName, isAvailable, numericState } from "../utils/entities";
@@ -421,7 +422,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
         { name: "show_forecast", selector: { boolean: {} } },
         { name: "dynamic_background", selector: { boolean: {} } },
         { name: "name", selector: { text: {} } },
-        { name: "thresholds", selector: { object: {} } },
+        { name: "thresholds", selector: listSelector(THRESHOLD_FIELDS, { label: "color", description: "below" }) },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "icon", selector: { icon: {} } },
         { name: "accent_color", selector: { text: {} } },

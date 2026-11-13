@@ -6,6 +6,7 @@ import { domainOf, entity, friendlyName, isAvailable } from "../utils/entities";
 import { relativeTime } from "../utils/format";
 import { isInternalPath, navigate } from "../utils/navigation";
 import { optionalMatch, safeColor } from "../utils/validate";
+import { BOOLEAN, ENTITY, ICON, listSelector, TEXT, YAML, type FormListField } from "../utils/form";
 
 export { relativeTime } from "../utils/format";
 
@@ -35,6 +36,21 @@ export interface ActionsCardConfig extends BaseCardConfig {
   columns?: number;
   show_header?: boolean;
 }
+
+/** Champs d'une action dans l'éditeur visuel (`data` et `target` restent en YAML). */
+export const ACTION_ITEM_FIELDS: Record<string, FormListField> = {
+  name: { label: "Nom", selector: TEXT },
+  entity: { label: "Entité visée", selector: ENTITY },
+  icon: { label: "Icône", selector: ICON },
+  color: { label: "Couleur (#RRGGBB)", selector: TEXT },
+  state_entity: { label: "Entité dont l’état est affiché", selector: ENTITY },
+  service: { label: "Service (domaine.service)", selector: TEXT },
+  data: { label: "Données du service (YAML)", selector: YAML },
+  target: { label: "Cible du service (YAML)", selector: YAML },
+  navigation_path: { label: "Vue à ouvrir (/chemin)", selector: TEXT },
+  confirm: { label: "Demander confirmation (question personnalisée en YAML)", selector: BOOLEAN },
+  danger: { label: "Bouton de confirmation rouge", selector: BOOLEAN },
+};
 
 export type ResolvedAction =
   | { kind: "service"; domain: string; service: string; data: Record<string, unknown>; target?: Record<string, unknown> }
@@ -347,7 +363,7 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", theme: "Thème", actions: "Actions (entity, name, icon, color, confirm, service, data…)",
+      name: "Titre", icon: "Icône", theme: "Thème", actions: "Actions",
       layout: "Présentation", columns: "Colonnes (vide = automatique)", show_header: "Afficher l’en-tête (par défaut si un titre est saisi)",
       accent_color: "Couleur d’accent (couleur des tuiles sans color)", card_background: "Fond de la carte",
     };
@@ -355,7 +371,7 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
-        { name: "actions", required: true, selector: { object: {} } },
+        { name: "actions", required: true, selector: listSelector(ACTION_ITEM_FIELDS, { label: "name", description: "entity" }) },
         { name: "layout", selector: { select: { options: [{ value: "tiles", label: "Tuiles" }, { value: "compact", label: "Pastilles" }] } } },
         { name: "columns", selector: { number: { min: 1, max: 6, step: 1, mode: "box" } } },
         { name: "show_header", selector: { boolean: {} } },

@@ -4,6 +4,7 @@ import { holdMoreInfo } from "./auralis-covers-card";
 import type { SwitchesCardConfig, SwitchesGroupConfig } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, isCommandable } from "../utils/entities";
+import { entitySelector, ICON, listSelector, TEXT } from "../utils/form";
 
 interface GroupStats {
   total: number;
@@ -117,7 +118,7 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", theme: "Thème", switches: "Interrupteurs (un seul groupe)",
-      groups: "Groupes (name, switches, icon, background_image, background_position)", group_columns: "Colonnes de groupes",
+      groups: "Groupes d’interrupteurs", group_columns: "Colonnes de groupes",
       show_header: "Afficher l’en-tête", show_group_label: "Afficher le titre des groupes", entity_labels: "Noms personnalisés",
       background_image: "Image de fond des groupes", background_position: "Cadrage de l’image", accent_color: "Couleur d’accent",
       image_brightness: "Luminosité de l’image (%)", image_opacity: "Opacité de l’image (%)", glass_opacity: "Opacité des commandes sur photo",
@@ -127,8 +128,14 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
-      { name: "switches", selector: { entity: { multiple: true, filter: { domain: "switch" } } } },
-      { name: "groups", selector: { object: {} } },
+      { name: "switches", selector: entitySelector("switch", { multiple: true }) },
+      { name: "groups", selector: listSelector({
+        name: { label: "Nom", required: true, selector: TEXT },
+        switches: { label: "Interrupteurs", required: true, selector: entitySelector("switch", { multiple: true }) },
+        icon: { label: "Icône", selector: ICON },
+        background_image: { label: "Image de fond", selector: TEXT },
+        background_position: { label: "Cadrage de l’image", selector: TEXT },
+      }, { label: "name" }) },
       { name: "group_columns", selector: { number: { min: 1, max: 4, step: 1, mode: "box" } } },
       { name: "show_header", selector: { boolean: {} } },
       { name: "show_group_label", selector: { boolean: {} } },

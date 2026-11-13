@@ -5,6 +5,7 @@ import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { displayState, entity, isActive, isAvailable, isCommandable, numericState } from "../utils/entities";
 import { severityClass, type Severity } from "../utils/severity";
 import { formLabels } from "../utils/machines";
+import { ENTITY, entitySelector, type FormSelector } from "../utils/form";
 
 export interface FridgeCardConfig extends BaseCardConfig {
   type: "custom:auralis-fridge-card";
@@ -196,18 +197,26 @@ export class AuralisFridgeCard extends AuralisBaseCard<FridgeCardConfig> {
     return { name: "Frigo connecté", theme: "carbon", fridge_temperature_entity: "sensor.frigo_temperature" };
   }
   static getConfigForm(): Record<string, unknown> {
-    const field = (name: string) => ({ name, selector: { entity: {} } });
+    const field = (name: string, selector: FormSelector = ENTITY) => ({ name, selector });
+    // La température et la consigne se lisent aussi sur le thermostat climate.*.
+    const temperature = entitySelector(["sensor", "climate"]);
+    const target = entitySelector(["number", "input_number", "climate", "sensor"]);
+    const door = entitySelector("binary_sensor");
     return {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
-        { name: "climate_entity", selector: { entity: { filter: { domain: "climate" } } } },
-        { name: "freezer_climate_entity", selector: { entity: { filter: { domain: "climate" } } } },
-        field("status_entity"), field("fridge_temperature_entity"), field("freezer_temperature_entity"),
-        field("fridge_target_entity"), field("freezer_target_entity"), field("door_entity"),
-        field("freezer_door_entity"), field("alert_entity"), field("filter_entity"), field("energy_entity"),
-        field("mode_entity"), field("quick_cool_entity"), field("quick_freeze_entity"), field("lock_entity"),
+        field("climate_entity", entitySelector("climate")),
+        field("freezer_climate_entity", entitySelector("climate")),
+        field("status_entity"),
+        field("fridge_temperature_entity", temperature), field("freezer_temperature_entity", temperature),
+        field("fridge_target_entity", target), field("freezer_target_entity", target),
+        field("door_entity", door), field("freezer_door_entity", door),
+        field("alert_entity"), field("filter_entity"), field("energy_entity", entitySelector("sensor")),
+        field("mode_entity", entitySelector(["select", "input_select", "climate"])),
+        field("quick_cool_entity", entitySelector(["switch", "button"])), field("quick_freeze_entity", entitySelector(["switch", "button"])),
+        field("lock_entity", entitySelector(["lock", "switch", "button"])),
         { name: "extra_entities", selector: { entity: { multiple: true } } },
         { name: "fridge_alert_above", selector: { number: { min: -5, max: 20, step: 0.5, mode: "box", unit_of_measurement: "°C" } } },
         { name: "freezer_alert_above", selector: { number: { min: -40, max: 0, step: 0.5, mode: "box", unit_of_measurement: "°C" } } },

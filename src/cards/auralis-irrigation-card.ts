@@ -5,6 +5,7 @@ import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { domainOf, entity, formatNumber, friendlyName, isCommandable } from "../utils/entities";
 import { severity, type Severity } from "../utils/severity";
+import { ENTITY, entitySelector, ICON, listSelector, numberSelector, TEXT, TEXT_LIST } from "../utils/form";
 
 /** Une zone d'arrosage : une vanne et ses entités associées. */
 export interface IrrigationZoneConfig {
@@ -655,44 +656,47 @@ export class AuralisIrrigationCard extends AuralisBaseCard<IrrigationCardConfig>
   }
 
   public static getConfigForm(): Record<string, unknown> {
+    // Champs d'une zone : la zone du premier niveau et chaque élément de `zones`.
+    const zone = {
+      valve_entity: { label: "Vanne (switch ou valve)", required: true, selector: entitySelector(["switch", "valve"]) },
+      name: { label: "Nom de la zone", selector: TEXT },
+      icon: { label: "Icône de la zone", selector: ICON },
+      countdown_entity: { label: "Minuterie de l’appareil (number)", selector: entitySelector(["number", "input_number"]) },
+      script_entity: { label: "Script d’arrosage minuté", selector: entitySelector("script") },
+      battery_entity: { label: "Pile", selector: entitySelector(["sensor", "binary_sensor"]) },
+      error_entity: { label: "Erreur de l’appareil", selector: ENTITY },
+      schedule_entity: { label: "Programmation (automatisation, planning ou interrupteur)", selector: entitySelector(["automation", "schedule", "input_boolean"]) },
+      schedule: { label: "Horaires affichés (HH:MM)", selector: TEXT_LIST },
+      durations: { label: "Durées proposées (minutes)", selector: TEXT_LIST },
+      max_duration: { label: "Durée maximale (minutes)", selector: numberSelector(1, 240) },
+    };
     const labels: Record<string, string> = {
       name: "Titre",
       icon: "Icône de la carte",
-      valve_entity: "Vanne (switch ou valve)",
-      zone_name: "Nom de la zone",
-      countdown_entity: "Minuterie de l’appareil (number)",
-      script_entity: "Script d’arrosage minuté",
-      battery_entity: "Pile",
-      error_entity: "Erreur de l’appareil",
-      schedule_entity: "Programmation (automatisation, planning ou interrupteur)",
-      schedule: "Horaires affichés (HH:MM)",
-      durations: "Durées proposées (minutes)",
-      max_duration: "Durée maximale (minutes)",
+      zone_name: zone.name.label,
+      zone_icon: zone.icon.label,
       weather_entity: "Météo (pluie prévue)",
       rain_threshold: "Seuil de pluie (mm sur 24 h)",
       theme: "Thème",
       accent_color: "Couleur d’accent",
-      zones: "Autres zones (YAML)",
+      zones: "Autres zones",
     };
+    for (const [key, field] of Object.entries(zone)) if (key !== "name" && key !== "icon") labels[key] = field.label;
     return {
       schema: [
-        { name: "name", selector: { text: {} } },
-        { name: "icon", selector: { icon: {} } },
-        { name: "valve_entity", selector: { entity: { filter: { domain: ["switch", "valve"] } } } },
-        { name: "zone_name", selector: { text: {} } },
-        { name: "countdown_entity", selector: { entity: { filter: { domain: ["number", "input_number"] } } } },
-        { name: "script_entity", selector: { entity: { filter: { domain: "script" } } } },
-        { name: "battery_entity", selector: { entity: { filter: { domain: ["sensor", "binary_sensor"] } } } },
-        { name: "error_entity", selector: { entity: {} } },
-        { name: "schedule_entity", selector: { entity: { filter: { domain: ["automation", "schedule", "input_boolean"] } } } },
-        { name: "schedule", selector: { text: { multiple: true } } },
-        { name: "durations", selector: { object: {} } },
-        { name: "max_duration", selector: { number: { min: 1, max: 240, step: 1, mode: "box" } } },
-        { name: "weather_entity", selector: { entity: { filter: { domain: "weather" } } } },
+        { name: "name", selector: TEXT },
+        { name: "icon", selector: ICON },
+        // La vanne reste facultative ici : une carte peut ne décrire que la liste `zones`.
+        { name: "valve_entity", selector: zone.valve_entity.selector },
+        { name: "zone_name", selector: TEXT },
+        { name: "zone_icon", selector: ICON },
+        ...(["countdown_entity", "script_entity", "battery_entity", "error_entity", "schedule_entity", "schedule", "durations", "max_duration"] as const)
+          .map((name) => ({ name, selector: zone[name].selector })),
+        { name: "weather_entity", selector: entitySelector("weather") },
         { name: "rain_threshold", selector: { number: { min: 0, max: 50, step: 0.5, mode: "box" } } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
-        { name: "accent_color", selector: { text: {} } },
-        { name: "zones", selector: { object: {} } },
+        { name: "accent_color", selector: TEXT },
+        { name: "zones", selector: listSelector(zone, { label: "name", description: "valve_entity" }) },
       ],
       computeLabel: ({ name }: { name: string }) => labels[name] ?? name,
     };

@@ -22,6 +22,7 @@ import {
   storageBar,
   type MachineAvailability,
 } from "../utils/machines";
+import { COMMAND, ENTITY, entitySelector, listSelector, SENSOR, TEMPERATURE, TEXT, YAML, type FormSelector } from "../utils/form";
 
 /** État du PC : un capteur qui publie une valeur (CPU, utilisateur…) signifie que le PC répond. */
 export function pcAvailability(state?: HassEntity): MachineAvailability {
@@ -113,6 +114,23 @@ interface PcDrive {
   /** `undefined` quand le disque est indisponible : la carte affiche « — ». */
   usage?: number;
   summary: string;
+}
+
+/** Sélecteurs filtrés des entités du PC ; les autres acceptent toute entité. */
+const PC_ENTITY_SELECTORS: Record<string, FormSelector> = {
+  cpu_entity: SENSOR, cpu_temperature_entity: TEMPERATURE, gpu_entity: SENSOR, gpu_temperature_entity: TEMPERATURE,
+  memory_entity: SENSOR, clock_speed_entity: SENSOR, storage_entity: SENSOR, storage_label_entity: SENSOR,
+  network_down_entity: SENSOR, network_up_entity: SENSOR, network_total_entity: SENSOR,
+  battery_percentage_entity: entitySelector("sensor", { deviceClass: "battery" }),
+  lock_entity: COMMAND, sleep_entity: COMMAND, restart_entity: COMMAND, shutdown_entity: COMMAND, wake_entity: COMMAND,
+};
+
+/** Élément « entité + libellé » (disques, interfaces réseau). */
+function entityLabelFields(entityLabel: string, selector: FormSelector) {
+  return {
+    entity: { label: entityLabel, required: true, selector },
+    label: { label: "Libellé", selector: TEXT },
+  };
 }
 
 const FORM_LABELS: Record<string, string> = {
@@ -225,10 +243,13 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
-        ...entityFields.map((name) => ({ name, selector: { entity: {} } })),
-        { name: "drives", selector: { object: {} } },
-        { name: "network_interfaces", selector: { object: {} } },
-        { name: "extra_sections", selector: { object: {} } },
+        ...entityFields.map((name) => ({ name, selector: PC_ENTITY_SELECTORS[name] ?? ENTITY })),
+        { name: "drives", selector: listSelector(entityLabelFields("Capteur du disque", SENSOR), { label: "entity", description: "label" }) },
+        { name: "network_interfaces", selector: listSelector(entityLabelFields("Capteur de l’interface", SENSOR), { label: "entity", description: "label" }) },
+        { name: "extra_sections", selector: listSelector({
+          title: { label: "Titre de la section", required: true, selector: TEXT },
+          entities: { label: "Entités (YAML : entity, label)", selector: YAML },
+        }, { label: "title" }) },
         { name: "card_background", selector: { object: {} } },
         { name: "show_grid", selector: { boolean: {} } },
         { name: "background_image", selector: { text: {} } },

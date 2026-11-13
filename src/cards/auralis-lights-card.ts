@@ -5,6 +5,7 @@ import type { BaseCardConfig, RoomSceneConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, hexToRgb, isActive, isCommandable, lightBrightness, lightRgbColor, lightSupportsColor, rgbToHex } from "../utils/entities";
 import { activateEntity } from "../utils/actions";
+import { BOOLEAN, entitySelector, ICON, listSelector, TEXT, YAML, type FormListField } from "../utils/form";
 
 export interface ColorPreset {
   name: string;
@@ -12,6 +13,13 @@ export interface ColorPreset {
   /** Température de blanc (K) envoyée aux lampes qui la gèrent, à la place de la couleur. */
   kelvin?: number;
 }
+/** Champs d'une ambiance dans l'éditeur visuel. */
+const SCENE_FIELDS: Record<string, FormListField> = {
+  entity: { label: "Scène ou script", required: true, selector: entitySelector(["scene", "script"]) },
+  label: { label: "Nom", selector: TEXT },
+  icon: { label: "Icône", selector: ICON },
+};
+
 interface LightsGroup {
   name: string;
   lights: string[];
@@ -199,8 +207,8 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème", lights: "Lumières (un seul groupe)",
-      groups: "Groupes (name, lights, icon, background_image, show_lights, scenes)", scenes: "Ambiances (entity, label, icon)",
-      preset_colors: "Couleurs prédéfinies (name, color, kelvin)", entity_labels: "Noms personnalisés",
+      groups: "Groupes de lumières", scenes: "Ambiances",
+      preset_colors: "Couleurs prédéfinies", entity_labels: "Noms personnalisés",
       background_image: "Image des groupes (https, /local/, /hacsfiles/, /api/)",
       accent_color: "Couleur d’accent", card_background: "Fond de la carte",
     };
@@ -209,10 +217,21 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
       { name: "icon", selector: { icon: {} } },
       { name: "show_header", selector: { boolean: {} } },
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
-      { name: "lights", selector: { entity: { multiple: true, filter: { domain: ["light", "switch"] } } } },
-      { name: "groups", selector: { object: {} } },
-      { name: "scenes", selector: { object: {} } },
-      { name: "preset_colors", selector: { object: {} } },
+      { name: "lights", selector: entitySelector(["light", "switch"], { multiple: true }) },
+      { name: "groups", selector: listSelector({
+        name: { label: "Nom", required: true, selector: TEXT },
+        lights: { label: "Lumières", required: true, selector: entitySelector(["light", "switch"], { multiple: true }) },
+        icon: { label: "Icône", selector: ICON },
+        background_image: { label: "Image de la tuile", selector: TEXT },
+        show_lights: { label: "Afficher les lumières du groupe", selector: BOOLEAN },
+        scenes: { label: "Ambiances du groupe (YAML : entity, label, icon)", selector: YAML },
+      }, { label: "name" }) },
+      { name: "scenes", selector: listSelector(SCENE_FIELDS, { label: "label", description: "entity" }) },
+      { name: "preset_colors", selector: listSelector({
+        name: { label: "Nom", required: true, selector: TEXT },
+        color: { label: "Couleur (#RRGGBB)", required: true, selector: TEXT },
+        kelvin: { label: "Température de blanc (K)", selector: { number: { min: 1000, max: 12000, step: 100, mode: "box", unit_of_measurement: "K" } } },
+      }, { label: "name", description: "color" }) },
       { name: "entity_labels", selector: { object: {} } },
       { name: "background_image", selector: { text: {} } },
       { name: "accent_color", selector: { text: {} } },

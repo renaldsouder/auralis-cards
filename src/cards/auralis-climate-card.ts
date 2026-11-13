@@ -4,6 +4,7 @@ import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { fireMoreInfo } from "../utils/actions";
 import { entity, formatNumber, friendlyName, isAvailable, numericState } from "../utils/entities";
+import { BOOLEAN, entitySelector, ICON, listSelector, TEXT, type FormListField } from "../utils/form";
 
 /** Palier de couleur : s'applique aux valeurs strictement inférieures à `below`. Le dernier palier n'a pas de borne. */
 export interface ClimateThreshold {
@@ -11,6 +12,13 @@ export interface ClimateThreshold {
   color: string;
   label?: string;
 }
+
+/** Champs d'un palier de couleur dans l'éditeur visuel (cartes Climat et Météo). */
+export const THRESHOLD_FIELDS: Record<string, FormListField> = {
+  below: { label: "Sous la valeur (vide pour le dernier palier)", selector: { number: { step: 0.5, mode: "box" } } },
+  color: { label: "Couleur (#RRGGBB)", required: true, selector: TEXT },
+  label: { label: "Libellé", selector: TEXT },
+};
 
 export interface ClimateRoomConfig {
   name?: string;
@@ -342,7 +350,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème", rooms: "Pièces (name, temperature_entity, humidity_entity, battery_entity, outdoor)",
+      name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème", rooms: "Pièces",
       columns: "Colonnes (vide = automatique)", graph_hours: "Durée des courbes (heures)", low_battery: "Seuil de batterie faible (%)",
       show_summary: "Afficher le résumé", thresholds: "Paliers de couleur intérieurs", outdoor_thresholds: "Paliers de couleur extérieurs",
       accent_color: "Couleur d’accent", background_image: "Image de fond", background_position: "Cadrage de l’image",
@@ -351,14 +359,21 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     return {
       schema: [
         { name: "name", selector: { text: {} } },
-        { name: "rooms", required: true, selector: { object: {} } },
+        { name: "rooms", required: true, selector: listSelector({
+          name: { label: "Nom", selector: TEXT },
+          temperature_entity: { label: "Capteur de température", required: true, selector: entitySelector("sensor", { deviceClass: "temperature" }) },
+          humidity_entity: { label: "Capteur d’humidité", selector: entitySelector("sensor", { deviceClass: "humidity" }) },
+          battery_entity: { label: "Pile du capteur", selector: entitySelector("sensor", { deviceClass: "battery" }) },
+          icon: { label: "Icône", selector: ICON },
+          outdoor: { label: "Capteur extérieur (hors de la moyenne)", selector: BOOLEAN },
+        }, { label: "name", description: "temperature_entity" }) },
         { name: "columns", selector: { number: { min: 1, max: 6, step: 1, mode: "box" } } },
         { name: "graph_hours", selector: { number: { min: 1, max: 168, step: 1, mode: "box" } } },
         { name: "low_battery", selector: { number: { min: 0, max: 100, step: 1, mode: "slider" } } },
         { name: "show_summary", selector: { boolean: {} } },
         { name: "show_header", selector: { boolean: {} } },
-        { name: "thresholds", selector: { object: {} } },
-        { name: "outdoor_thresholds", selector: { object: {} } },
+        { name: "thresholds", selector: listSelector(THRESHOLD_FIELDS, { label: "color", description: "below" }) },
+        { name: "outdoor_thresholds", selector: listSelector(THRESHOLD_FIELDS, { label: "color", description: "below" }) },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "icon", selector: { icon: {} } },
         { name: "accent_color", selector: { text: {} } },
