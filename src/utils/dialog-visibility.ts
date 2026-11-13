@@ -35,6 +35,21 @@ function handlePopState(): void {
 
 function addHistoryFrame(card: HTMLElement, close: () => void): void {
   if (typeof window === "undefined" || !window.history?.pushState) return;
+  if (pendingBacks > 0) {
+    // Une fenêtre vient de se fermer et son retour arrière n'a pas encore eu lieu : ajouter
+    // l'étape maintenant la ferait retirer par ce retour arrière, qui fermerait la nouvelle
+    // fenêtre. On attend qu'il soit passé, si la fenêtre est toujours ouverte.
+    void dialogHistorySettled().then(() => {
+      if (openDialogs.has(card) && !historyFrames.some((frame) => frame.card === card && frame.open)) {
+        pushHistoryFrame(card, close);
+      }
+    });
+    return;
+  }
+  pushHistoryFrame(card, close);
+}
+
+function pushHistoryFrame(card: HTMLElement, close: () => void): void {
   const token = `auralis-${Date.now()}-${++nextDialogId}`;
   const url = window.location.href;
   const state = window.history.state;
