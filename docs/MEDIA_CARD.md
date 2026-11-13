@@ -9,7 +9,13 @@ La carte `custom:auralis-media-card` pilote les lecteurs multimédias de la mais
 
 Pour un ampli sans morceau en cours, la carte affiche la source et le mode sonore actifs (« Télé · Dolby Surround »).
 
-Plusieurs lecteurs peuvent partager la même carte : des pastilles en haut permettent de passer de l'un à l'autre. Par défaut, la carte montre celui qui joue.
+Plusieurs lecteurs peuvent partager la même carte : des pastilles en haut permettent de passer de l'un à l'autre (au clavier : flèches gauche et droite). Par défaut, la carte montre celui qui joue.
+
+### Lecteur affiché
+
+1. Le lecteur choisi avec une pastille reste affiché. Ce choix tombe quand ce lecteur s'éteint pendant qu'un autre joue.
+2. Sans choix, la carte ne change pas de lecteur sous le doigt : elle garde celui affiché tant que la fenêtre du lecteur est ouverte, et pendant 8 secondes après chaque action (bouton, curseur, pastille).
+3. Ensuite, elle montre celui qui joue, sinon celui qui est allumé, sinon le premier.
 
 ## Installation
 
@@ -61,14 +67,16 @@ Les options visuelles communes `theme`, `accent_color` et `card_background` sont
 La carte n'affiche que les commandes que l'appareil prend en charge (attribut `supported_features`). Un ampli Onkyo, par exemple, n'a ni « précédent » ni « suivant » : la rangée de lecture disparaît et la carte se concentre sur le volume et les sources.
 
 - **Marche/arrêt** : bouton en haut à droite. Un appareil éteint ou en veille affiche un bouton « Allumer » à la place des commandes.
-- **Volume** : le curseur envoie la valeur au relâchement. Les boutons − et + utilisent `volume_step`. Si l'appareil ne permet pas de choisir une valeur précise, la carte utilise ses commandes − et + d'origine. Le maximum `max_volume` s'applique dans tous les cas.
-- **Sources** : un appui sélectionne la source. La source active est mise en couleur.
+- **Volume** : le curseur envoie la valeur au relâchement ; pendant le glissement, il n'est jamais ramené en arrière par une mise à jour de l'appareil. Les boutons − et + utilisent `volume_step`. Si l'appareil ne permet pas de choisir une valeur précise, la carte utilise ses commandes − et + d'origine. Le maximum `max_volume` s'applique dans tous les cas.
+- **Sources** : un appui sélectionne la source. La source active est mise en couleur ; les sources sont grisées le temps du changement.
+- **Échecs** : si l'appareil refuse une commande, son bouton clignote en rouge et un message en haut de l'écran donne la raison.
+- **Pochette** : une pochette qui ne se charge pas est remplacée par l'icône de l'appareil.
 
 ## Fenêtre du lecteur
 
 Un appui sur la pochette ou l'icône ouvre la fenêtre du lecteur :
 
-- la pochette en grand et la position de lecture, réglable si l'appareil le permet ;
+- la pochette en grand et la position de lecture, réglable si l'appareil le permet (le curseur reste où vous le lâchez le temps que l'appareil suive) ;
 - la lecture, avec la lecture aléatoire et la répétition quand elles existent ;
 - le volume ;
 - **toutes** les sources de l'appareil, avec les noms et icônes de vos favorites ;

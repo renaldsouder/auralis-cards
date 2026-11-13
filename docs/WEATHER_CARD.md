@@ -25,7 +25,7 @@ Dans l'éditeur visuel, Home Assistant propose la carte quand vous partez d'une 
 | `temperature_entity` | — | Capteur `sensor.*` de température local, affiché à la place de celle du service météo. |
 | `humidity_entity` | — | Capteur `sensor.*` d'humidité local, prioritaire sur celle du service météo. |
 | `sun_entity` | `sun.sun` | Entité soleil : lever, coucher et passage en mode nuit. |
-| `alert_entity` | — | Entité de vigilance. `vert`, `jaune`, `orange` et `rouge` (ou `green`, `yellow`, `red`) sont colorés ; tout autre état est affiché tel quel. |
+| `alert_entity` | — | Entité de vigilance. `vert`, `jaune`, `orange` et `rouge` (ou `green`, `yellow`, `red`) sont colorés ; tout autre état est affiché tel quel. Un appui sur la pastille ouvre la fiche de l'entité. |
 | `forecast_type` | `daily` | Bandeau de prévisions : `daily` (jours), `hourly` (heures) ou `twice_daily` (jour et nuit). Si le service ne le fournit pas, la carte prend un autre type disponible. |
 | `forecast_count` | 5 jours, 8 heures | Nombre de prévisions du bandeau, de 1 à 12. Le bandeau défile s'il manque de place. |
 | `show_clock` | `true` | Affiche l'horloge. Sans elle, le nom du lieu prend sa place. |
@@ -36,7 +36,7 @@ Dans l'éditeur visuel, Home Assistant propose la carte quand vous partez d'une 
 | `icon` | `mdi:map-marker-outline` | Icône devant le nom du lieu. |
 | `thresholds` | paliers extérieurs | Paliers de couleur des températures, au même format que la [carte Climat](CLIMATE_CARD.md#paliers-de-couleur). |
 
-Les options visuelles communes `theme`, `accent_color` et `card_background` sont acceptées. Un `card_background` remplace le fond dynamique. Sans `accent_color`, l'accent prend la couleur du temps actuel.
+Les options visuelles communes `theme`, `accent_color` et `card_background` sont acceptées. Un `card_background` remplace le fond dynamique. Sans `accent_color`, l'accent prend la couleur du temps actuel ; avec, il colore les pastilles (icônes et contour), le halo de l'icône du temps actuel et la prévision en cours du bandeau.
 
 ## Couleurs
 
@@ -59,8 +59,8 @@ Dans le bandeau des jours, chaque barre verticale va de la minimale à la maxima
 Un appui sur la carte ouvre une fenêtre avec :
 
 - **Mesures actuelles** : ressenti, humidité, point de rosée, pression, vent, rafales, indice UV, couverture nuageuse, visibilité, lever et coucher du soleil. Seules les valeurs fournies par le service météo apparaissent.
-- **Prochaines heures** : courbe de température sur 24 heures, barres de risque de pluie et détail heure par heure.
-- **Prochains jours** : jusqu'à 10 jours avec temps, risque de pluie, minimale, barre de plage et maximale.
+- **Prochaines heures** : courbe de température sur 24 heures, barres de risque de pluie et détail heure par heure (risque et cumul de pluie ; l'humidité est dans l'infobulle).
+- **Prochains jours** : jusqu'à 10 jours avec temps, risque de pluie, minimale, barre de plage et maximale. Pour un service qui ne publie que des prévisions jour et nuit (`twice_daily`), l'onglet devient « Jour et nuit ».
 
 Les boutons du bas ouvrent la fiche Home Assistant du service météo, du capteur local et de la vigilance.
 
@@ -68,6 +68,8 @@ Les boutons du bas ouvrent la fiche Home Assistant du service météo, du capteu
 
 - Les prévisions sont reçues par abonnement (`weather/subscribe_forecast`, Home Assistant 2023.9 ou plus récent) et mises à jour dès que le service météo en publie de nouvelles. Les anciennes intégrations qui exposent encore l'attribut `forecast` restent prises en charge.
 - La carte s'abonne aux prévisions journalières et horaires quand le service les fournit, pour remplir le bandeau et les deux onglets de la fenêtre.
+- Si l'abonnement échoue, la carte affiche « Prévisions indisponibles » et réessaie après 30 s, puis 1, 2 et 4 minutes, enfin toutes les 5 minutes.
+- Quand l'entité météo devient brièvement indisponible (redémarrage de l'intégration), les dernières prévisions restent affichées. Une entité absente de Home Assistant affiche « Entité introuvable ».
 - Le maximum et le minimum du jour viennent de la prévision journalière. Le risque de pluie affiché sur la carte est le plus élevé des trois prochaines heures, ou à défaut celui du jour.
-- Le mode nuit suit `sun.sun`. Sans cette entité, la nuit va de 20 h à 7 h.
+- Le mode nuit suit `sun_entity` (`sun.sun` par défaut), et la carte se met à jour à chaque changement de cette entité. Sans elle, la nuit va de 20 h à 7 h.
 - L'heure, la date et les jours sont affichés dans le fuseau horaire configuré dans Home Assistant.
