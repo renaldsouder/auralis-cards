@@ -318,11 +318,39 @@ describe("Auralis room from a Home Assistant area", () => {
     card.hass = areaHass();
     expect(internals.areaProblem()).toBe("Zone « xyz » introuvable.");
     card.setConfig({ type: "custom:auralis-room-card", area: "garage" });
-    expect(internals.areaProblem()).toBe("La zone « Garage » ne contient ni lumière, ni volet, ni capteur.");
+    expect(internals.areaProblem()).toBe("La zone « Garage » ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur.");
     // Un capteur de diagnostic ne suffit pas à rendre la zone utilisable.
     card.setConfig({ type: "custom:auralis-room-card", area: "Cave" });
-    expect(internals.areaProblem()).toBe("La zone « Cave » ne contient ni lumière, ni volet, ni capteur.");
+    expect(internals.areaProblem()).toBe("La zone « Cave » ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur.");
     expect(() => card.setConfig({ type: "custom:auralis-room-card", area: "  " })).toThrow();
+  });
+
+  it("accepts an area that only holds a thermostat, a player or a television", () => {
+    const base = areaHass();
+    const only = (entityId: string, attributes: Record<string, unknown> = {}): HomeAssistant => <HomeAssistant>{
+      ...base,
+      states: { ...base.states, [entityId]: { ...state(entityId, "idle"), attributes } },
+      entities: { ...(base.entities as object), [entityId]: { entity_id: entityId, area_id: "garage" } },
+    };
+    const card = new roomCard.AuralisRoomCard();
+    const internals = card as unknown as AreaInternals;
+    card.setConfig({ type: "custom:auralis-room-card", area: "garage" });
+
+    card.hass = only("climate.garage");
+    expect(internals.areaProblem()).toBeUndefined();
+    expect(internals.room.climate_entity).toBe("climate.garage");
+
+    card.hass = only("media_player.radio");
+    expect(internals.areaProblem()).toBeUndefined();
+    expect(internals.sideControls("right")).toEqual([{ type: "media", entity: "media_player.radio" }]);
+
+    card.hass = only("media_player.ecran", { device_class: "tv" });
+    expect(internals.areaProblem()).toBeUndefined();
+    expect(internals.sideControls("right")).toEqual([{ type: "tv", entity: "media_player.ecran" }]);
+
+    // Une télévision écartée par `right_controls: []` ne laisse rien à afficher.
+    card.setConfig({ type: "custom:auralis-room-card", area: "garage", right_controls: [] });
+    expect(internals.areaProblem()).toBe("La zone « Garage » ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur.");
   });
 
   it("proposes an area in the stub and the editor", () => {

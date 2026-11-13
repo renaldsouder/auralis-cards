@@ -4879,7 +4879,7 @@ var Qn = class extends N {
 		if (e.status === "unavailable") return "Les zones de Home Assistant ne sont pas disponibles (Home Assistant 2023.x ou plus récent requis).";
 		if (e.status === "not-found") return `Zone « ${e.area} » introuvable.`;
 		let t = this.room;
-		if (!t?.lights?.length && !t?.covers?.length && !t?.temperature_entity && !t?.humidity_entity) return `La zone « ${e.name} » ne contient ni lumière, ni volet, ni capteur.`;
+		return t?.lights?.length || t?.covers?.length || t?.temperature_entity || t?.humidity_entity || t?.climate_entity || t?.media_player_entity || t?.right_controls?.length ? void 0 : `La zone « ${e.name} » ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur.`;
 	}
 	static getStubConfig(e) {
 		let t = Un(e);
@@ -16580,7 +16580,7 @@ var Lu = class extends N {
       <div class="zones">${t.map((e) => this.renderZone(e))}</div>
     </div></ha-card>${this.renderStandaloneConfirmation()}`;
 	}
-}, Ru = "0.23.0";
+}, Ru = "0.23.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", Qn), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", nn), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", qr), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Qr), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", ai), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Ii), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", hn), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", zi), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", Dn), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Xi), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", ka), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", eo), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", Ho), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", hs), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", Ms), customElements.get("auralis-media-card") || customElements.define("auralis-media-card", tc), customElements.get("auralis-tabs-card") || customElements.define("auralis-tabs-card", dc), customElements.get("auralis-screensaver-card") || customElements.define("auralis-screensaver-card", Gc), customElements.get("auralis-batteries-card") || customElements.define("auralis-batteries-card", Ll), customElements.get("auralis-irrigation-card") || customElements.define("auralis-irrigation-card", Lu), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends Qn {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends qr {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Qr {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends ai {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Ii {}), window.customCards = window.customCards || [];
 var zu = [
 	{
