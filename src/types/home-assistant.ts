@@ -27,6 +27,9 @@ export interface HomeAssistant {
   locale?: { language?: string };
   themes?: { darkMode?: boolean };
   callWS?<T>(message: Record<string, unknown>): Promise<T>;
+  connection?: {
+    subscribeMessage<T>(callback: (message: T) => void, message: Record<string, unknown>): Promise<() => unknown>;
+  };
   callService(
     domain: string,
     service: string,
@@ -59,6 +62,7 @@ declare global {
     "auralis-fridge-card": HTMLElement;
     "auralis-energy-card": HTMLElement;
     "auralis-climate-card": HTMLElement;
+    "auralis-weather-card": HTMLElement;
     "orbit-room-card": HTMLElement;
     "orbit-pc-card": HTMLElement;
     "orbit-unraid-card": HTMLElement;

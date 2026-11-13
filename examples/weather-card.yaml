@@ -1,0 +1,20 @@
+# Carte Météo Auralis — à coller dans l'éditeur YAML d'une carte.
+# Remplacez les identifiants d'entités par les vôtres.
+type: custom:auralis-weather-card
+entity: weather.forecast_maison
+name: Maison
+
+# Facultatif : un capteur extérieur local remplace la température du service météo.
+temperature_entity: sensor.exterieur_temperature
+humidity_entity: sensor.exterieur_humidite
+
+# Facultatif : vigilance Météo-France (vert, jaune, orange, rouge).
+# alert_entity: sensor.33_weather_alert
+
+forecast_type: daily # daily, hourly ou twice_daily
+forecast_count: 5
+show_clock: true
+show_greeting: true
+
+grid_options:
+  columns: full

@@ -172,6 +172,16 @@ const states = [
   e("sensor.garderie_temperature", "unavailable", { unit_of_measurement: "°C" }),
   e("sensor.exterieur_temperature", "7.8", { unit_of_measurement: "°C" }),
   e("sensor.exterieur_humidity", "83", { unit_of_measurement: "%" }),
+  e("weather.maison", "partlycloudy", {
+    friendly_name: "Maison", temperature: 8.4, temperature_unit: "°C", apparent_temperature: 6.1, dew_point: 5.2,
+    humidity: 81, pressure: 1017, pressure_unit: "hPa", wind_speed: 17, wind_gust_speed: 32, wind_speed_unit: "km/h",
+    wind_bearing: 250, uv_index: 1.4, cloud_coverage: 55, visibility: 18, visibility_unit: "km", supported_features: 3,
+  }),
+  e("sun.sun", "above_horizon", {
+    next_setting: new Date(Date.now() + 2.5 * 3_600_000).toISOString(),
+    next_rising: new Date(Date.now() + 16 * 3_600_000).toISOString(),
+  }),
+  e("sensor.vigilance_meteo", "Jaune", { friendly_name: "Vigilance vent" }),
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -198,6 +208,34 @@ const hass: HomeAssistant = {
       })];
     })) as T;
   },
+  // Prévisions simulées : renvoyées une fois, comme le premier message de weather/subscribe_forecast.
+  connection: {
+    subscribeMessage: async <T>(callback: (message: T) => void, message: Record<string, unknown>) => {
+      const hourly = message.forecast_type === "hourly";
+      const conditions = hourly
+        ? ["partlycloudy", "partlycloudy", "cloudy", "rainy", "rainy", "pouring", "cloudy", "partlycloudy", "clear-night", "clear-night"]
+        : ["partlycloudy", "rainy", "lightning-rainy", "cloudy", "sunny", "sunny", "snowy-rainy"];
+      const start = hourly ? Math.floor(Date.now() / 3_600_000) * 3_600_000 : new Date().setHours(12, 0, 0, 0);
+      const forecast = Array.from({ length: hourly ? 24 : 7 }, (_, index) => ({
+        datetime: new Date(start + index * (hourly ? 3_600_000 : 86_400_000)).toISOString(),
+        condition: conditions[index % conditions.length],
+        temperature: hourly ? 8.4 + 3 * Math.sin((index - 2) / 4) : [11, 9, 7, 6, 14, 17, 3][index],
+        templow: hourly ? undefined : [4, 5, 2, -1, 6, 9, -3][index],
+        precipitation_probability: hourly ? [5, 10, 30, 70, 85, 90, 40, 15, 0, 0][index % 10] : [20, 80, 90, 30, 0, 5, 60][index],
+        wind_speed: 12 + index,
+      }));
+      window.setTimeout(() => callback({ type: message.forecast_type, forecast } as T), 300);
+      return () => undefined;
+    },
+  },
+};
+
+const weather = {
+  type: "custom:auralis-weather-card",
+  entity: "weather.maison",
+  temperature_entity: "sensor.exterieur_temperature",
+  alert_entity: "sensor.vigilance_meteo",
+  forecast_count: 6,
 };
 
 const climate = {
@@ -443,6 +481,7 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
 };
 
 mount("auralis-navbar-card", navbar);
+mount("auralis-weather-card", weather);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);

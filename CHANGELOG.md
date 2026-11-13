@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0
+
+- Ajoute la carte Auralis Météo : salutation, date, heure, température et temps actuels, humidité, vent, risque de pluie et prochain lever ou coucher du soleil.
+- Colore le fond selon le temps et passe en mode nuit avec `sun.sun`.
+- Affiche un bandeau de prévisions (jours, heures ou jour et nuit) avec des barres de températures colorées par palier.
+- Ouvre une fenêtre avec les mesures détaillées, la courbe et le risque de pluie des 24 prochaines heures, et les prochains jours.
+- Accepte un capteur de température local et une entité de vigilance.
+
 ## 0.16.0
 
 - Ajoute la carte Auralis Climat des pièces : une tuile par pièce avec température colorée par palier de confort, humidité, batterie faible et courbe de la période.
