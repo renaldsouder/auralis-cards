@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.0
+
+- Carte Proxmox : les VM et les LXC lisent `stop_entity`, `pause_entity` et `resume_entity`. Une charge active propose Pause, Redémarrer, Éteindre ou Arrêter et Console ; une charge suspendue Reprendre. Redémarrer et arrêter demandent confirmation, comme sur la carte UNRAID.
+- Cartes Lumières, Volets et Énergie : `accent_color` et `card_background` sont pris en compte, sur la carte et dans ses fenêtres. Sans ces options, l’apparence ne change pas.
+- Carte Pièce : `accent_color` colore toute la carte (commandes latérales, avatar, halo, dock des volets, fenêtre Ambiance), et plus seulement la photo.
+
 ## 0.21.0
 
 - Carte Lumières : accepte les éclairages commandés par relais (`switch.*`), seuls ou mêlés aux lampes. Un groupe d’interrupteurs n’affiche ni intensité ni couleur.

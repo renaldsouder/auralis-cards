@@ -15,6 +15,8 @@ La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette
 - `scenes` : scènes Home Assistant de la carte, ou par groupe pour les remplacer. Les scènes pilotent les entités définies dans Home Assistant, selon leur propre configuration.
 - `preset_colors` : liste facultative de `{ name, color }`, avec couleur au format `#RRGGBB`. Sans option, sept couleurs sont proposées.
 - `entity_labels` : noms affichés pour les lumières.
+- `accent_color` : couleur des icônes, des curseurs et des lumières allumées, sur la carte et dans ses fenêtres. Sans option, la couleur du thème est conservée.
+- `card_background` : fond de la carte, `mode: gradient` avec `gradient`, ou `mode: solid` avec `color`.
 
 Les éclairages commandés par un relais (`switch.*`) n'ont que la marche et l'arrêt : un groupe qui ne contient que des interrupteurs n'affiche ni intensité ni couleur. Dans un groupe mixte, l'intensité et la couleur ne s'appliquent qu'aux lampes `light.*`.
 

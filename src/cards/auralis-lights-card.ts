@@ -92,6 +92,9 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .scene-item small { width:70px; overflow:hidden; color:var(--auralis-muted); font-size:10px; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
     .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
     @container (max-width:330px) { .lights-shell { padding:13px; } .group-body { padding:12px; } }
+    /* accent_color et card_background, posés sur l'hôte par applyHostPalette(). */
+    :host([data-accent]), :host([data-accent]) .dialog-backdrop { --auralis-active:var(--auralis-card-accent); }
+    :host([data-background]) ha-card, :host([data-background]) .lights-shell { background:var(--auralis-card-background); }
   `];
 
   public setConfig(config: LightsCardConfig): void {

@@ -204,3 +204,81 @@ describe("AuralisProxmoxCard configuration and guarded actions", () => {
     );
   });
 });
+
+describe("Proxmox workload commands", () => {
+  const running = (entityId: string) => state(entityId, "running");
+  const vm: ManagedProxmoxWorkload = {
+    name: "Home Assistant",
+    entity: "sensor.hass_statut",
+    start_entity: "button.hass_start",
+    stop_entity: "button.hass_stop",
+    restart_entity: "button.hass_restart",
+    pause_entity: "button.hass_pause",
+    resume_entity: "button.hass_resume",
+  };
+  const makeCard = (item: ManagedProxmoxWorkload, itemState: string) => {
+    const callService = vi.fn(async () => undefined);
+    const card = new proxmoxCard.AuralisProxmoxCard();
+    card.setConfig(config({ vms: [item] }));
+    const states: Record<string, HassEntity> = {
+      "binary_sensor.proxmox_online": state("binary_sensor.proxmox_online", "on"),
+      [item.entity]: itemState === "running" ? running(item.entity) : state(item.entity, itemState),
+    };
+    for (const id of [item.start_entity, item.stop_entity, item.restart_entity, item.pause_entity, item.resume_entity]) {
+      if (id) states[id] = state(id, "2026-11-01T08:30:00+01:00");
+    }
+    card.hass = { states, callService };
+    return { card, callService };
+  };
+  type Internals = {
+    runWorkloadAction(item: ManagedProxmoxWorkload, action: "stop" | "restart" | "pause" | "resume"): Promise<void>;
+    confirmWorkloadAction(item: ManagedProxmoxWorkload, action: "stop" | "restart"): void;
+    confirmState: { title: string; action(): Promise<void> } | null;
+    dialog: string | null;
+  };
+
+  it("maps each command to its entity and falls back to the switch to start or stop", () => {
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "stop")).toBe("button.hass_stop");
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "pause")).toBe("button.hass_pause");
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "resume")).toBe("button.hass_resume");
+    const lxc = { name: "LXC", entity: "switch.lxc" };
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "start")).toBe("switch.lxc");
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "stop")).toBe("switch.lxc");
+    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "pause")).toBeUndefined();
+    // Un capteur d'état ne peut pas servir de commande.
+    expect(proxmoxCard.proxmoxWorkloadActionEntity({ name: "VM", entity: "sensor.vm" }, "stop")).toBeUndefined();
+  });
+
+  it("keeps stop and restart behind a confirmation, then presses the configured button", async () => {
+    const { card, callService } = makeCard(vm, "running");
+    const internals = card as unknown as Internals;
+    internals.confirmWorkloadAction(vm, "stop");
+    expect(callService).not.toHaveBeenCalled();
+    expect(internals.confirmState?.title).toBe("Éteindre Home Assistant ?");
+    expect(internals.dialog).toBe("workloads");
+    await internals.confirmState?.action();
+    expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.hass_stop" });
+  });
+
+  it("pauses and resumes with their own buttons", async () => {
+    const { card, callService } = makeCard(vm, "running");
+    const internals = card as unknown as Internals;
+    await internals.runWorkloadAction(vm, "pause");
+    await internals.runWorkloadAction(vm, "resume");
+    expect(callService).toHaveBeenNthCalledWith(1, "button", "press", {}, { entity_id: "button.hass_pause" });
+    expect(callService).toHaveBeenNthCalledWith(2, "button", "press", {}, { entity_id: "button.hass_resume" });
+  });
+
+  it("turns off a switch workload without stop_entity instead of toggling it on", async () => {
+    const lxc = { name: "Mosquitto", entity: "switch.lxc_mosquitto" };
+    const { card, callService } = makeCard(lxc, "on");
+    await (card as unknown as Internals).runWorkloadAction(lxc, "stop");
+    expect(callService).toHaveBeenCalledWith("homeassistant", "turn_off", {}, { entity_id: "switch.lxc_mosquitto" });
+  });
+
+  it("sends nothing when the workload itself is unavailable", async () => {
+    const { card, callService } = makeCard(vm, "unavailable");
+    await (card as unknown as Internals).runWorkloadAction(vm, "stop");
+    expect(callService).not.toHaveBeenCalled();
+  });
+});

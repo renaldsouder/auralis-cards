@@ -90,6 +90,8 @@ Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les au
 
 La [carte Énergie](examples/energy-card.yaml) compare les sept derniers jours aux mêmes jours de la semaine précédente. Renseignez `energy_entity` avec un capteur d’énergie cumulée qui alimente les statistiques Recorder, et `power_entity` pour afficher la puissance instantanée. Elle suit aussi un compteur de gaz ou d’eau : l’unité du capteur (m³, L…) est reprise automatiquement, et `unit` permet d’en choisir une autre.
 
+`accent_color` colore la courbe et le total de la semaine en cours ; `card_background` remplace le fond de la carte.
+
 Dans une vue Sections, la carte Énergie utilise 12 colonnes par défaut. Modifiez sa largeur dans l’onglet **Disposition** ou définissez `grid_options.columns: full` pour occuper toute la section.
 
 La [carte Climat des pièces](examples/climate-card.yaml) réunit les capteurs de température de la maison : une tuile par pièce avec température colorée par palier de confort, humidité, batterie faible et courbe sur 24 heures. Un appui ouvre les courbes de température et d’humidité sur 24 heures ou 7 jours. Voir le [guide Climat](docs/CLIMATE_CARD.md).
@@ -302,6 +304,8 @@ La pop-up Lumières contient une commande générale compacte, une luminosité g
 
 `ambiance` configure l'unique bouton affiché sur la photographie : son `label`, son `icon` et sa `position` (`top-left`, `top-right`, `bottom-left` ou `bottom-right`). Un clic ouvre une petite pop-up. La liste `scenes` fournit les modes proposés dans cette pop-up ; chaque entrée possède sa propre `entity`, son `label` et son `icon`. L'ancien `scene_entity` reste accepté et produit un bouton « Ambiance » contenant le mode « Mode soirée ». Le fichier [`examples/salon-card-complete.yaml`](examples/salon-card-complete.yaml) reprend les identifiants réels fournis pour la carte Salon ; seule l'entité de télévision doit être remplacée par son identifiant réel.
 
+`accent_color` colore toute la carte : commandes latérales, avatar, halo, dock des volets et fenêtre Ambiance. Le titre d'une fenêtre ouverte par une commande latérale vient de son `popup_title`, puis de son `label` ; `popup_titles` sert quand aucun des deux n'est défini.
+
 `popup_titles` personnalise le titre de chaque pop-up. La section `climate_popup` choisit les capteurs représentés, génère un graphe séparé par capteur et règle la période avec `graph_period_unit: hours`, `days` ou `months`. Un mois correspond à 30 jours dans le graphe d'historique Home Assistant. Une liste `graph_entities: []` désactive les graphes ; les options `show_overview`, `show_current_values` et `show_thermostat` permettent de composer librement le contenu. Les cartes de valeurs actuelles sont masquées par défaut, car le résumé « Confort de la pièce » contient déjà ces mesures.
 
 ## Carte Volets
@@ -323,6 +327,8 @@ groups:
       - cover.fenetre_bureau
       - cover.velux_bureau
 ```
+
+`accent_color` colore les icônes, l'état et le contour de survol des tuiles ; `card_background` remplace le fond de la carte (`mode: gradient` avec `gradient`, ou `mode: solid` avec `color`). Sans ces options, l'apparence d'origine est conservée.
 
 Les quatre photos intégrées se répètent si davantage de groupes sont configurés. Les entités absentes ou indisponibles restent visibles, et leurs commandes individuelles sont désactivées.
 
@@ -502,7 +508,7 @@ Une carte représente un nœud Proxmox. Son état apparaît sous son nom, puis d
 
 Le panneau inférieur contient uniquement les entrées de `storages`, sans limite de nombre. Chaque `name` est libre. `show_on_card: false` masque une entrée de la façade tout en la conservant dans la pop-up. Le bouton **Disques** ouvre les stockages et les disques physiques de `disks`. Les champs facultatifs sont `usage_entity` (pourcentage utilisé), `capacity_entity` (capacité ou résumé), `status_entity` et `temperature_entity`. Un disque sans mesure d’occupation reste visible avec ses autres informations, sans inventer un taux d’utilisation.
 
-Le rail comporte **Détails du nœud**, **VM** et **LXC**. Chaque pop-up VM/LXC présente exclusivement son type de charge, avec recherche, groupes, filtres, sélection multiple et commandes disponibles. Les icônes sont vertes pour les charges actives, neutres pour les charges arrêtées, orange pour les suspendues et atténuées pour les indisponibles. Les groupes se nomment via `group` et chaque charge via `name`.
+Le rail comporte **Détails du nœud**, **VM** et **LXC**. Chaque pop-up VM/LXC présente exclusivement son type de charge, avec recherche, groupes, filtres, sélection multiple et commandes disponibles. Chaque charge accepte `start_entity`, `stop_entity`, `restart_entity`, `pause_entity`, `resume_entity` et `console_url` : une charge arrêtée propose **Démarrer**, une charge active **Pause**, **Redémarrer**, **Éteindre** (VM) ou **Arrêter** (LXC) et **Console**, une charge suspendue **Reprendre** et l’arrêt. Seules les commandes configurées apparaissent ; un `switch` sert de repli pour démarrer et arrêter. Le redémarrage et l’arrêt demandent confirmation. Les icônes sont vertes pour les charges actives, neutres pour les charges arrêtées, orange pour les suspendues et atténuées pour les indisponibles. Les groupes se nomment via `group` et chaque charge via `name`.
 
 La pop-up Détails regroupe l’état, CPU, RAM, version, quorum, température, uptime, réseau, Ceph, sauvegarde et alertes si leurs capteurs sont disponibles. Elle ne répète aucune liste de disques, VM ou LXC. L’ancien bouton circulaire était la commande de sauvegarde : elle se trouve désormais ici, avec son libellé explicite. Les commandes sensibles conservent leur confirmation.
 

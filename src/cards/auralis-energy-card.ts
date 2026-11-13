@@ -168,6 +168,9 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       .reading ha-icon { display: none; }
       .reading strong { font-size: 12px; }
     }
+    /* accent_color colore la semaine en cours ; card_background remplace le fond. */
+    :host([data-accent]) { --energy-current: var(--auralis-card-accent); }
+    :host([data-background]) ha-card, :host([data-background]) .energy-shell { background: var(--auralis-card-background); }
   `];
 
   private history?: Map<number, number>;
