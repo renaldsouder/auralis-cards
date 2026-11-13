@@ -142,6 +142,32 @@ describe("Auralis navbar configuration", () => {
     expect(() => card.setConfig(config({ position: "corner" as NavbarCardConfig["position"] }))).toThrow("position doit être");
   });
 
+  it("never creates or keeps a floating bar once the card has left the page", () => {
+    const append = vi.fn();
+    vi.stubGlobal("document", { body: { append } });
+    const card = new navbar.AuralisNavbarCard();
+    const internals = card as unknown as {
+      isConnected: boolean;
+      setAttribute: (name: string, value: string) => void;
+      overlay?: { remove: () => void };
+      syncOverlay: () => void;
+    };
+    internals.setAttribute = vi.fn();
+    card.setConfig(config({ position: "bottom" }));
+    internals.isConnected = false;
+    const stale = { remove: vi.fn() };
+    internals.overlay = stale;
+
+    // A route change finishes its update after Home Assistant removed the view.
+    internals.syncOverlay();
+
+    expect(append).not.toHaveBeenCalled();
+    expect(stale.remove).toHaveBeenCalled();
+    expect(internals.overlay).toBeUndefined();
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+
   it("returns to an editable card footprint while dashboard editing is active", () => {
     const card = new navbar.AuralisNavbarCard();
     card.setConfig(config({ position: "bottom" }));

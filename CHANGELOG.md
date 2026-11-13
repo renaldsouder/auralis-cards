@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.2
+
+- Barre de navigation : une barre de plus s’ajoutait à chaque changement de vue. La carte, déjà retirée de la page par Home Assistant, terminait une mise à jour et recréait sa barre flottante, que plus rien ne supprimait. Une carte retirée de la page ne crée plus de barre.
+
 ## 0.22.1
 
 - Barre de navigation : `hide_native_header` ne masque plus l’en-tête aux administrateurs. Son menu ⋮ étant le seul accès au mode modification, un administrateur ne pouvait plus modifier le tableau de bord. Les autres comptes restent sans en-tête.

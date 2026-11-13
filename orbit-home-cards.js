@@ -6397,7 +6397,7 @@ var ln = class extends B {
 		let t = this.isConnected && this.config && e === "right" && !this.editing ? en(this) : void 0;
 		this.reservedRoot !== t && nn(this, this.reservedRoot), t && tn(this, t), this.reservedRoot = t;
 		let n = this.isConnected && this.config && !this.editing && (e === "bottom" || e === "top" || Yt(this.config, this.hass)) ? en(this) : void 0;
-		if (this.layoutRoot !== n && Qt(this, this.layoutRoot), n && Zt(this, n, e), this.layoutRoot = n, !this.config || e === "inline" || this.editing) {
+		if (this.layoutRoot !== n && Qt(this, this.layoutRoot), n && Zt(this, n, e), this.layoutRoot = n, !this.isConnected || !this.config || e === "inline" || this.editing) {
 			this.removeOverlay();
 			return;
 		}
@@ -11233,7 +11233,7 @@ var pi = class extends B {
 			min_columns: 4
 		};
 	}
-}, mi = "0.22.1";
+}, mi = "0.22.2";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", pt), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", mt), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", Ot), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Ft), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", Ut), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", ln), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", pn), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", mn), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", xn), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Dn), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", Fn), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", nr), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", Er), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", Vr), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", Xr), customElements.get("auralis-media-card") || customElements.define("auralis-media-card", pi), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends pt {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends Ot {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Ft {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends Ut {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends ln {}), window.customCards = window.customCards || [];
 var hi = [
 	{
