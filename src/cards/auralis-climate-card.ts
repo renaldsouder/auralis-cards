@@ -1,7 +1,7 @@
 import { css, html, nothing, svg, type TemplateResult } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import type { BaseCardConfig } from "../types/config";
-import type { HassEntity } from "../types/home-assistant";
+import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { fireMoreInfo } from "../utils/actions";
 import { entity, formatNumber, friendlyName, isAvailable, numericState } from "../utils/entities";
 
@@ -29,6 +29,8 @@ export interface ClimateCardConfig extends BaseCardConfig {
   graph_hours?: number;
   low_battery?: number;
   show_summary?: boolean;
+  /** Masque l'en-tête (icône, nom, état) avec `false`. */
+  show_header?: boolean;
   thresholds?: ClimateThreshold[];
   outdoor_thresholds?: ClimateThreshold[];
 }
@@ -124,7 +126,48 @@ export function resampleHistory(points: HistoryPoint[], start: number, end: numb
   });
 }
 
-export function seriesStats(values: Series): { min: number; max: number; mean: number } | undefined {
+export interface SeriesStats {
+  min: number;
+  max: number;
+  mean: number;
+}
+
+/**
+ * Minimum, maximum et moyenne sur les mesures brutes de la période, pas sur les moyennes par
+ * intervalle du tracé (qui écrêtent les pics). La valeur en cours au début de la période et la
+ * mesure actuelle comptent. La moyenne est pondérée par la durée de chaque valeur : un capteur
+ * qui envoie dix mesures en une minute ne pèse pas plus qu'une valeur stable pendant une heure.
+ */
+export function pointStats(points: HistoryPoint[], start: number, end: number, current?: number): SeriesStats | undefined {
+  const before = points.filter((point) => point.time < start).at(-1);
+  const inside = points.filter((point) => point.time >= start && point.time <= end);
+  const timeline = [...(before ? [{ time: start, value: before.value }] : []), ...inside];
+  const values = [...timeline.map((point) => point.value), ...(isNumber(current) ? [current] : [])];
+  if (!values.length) return undefined;
+  let weighted = 0;
+  let duration = 0;
+  timeline.forEach((point, index) => {
+    const span = (timeline[index + 1]?.time ?? end) - point.time;
+    if (span > 0) {
+      weighted += point.value * span;
+      duration += span;
+    }
+  });
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values),
+    mean: duration > 0 ? weighted / duration : values.reduce((sum, value) => sum + value, 0) / values.length,
+  };
+}
+
+/** Extrêmes de la période complétés par la mesure actuelle (affichée sur la tuile). */
+export function withCurrentStats(stats: SeriesStats | undefined, current?: number): SeriesStats | undefined {
+  if (!isNumber(current)) return stats;
+  if (!stats) return { min: current, max: current, mean: current };
+  return { ...stats, min: Math.min(stats.min, current), max: Math.max(stats.max, current) };
+}
+
+export function seriesStats(values: Series): SeriesStats | undefined {
   const defined = values.filter(isNumber);
   if (!defined.length) return undefined;
   return {
@@ -195,6 +238,8 @@ interface HistoryState {
   time: number;
   hours: number;
   series: Record<string, Series>;
+  /** Statistiques calculées sur les mesures brutes de chaque entité. */
+  stats: Record<string, SeriesStats | undefined>;
 }
 
 export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
@@ -209,60 +254,63 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
   };
 
   static styles = [AuralisBaseCard.styles, css`
+    /* Fond et texte suivent le thème ; une image de fond garde un voile sombre et un texte clair. */
+    .climate-shell { --machine-accent:#79d6f2; background:var(--auralis-card-background,var(--auralis-card)); color:var(--auralis-text); }
+    .climate-shell:not(.has-image)::before { display:none; }
+    .climate-shell.has-image { --auralis-text:#f4f8fc; --auralis-muted:#a7b4c2; --auralis-border:rgba(195,211,229,.16); --auralis-layer:rgba(9,14,20,var(--machine-glass-alpha,.84)); background:var(--auralis-card-background,#090d12); }
     .climate-shell, .climate-content { min-height:0; }
-    .climate-shell { --machine-accent:#79d6f2; }
     .climate-header { align-items:center; padding-right:0; }
-    .climate-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
+    .climate-header .badge { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--machine-accent) 14%,var(--auralis-layer)); color:var(--machine-accent); }
     .climate-header .badge ha-icon { --mdc-icon-size:23px; }
-    .climate-header h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .climate-header .machine-status { margin-top:5px; }
+    .climate-header h2 { overflow:hidden; color:inherit; font-size:var(--auralis-title-size); text-overflow:ellipsis; white-space:nowrap; }
+    .climate-header .machine-status { margin-top:5px; color:var(--auralis-muted); }
     .summary { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
-    .chip { --band:#93a2b5; display:inline-flex; min-height:30px; align-items:center; gap:7px; padding:5px 11px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,var(--machine-glass-alpha,.84)); color:#b9c6d5; font-size:11px; backdrop-filter:blur(10px); }
-    .chip strong { color:#fff; font-weight:700; white-space:nowrap; }
+    .chip { --band:var(--auralis-muted); display:inline-flex; min-height:30px; align-items:center; gap:7px; padding:5px 11px; border:1px solid var(--auralis-border); border-radius:999px; background:var(--auralis-layer); color:var(--auralis-muted); font-size:var(--auralis-text-xs); backdrop-filter:blur(10px); }
+    .chip strong { color:var(--auralis-text); font-weight:700; white-space:nowrap; }
     .chip .swatch { width:8px; height:8px; flex:0 0 auto; border-radius:50%; background:var(--band); box-shadow:0 0 0 4px color-mix(in srgb,var(--band) 18%,transparent); }
     .chip ha-icon { --mdc-icon-size:15px; }
     .chip.alert { border-color:color-mix(in srgb,var(--auralis-active) 45%,transparent); color:var(--auralis-active); }
     .rooms { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:10px; margin-top:14px; }
     .rooms.fixed { grid-template-columns:repeat(var(--climate-columns),minmax(0,1fr)); }
-    .room { --band:#93a2b5; display:flex; min-width:0; flex-direction:column; padding:12px 12px 10px; overflow:hidden; border:1px solid color-mix(in srgb,var(--band) 38%,rgba(195,211,229,.14)); border-radius:18px; background:linear-gradient(160deg,color-mix(in srgb,var(--band) 14%,transparent),transparent 62%),rgba(9,14,20,var(--machine-glass-alpha,.84)); color:inherit; cursor:pointer; text-align:start; backdrop-filter:blur(12px); transition:border-color .15s ease; }
+    .room { --band:var(--auralis-muted); display:flex; min-width:0; flex-direction:column; padding:12px 12px 10px; overflow:hidden; border:1px solid color-mix(in srgb,var(--band) 38%,var(--auralis-border)); border-radius:18px; background:linear-gradient(160deg,color-mix(in srgb,var(--band) 14%,transparent),transparent 62%),var(--auralis-layer); color:inherit; cursor:pointer; text-align:start; backdrop-filter:blur(12px); transition:border-color .15s ease; }
     .room:hover { border-color:color-mix(in srgb,var(--band) 80%,transparent); }
     .room:focus-visible, .tabs button:focus-visible { outline:2px solid var(--band,var(--auralis-info)); outline-offset:2px; }
     .room.unavailable { opacity:.55; }
-    .room-head { display:flex; min-width:0; align-items:center; gap:7px; color:#c7d0dc; font-size:11px; font-weight:650; }
+    .room-head { display:flex; min-width:0; align-items:center; gap:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:650; }
     .room-head ha-icon { --mdc-icon-size:16px; flex:0 0 auto; color:var(--band); }
     .room-head .name { overflow:hidden; flex:1; text-overflow:ellipsis; white-space:nowrap; }
     .room-head .battery { color:var(--auralis-active); }
     .room-value { display:flex; align-items:baseline; gap:3px; margin-top:8px; }
     .room-value strong { color:var(--band); font-size:28px; font-weight:740; letter-spacing:-.05em; line-height:1; }
-    .room-value small { color:#9caabb; font-size:11px; }
-    .band-label { min-width:0; align-self:center; padding:3px 8px; margin-inline-start:auto; overflow:hidden; border-radius:999px; background:color-mix(in srgb,var(--band) 16%,transparent); color:var(--band); font-size:10px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+    .room-value small { color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .band-label { min-width:0; align-self:center; padding:3px 8px; margin-inline-start:auto; overflow:hidden; border-radius:999px; background:color-mix(in srgb,var(--band) 16%,transparent); color:var(--band); font-size:var(--auralis-text-xs); font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
     .spark { display:block; width:100%; height:34px; margin-top:9px; overflow:visible; }
-    .spark-empty { display:grid; height:34px; margin-top:9px; place-items:center; border-radius:9px; background:rgba(255,255,255,.035); color:#7e8c9d; font-size:9px; }
-    .room-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; color:#9baabd; font-size:10px; white-space:nowrap; }
+    .spark-empty { display:grid; height:34px; margin-top:9px; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--auralis-muted) 8%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .room-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); white-space:nowrap; }
     .room-foot span { display:inline-flex; align-items:center; gap:3px; }
     .room-foot ha-icon { --mdc-icon-size:13px; color:#63bbff; }
-    .detail-now { --band:#93a2b5; }
+    .detail-now { --band:var(--auralis-muted); }
     .detail-now strong { color:var(--band); font-size:30px; letter-spacing:-.05em; }
     .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:10px; }
-    .stats .dialog-stat { --band:#f4f8fc; min-width:0; }
+    .stats .dialog-stat { --band:var(--auralis-text); min-width:0; }
     .stats .dialog-stat strong { color:var(--band); }
-    .chart { margin:0; padding:12px 12px 8px; border:1px solid var(--auralis-border); border-radius:18px; background:rgba(255,255,255,.03); }
+    .chart { margin:0; padding:12px 12px 8px; border:1px solid var(--auralis-border); border-radius:18px; background:color-mix(in srgb,var(--auralis-text) 3%,transparent); }
     .plot { position:relative; height:132px; }
     .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
     .plot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); }
-    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:rgba(11,17,24,.7); color:var(--auralis-muted); font-size:10px; }
+    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:color-mix(in srgb,var(--auralis-bg) 70%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .plot .axis.top { top:2px; }
     .plot .axis.bottom { bottom:2px; }
-    .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:10px; }
-    .chart-empty { display:grid; min-height:132px; margin:0; place-items:center; color:var(--auralis-muted); font-size:12px; text-align:center; }
-    .tabs button { color:var(--auralis-muted); }
+    .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .chart-empty { display:grid; min-height:132px; margin:0; place-items:center; color:var(--auralis-muted); font-size:var(--auralis-text-sm); text-align:center; }
+    .tabs button { min-height:var(--auralis-target); color:var(--auralis-muted); }
     .tabs button.active { color:var(--auralis-text); }
     @container (max-width:520px) { .rooms.fixed { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @container (max-width:330px) {
       .room { padding:11px 10px 9px; }
       .room-value strong { font-size:25px; }
       .room-value small { display:none; }
-      .band-label { padding:3px 7px; font-size:9px; }
+      .band-label { padding:3px 7px; }
     }
     @container (max-width:250px) { .rooms, .rooms.fixed { grid-template-columns:1fr; } }
   `];
@@ -277,13 +325,23 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
   private historyRequest?: { key: string; time: number };
   private detailRequest?: { key: string; time: number };
 
-  static getStubConfig(): Partial<ClimateCardConfig> {
-    return { name: "Températures", theme: "carbon", rooms: [{ name: "Salon", temperature_entity: "sensor.salon_temperature", humidity_entity: "sensor.salon_humidity" }] };
+  static getStubConfig(hass?: HomeAssistant): Partial<ClimateCardConfig> {
+    const temperatures = Object.values(hass?.states ?? {})
+      .filter((state) => SENSOR_ID.test(state.entity_id) && state.attributes.device_class === "temperature")
+      .slice(0, 3)
+      .map((state) => ({ temperature_entity: state.entity_id }));
+    return {
+      name: "Températures",
+      theme: "carbon",
+      rooms: temperatures.length
+        ? temperatures
+        : [{ name: "Salon", temperature_entity: "sensor.salon_temperature", humidity_entity: "sensor.salon_humidity" }],
+    };
   }
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", theme: "Thème", rooms: "Pièces (name, temperature_entity, humidity_entity, battery_entity, outdoor)",
+      name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème", rooms: "Pièces (name, temperature_entity, humidity_entity, battery_entity, outdoor)",
       columns: "Colonnes (vide = automatique)", graph_hours: "Durée des courbes (heures)", low_battery: "Seuil de batterie faible (%)",
       show_summary: "Afficher le résumé", thresholds: "Paliers de couleur intérieurs", outdoor_thresholds: "Paliers de couleur extérieurs",
       accent_color: "Couleur d’accent", background_image: "Image de fond", background_position: "Cadrage de l’image",
@@ -297,6 +355,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
         { name: "graph_hours", selector: { number: { min: 1, max: 168, step: 1, mode: "box" } } },
         { name: "low_battery", selector: { number: { min: 0, max: 100, step: 1, mode: "slider" } } },
         { name: "show_summary", selector: { boolean: {} } },
+        { name: "show_header", selector: { boolean: {} } },
         { name: "thresholds", selector: { object: {} } },
         { name: "outdoor_thresholds", selector: { object: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
@@ -364,7 +423,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     await Promise.all([this.refreshHistory(), this.refreshDetail()]);
   }
 
-  private async fetchSeries(ids: string[], hours: number, buckets: number, time: number): Promise<Record<string, Series>> {
+  private async fetchSeries(ids: string[], hours: number, buckets: number, time: number): Promise<Pick<HistoryState, "series" | "stats">> {
     const start = time - hours * HOUR;
     const result = await this.hass!.callWS!<Record<string, unknown>>({
       type: "history/history_during_period",
@@ -376,7 +435,12 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
       minimal_response: true,
       no_attributes: true,
     });
-    return Object.fromEntries(ids.map((id) => [id, resampleHistory(parseHistory(result?.[id]), start, time, buckets)]));
+    const points = Object.fromEntries(ids.map((id) => [id, parseHistory(result?.[id])]));
+    return {
+      // Les intervalles ne servent qu'au tracé ; les statistiques viennent des mesures brutes.
+      series: Object.fromEntries(ids.map((id) => [id, resampleHistory(points[id], start, time, buckets)])),
+      stats: Object.fromEntries(ids.map((id) => [id, pointStats(points[id], start, time)])),
+    };
   }
 
   /** Courbes des tuiles : un seul appel pour toutes les températures, rafraîchi toutes les cinq minutes. */
@@ -395,9 +459,9 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const request = { key, time };
     this.historyRequest = request;
     try {
-      const series = await this.fetchSeries(ids, hours, TILE_BUCKETS, time);
+      const loaded = await this.fetchSeries(ids, hours, TILE_BUCKETS, time);
       if (this.historyRequest !== request) return;
-      this.history = { key, time, hours, series };
+      this.history = { key, time, hours, ...loaded };
       this.historyError = false;
     } catch {
       if (this.historyRequest === request) this.historyError = true;
@@ -420,9 +484,9 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const request = { key, time };
     this.detailRequest = request;
     try {
-      const series = await this.fetchSeries(ids, hours, DETAIL_BUCKETS, time);
+      const loaded = await this.fetchSeries(ids, hours, DETAIL_BUCKETS, time);
       if (this.detailRequest !== request) return;
-      this.detail = { key, time, hours, series };
+      this.detail = { key, time, hours, ...loaded };
       this.detailError = false;
     } catch {
       if (this.detailRequest === request) this.detailError = true;
@@ -514,7 +578,8 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
   private renderRoom(view: RoomView): TemplateResult {
     const hours = this.history?.hours ?? this.config?.graph_hours ?? 24;
     const values = this.withCurrent(this.history?.series[view.room.temperature_entity], view.temperature);
-    const stats = seriesStats(values);
+    const raw = this.history?.stats[view.room.temperature_entity];
+    const stats = raw ? withCurrentStats(raw, view.temperature) : undefined;
     const [min, max] = chartRange(values);
     const { line, area } = chartPaths(values, 100, 34, min, max);
     const gradient = `spark-${view.index}`;
@@ -586,8 +651,9 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const end = loaded?.time ?? Date.now();
     const temperatures = this.withCurrent(loaded?.series[view.room.temperature_entity], view.temperature);
     const humidities = view.room.humidity_entity ? this.withCurrent(loaded?.series[view.room.humidity_entity], view.humidity) : [];
-    const stats = seriesStats(temperatures);
-    const stat = (label: string, value?: number) => html`<div class="dialog-stat" style=${`--band:${temperatureBand(value, view.thresholds)?.color ?? "#f4f8fc"}`}>
+    const raw = loaded?.stats[view.room.temperature_entity];
+    const stats = raw ? withCurrentStats(raw, view.temperature) : undefined;
+    const stat = (label: string, value?: number) => html`<div class="dialog-stat" style=${`--band:${temperatureBand(value, view.thresholds)?.color ?? "var(--auralis-text)"}`}>
       <strong>${this.temperature(value, view.unit)}</strong><small>${label}</small></div>`;
     const context = [
       view.available ? view.band?.label : "Capteur indisponible",
@@ -629,14 +695,15 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const status = available === views.length
       ? `${views.length} pièce${views.length > 1 ? "s" : ""} · courbes sur ${this.periodLabel(hours)}`
       : `${available} capteur${available > 1 ? "s" : ""} sur ${views.length} disponible${available > 1 ? "s" : ""}`;
-    return html`<ha-card><div class="machine-shell climate-shell ${this.machineGridClass()}" style=${this.machineStyle("#79d6f2")}>
+    const image = Boolean(config.background_image?.trim());
+    return html`<ha-card><div class="machine-shell climate-shell ${image ? "has-image" : ""} ${this.machineGridClass()}" style=${this.machineStyle("#79d6f2")}>
       <div class="machine-content climate-content">
-        <header class="machine-header climate-header">
+        ${config.show_header !== false ? html`<header class="machine-header climate-header">
           <span class="badge"><ha-icon .icon=${config.icon || "mdi:home-thermometer-outline"}></ha-icon></span>
           <div class="title-wrap"><h2>${config.name}</h2>
             <div class="machine-status"><span class="dot ${available === views.length ? "healthy" : available ? "warning" : "danger"}"></span>${status}</div>
           </div>
-        </header>
+        </header>` : nothing}
         ${this.renderSummary(views)}
         <div class="rooms ${config.columns ? "fixed" : ""}" style=${config.columns ? `--climate-columns:${config.columns}` : ""}>
           ${views.map((view) => this.renderRoom(view))}

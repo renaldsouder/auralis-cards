@@ -79,3 +79,75 @@ describe("Auralis lights card", () => {
     expect(callService).toHaveBeenNthCalledWith(2, "light", "turn_on", { rgb_color: [255, 128, 64] }, { entity_id: ["light.rgb"] });
   });
 });
+
+describe("Auralis lights card targets and options", () => {
+  const light = (entity_id: string, state: string, attributes: Record<string, unknown> = {}) => ({ entity_id, state, attributes });
+
+  it("adjusts only the lights that are on, or every compatible light when all are off", async () => {
+    const module = await import("../src/cards/auralis-lights-card");
+    const hass: HomeAssistant = {
+      states: {
+        "light.on": light("light.on", "on", { brightness: 80, supported_color_modes: ["brightness"] }),
+        "light.off": light("light.off", "off", { supported_color_modes: ["brightness"] }),
+        "light.relay": light("light.relay", "on", { supported_color_modes: ["onoff"] }),
+        "light.lost": light("light.lost", "unavailable", { supported_color_modes: ["brightness"] }),
+        "switch.porch": light("switch.porch", "on"),
+      },
+      callService: vi.fn(),
+    };
+    const ids = Object.keys(hass.states);
+    expect(module.brightnessTargets(hass, ids)).toEqual(["light.on"]);
+    hass.states["light.on"] = light("light.on", "off", { supported_color_modes: ["brightness"] });
+    expect(module.brightnessTargets(hass, ids)).toEqual(["light.on", "light.off"]);
+  });
+
+  it("sends white presets as a colour temperature to compatible lights", async () => {
+    const module = await import("../src/cards/auralis-lights-card");
+    const callService = vi.fn(async () => undefined);
+    const hass: HomeAssistant = {
+      states: {
+        "light.ct": light("light.ct", "on", { supported_color_modes: ["color_temp", "hs"] }),
+        "light.rgb": light("light.rgb", "on", { supported_color_modes: ["rgb"] }),
+      },
+      callService,
+    };
+    await module.applyLightPreset(hass, ["light.ct", "light.rgb"], { name: "Blanc chaud", color: "#ffd4a3", kelvin: 2700 });
+    expect(callService).toHaveBeenCalledWith("light", "turn_on", { color_temp_kelvin: 2700 }, { entity_id: ["light.ct"] });
+    expect(callService).toHaveBeenCalledWith("light", "turn_on", { rgb_color: [255, 212, 163] }, { entity_id: ["light.rgb"] });
+    callService.mockClear();
+    await module.applyLightPreset(hass, ["light.ct", "light.rgb"], { name: "Rose", color: "#ff7eb8" });
+    expect(callService).toHaveBeenCalledTimes(1);
+    expect(callService).toHaveBeenCalledWith("light", "turn_on", { rgb_color: [255, 126, 184] }, { entity_id: ["light.ct", "light.rgb"] });
+  });
+
+  it("accepts background_image as an alias of image, the card image as fallback, and /api/ paths", async () => {
+    const module = await import("../src/cards/auralis-lights-card");
+    expect(module.groupImageStyle({ image: "/local/salon.jpg" })).toContain('url("/local/salon.jpg")');
+    expect(module.groupImageStyle({ background_image: "/api/image/serve/abc/512x512" })).toContain("/api/image/serve/abc/512x512");
+    expect(module.groupImageStyle({}, "https://exemple.fr/photo.jpg")).toContain("https://exemple.fr/photo.jpg");
+    expect(module.groupImageStyle({ image: "media-source://media_source/local/salon.jpg" })).toBe("");
+    expect(module.groupImageStyle({ image: "/local/a.jpg\");color:red" })).toBe("");
+  });
+
+  it("offers a valid stub, sizes to its content and closes the scenes popup only on success", async () => {
+    vi.stubGlobal("window", globalThis);
+    const stub = LightsCard.getStubConfig({ states: { "light.salon": light("light.salon", "off") }, callService: vi.fn() });
+    expect(stub.lights).toEqual(["light.salon"]);
+    const card = new LightsCard();
+    expect(() => card.setConfig({ type: "custom:auralis-lights-card", ...stub })).not.toThrow();
+    expect(() => card.setConfig({ type: "custom:auralis-lights-card", ...LightsCard.getStubConfig() })).not.toThrow();
+    expect(card.getGridOptions()).toEqual({ columns: 6, min_columns: 3 });
+    const callService = vi.fn(async (): Promise<unknown> => { throw new Error("refusé"); });
+    card.hass = { states: {}, callService };
+    const internals = card as unknown as { dialog: string | null; activateScene(scene: { entity: string }): Promise<void> };
+    internals.dialog = "scenes:0";
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await internals.activateScene({ entity: "scene.cosy" });
+    expect(internals.dialog).toBe("scenes:0");
+    callService.mockImplementation(async () => undefined);
+    await internals.activateScene({ entity: "scene.cosy" });
+    expect(internals.dialog).toBeNull();
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+});
