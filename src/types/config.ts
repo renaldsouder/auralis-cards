@@ -121,6 +121,8 @@ export interface RoomClimatePopupConfig {
 export interface RoomCardConfig extends BaseCardConfig {
   type: "custom:auralis-room-card";
   subtitle?: string;
+  /** Masque l'en-tête (icône, nom, sous-titre, pastilles de climat) avec `false`. */
+  show_header?: boolean;
   lights?: string[];
   covers?: string[];
   left_controls?: RoomSideControlConfig[];
@@ -152,6 +154,10 @@ export interface CoversCardConfig extends BaseCardConfig {
   type: "custom:auralis-covers-card";
   groups: CoversGroupConfig[];
   group_columns?: number;
+  /** Alias de `group_columns`. */
+  columns?: number;
+  /** En-tête (icône, nom, état) : affiché par défaut quand `name` est renseigné. */
+  show_header?: boolean;
   entity_labels?: Record<string, string>;
 }
 
@@ -168,6 +174,8 @@ export interface SwitchesCardConfig extends BaseCardConfig {
   switches?: string[];
   groups?: SwitchesGroupConfig[];
   group_columns?: number;
+  /** Alias de `group_columns`. */
+  columns?: number;
   show_header?: boolean;
   show_group_label?: boolean;
   entity_labels?: Record<string, string>;
