@@ -1,29 +1,35 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, météo, caméras, ampli et multimédia, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, météo, caméras, ampli et multimédia, frigo connecté, arrosage, piles et appareils muets, onglets, veille d’écran, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
 ## Cartes disponibles
 
-- `custom:auralis-room-card`
-- `custom:auralis-covers-card`
-- `custom:auralis-switches-card`
-- `custom:auralis-navbar-card`
-- `custom:auralis-pc-card`
-- `custom:auralis-unraid-card`
-- `custom:auralis-proxmox-card`
-- `custom:auralis-lights-card`
-- `custom:auralis-thermostat-card`
-- `custom:auralis-fridge-card`
-- `custom:auralis-energy-card`
-- `custom:auralis-climate-card`
-- `custom:auralis-weather-card`
-- `custom:auralis-actions-card`
-- `custom:auralis-cameras-card`
-- `custom:auralis-media-card`
+| Carte | Rôle | Documentation |
+| --- | --- | --- |
+| `custom:auralis-room-card` | Pièce tout-en-un : lumières, volets, climat, musique, ambiances | [Exemple](#exemple-minimal--pièce) |
+| `custom:auralis-lights-card` | Éclairage par groupes, couleurs, blancs et ambiances | [LIGHTS_CARD](docs/LIGHTS_CARD.md) |
+| `custom:auralis-covers-card` | Groupes de volets, position volet par volet | [Volets](#carte-volets) |
+| `custom:auralis-switches-card` | Prises et interrupteurs groupés | [Prises](#carte-prises-et-interrupteurs) |
+| `custom:auralis-thermostat-card` | Consignes et modes des thermostats | [THERMOSTAT_CARD](docs/THERMOSTAT_CARD.md) |
+| `custom:auralis-climate-card` | Températures, humidité et piles des pièces | [CLIMATE_CARD](docs/CLIMATE_CARD.md) |
+| `custom:auralis-weather-card` | Horloge, météo et prévisions | [WEATHER_CARD](docs/WEATHER_CARD.md) |
+| `custom:auralis-media-card` | Ampli, enceintes, télévision | [MEDIA_CARD](docs/MEDIA_CARD.md) |
+| `custom:auralis-cameras-card` | Mosaïque de caméras, mouvement, direct | [CAMERAS_CARD](docs/CAMERAS_CARD.md) |
+| `custom:auralis-actions-card` | Scripts, boutons et scènes à un appui | [ACTIONS_CARD](docs/ACTIONS_CARD.md) |
+| `custom:auralis-energy-card` | Consommation du jour, comparaison à J−7, coût | [ENERGY_CARD](docs/ENERGY_CARD.md) |
+| `custom:auralis-fridge-card` | Frigo connecté : températures, portes, alertes | [FRIDGE_CARD](docs/FRIDGE_CARD.md) |
+| `custom:auralis-irrigation-card` | Vannes d'arrosage, arrosage minuté sûr | [IRRIGATION_CARD](docs/IRRIGATION_CARD.md) |
+| `custom:auralis-batteries-card` | Piles faibles et appareils indisponibles, sans configuration | [BATTERIES_CARD](docs/BATTERIES_CARD.md) |
+| `custom:auralis-pc-card` | Suivi et commandes d'un ordinateur | [PC](#exemple-minimal--pc) |
+| `custom:auralis-unraid-card` | Serveur UNRAID : array, Docker, VM | [UNRAID](#exemple-minimal--unraid) |
+| `custom:auralis-proxmox-card` | Nœud ou cluster Proxmox, VM et LXC | [Proxmox](#exemple-minimal--proxmox) |
+| `custom:auralis-navbar-card` | Barre de navigation entre les vues | [Navigation](#exemple-minimal--navigation) |
+| `custom:auralis-tabs-card` | Plusieurs cartes sous des onglets | [TABS_CARD](docs/TABS_CARD.md) |
+| `custom:auralis-screensaver-card` | Veille d'écran pour tablette murale | [SCREENSAVER_CARD](docs/SCREENSAVER_CARD.md) |
 
-Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
+Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora` (voir [Thèmes](#thèmes)).
 
 Le design cinématique accepte une image locale facultative avec `background_image`. Placez l'image dans `config/www/`, puis utilisez une URL `/local/...`. Sans image, une ambiance abstraite sombre est affichée automatiquement.
 
@@ -49,6 +55,32 @@ glass_opacity: 0.84
 `card_background.color` est utilisé avec `mode: solid` ou `mode: grid`. `card_background.gradient` est utilisé avec `mode: gradient`. `show_grid` permet d'afficher ou masquer les lignes sans changer le fond choisi.
 
 Le [cahier des charges](docs/CAHIER_DES_CHARGES.md) décrit le périmètre et les choix fonctionnels.
+
+## Comportements communs
+
+Toutes les cartes partagent les mêmes règles :
+
+- **Commandes** : un bouton montre l'état « en cours » pendant l'appel. Si Home Assistant refuse la commande, un message l'indique quelques secondes en haut de l'écran. Un bouton jamais pressé (état `unknown`) reste utilisable ; seule une entité `unavailable` désactive la commande.
+- **Fiche de l'entité** : un appui long ou un clic droit sur une ligne ouvre la fiche Home Assistant de l'entité.
+- **Fenêtres de détail** : Échap ou le geste retour les ferment, et le focus revient au bouton qui les a ouvertes.
+- **Mises à jour** : une carte ne se redessine que lorsqu'une entité qu'elle affiche change, ce qui ménage les tablettes allumées en permanence.
+- **Seuils d'alerte** : les mesures des cartes machines passent en ambre puis en rouge au-delà de leurs seuils. Les valeurs par défaut se règlent avec `alert_levels` :
+
+```yaml
+alert_levels:
+  cpu: { warning: 80, critical: 95 }        # %
+  memory: { warning: 85, critical: 95 }     # %
+  disk: { warning: 85, critical: 95 }       # %
+  temperature: { warning: 70, critical: 85 } # °C
+```
+
+## Thèmes
+
+Chaque carte accepte `theme` : `halo` (clair), `aurora` (clair, teinté), `carbon` (sombre) ou `mono` (sombre, sans couleur). Avec `auto`, la valeur par défaut, la carte suit le mode sombre de Home Assistant : `carbon` s'il est actif, `halo` sinon.
+
+Les surfaces planes suivent le thème : fond de carte, tuiles, lignes, puces, en-têtes, fenêtres de détail, confirmations et formulaires. Une fenêtre ouverte depuis une carte `halo` ou `aurora` est donc claire.
+
+Les façades photo restent sombres dans tous les thèmes, avec un texte clair : façade des cartes PC, UNRAID, Proxmox et Frigo, ciel de la carte Météo, pochette de la carte Multimédia, images des caméras, photo de la carte Pièce et tuiles photo des volets et des prises. Une image n'a pas de couleur fixe : le voile sombre garantit la lecture quelle que soit la photo. Les couleurs vives (seuils de température, conditions météo, accents) sont assombries automatiquement quand elles servent de texte sur un fond clair.
 
 ## Développement
 
@@ -203,6 +235,34 @@ grid_options:
   columns: 12
   rows: auto
 ```
+
+### Pièce remplie depuis une zone Home Assistant
+
+Avec `area`, la carte reprend les appareils d'une zone (pièce) de Home Assistant : plus besoin de lister chaque entité.
+
+```yaml
+type: custom:auralis-room-card
+area: salon            # identifiant ou nom de la zone, sans tenir compte de la casse
+# Facultatif :
+# area_exclude:        # entités de la zone à ignorer (identifiants ou motifs avec * et ?)
+#   - light.veilleuse_*
+#   - media_player.salon_groupe
+# area_include_switches: true   # reprend aussi les interrupteurs switch.* (hors prises) comme lumières
+```
+
+Une entité appartient à la zone quand elle y est rattachée directement, ou, à défaut, quand son appareil l'est. Les entités masquées, désactivées, de configuration ou de diagnostic sont ignorées. Chaque option **non renseignée** (ou laissée vide) est remplie :
+
+| Option | Reprise depuis la zone |
+| --- | --- |
+| `name` | nom de la zone |
+| `lights` | lumières `light.*`, triées par nom ; un groupe de lumières de la zone remplace ses membres. Avec `area_include_switches: true`, les `switch.*` qui ne sont pas des prises (`device_class: outlet`) |
+| `covers` | volets `cover.*`, sauf portes de garage et portails (`device_class: garage` ou `gate`) |
+| `temperature_entity` / `humidity_entity` | premier capteur de classe `temperature` / `humidity`, en évitant ceux dont le nom contient « batterie » ou « battery » |
+| `climate_entity` | premier thermostat `climate.*` |
+| `media_player_entity` | premier lecteur `media_player.*` qui n'est pas une télévision |
+| `right_controls` | si la zone contient une télévision (`device_class: tv`) et que `right_controls` n'est pas défini : le lecteur puis une commande `tv` |
+
+Une option renseignée l'emporte toujours sur la zone ; pour ne retirer que certains appareils, utilisez `area_exclude` (par exemple `light.*` pour n'afficher aucune lumière). Si la zone n'existe pas, ou si elle ne contient ni lumière, ni volet, ni capteur, la carte affiche un message explicite à la place de la pièce. Les zones nécessitent Home Assistant 2023.x ou plus récent. Toutes les autres options (photo, ambiances, thermostat, libellés…) restent disponibles.
 
 Une version autonome, limitée à la carte Salon, est disponible dans [`examples/salon-card.yaml`](examples/salon-card.yaml).
 
@@ -361,7 +421,7 @@ show_grid: false
 background_image: /local/auralis-cards/images/pc-bureau.jpg
 background_position: center
 image_opacity: 35
-online_entity: binary_sensor.pc_bureau_online
+status_entity: binary_sensor.pc_bureau_online # online_entity reste accepté
 session_entity: sensor.pc_bureau_session
 uptime_entity: sensor.pc_bureau_uptime
 cpu_entity: sensor.pc_bureau_cpu

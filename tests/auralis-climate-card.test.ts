@@ -84,6 +84,26 @@ describe("Auralis climate card", () => {
     expect(climate.seriesStats([undefined])).toBeUndefined();
   });
 
+  it("computes min, max and mean on the raw readings, not on the interval averages", () => {
+    const points = [
+      { time: -50, value: 18 },
+      { time: 100, value: 30 },
+      { time: 110, value: 20 },
+      { time: 900, value: 99 },
+    ];
+    // Les moyennes par intervalle écrêtent le pic de 30 ; les mesures brutes le gardent.
+    const buckets = climate.resampleHistory(points, 0, 400, 4);
+    expect(climate.seriesStats(buckets)?.max).toBe(25);
+    const stats = climate.pointStats(points, 0, 400);
+    expect(stats?.min).toBe(18);
+    expect(stats?.max).toBe(30);
+    // Moyenne pondérée par la durée : 18 pendant 100, 30 pendant 10, 20 pendant 290.
+    expect(stats?.mean).toBeCloseTo((18 * 100 + 30 * 10 + 20 * 290) / 400, 6);
+    expect(climate.pointStats([], 0, 400)).toBeUndefined();
+    expect(climate.withCurrentStats(stats, 31)).toMatchObject({ min: 18, max: 31 });
+    expect(climate.withCurrentStats(undefined, 21)).toEqual({ min: 21, max: 21, mean: 21 });
+  });
+
   it("draws within the chart box and widens flat series", () => {
     expect(climate.chartRange([20, 20, 20])).toEqual([18.8, 21.2]);
     const [min, max] = climate.chartRange([10, 20]);

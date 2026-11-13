@@ -2,7 +2,7 @@
 
 La carte `custom:auralis-actions-card` réunit des actions à un appui : lancer un script, appuyer sur un bouton, activer une scène, déclencher une automatisation, basculer un interrupteur ou ouvrir une vue.
 
-Chaque tuile montre l'état utile de l'action : « Utilisé il y a 2 j » pour un bouton, « Lancé il y a 3 h » pour un script, « Allumé » pour un interrupteur. Pendant l'exécution, une roue tourne autour de l'icône. Ensuite, la tuile indique « Fait » en vert ou « Échec » en rouge pendant quelques secondes.
+Chaque tuile montre l'état utile de l'action : « Utilisé il y a 2 j » pour un bouton, « Lancé il y a 3 h » pour un script, « Allumé » pour un interrupteur. Pendant l'exécution, une roue tourne autour de l'icône. Ensuite, la tuile indique « Fait » en vert ou « Échec » en rouge pendant quelques secondes ; un échec affiche aussi un message en haut de l'écran avec la raison donnée par Home Assistant.
 
 ## Installation
 
@@ -19,14 +19,14 @@ Dans l'éditeur visuel, Home Assistant propose la carte quand vous partez d'une 
 | `entity` | Entité visée. Son domaine choisit l'action par défaut (tableau ci-dessous) et son état s'affiche sur la tuile. |
 | `name` | Nom affiché. Sans cette option, le nom Home Assistant de l'entité est utilisé. |
 | `icon` | Icône. Sans cette option : icône de l'entité, puis icône du domaine. |
-| `color` | Couleur de la tuile. Sans cette option, une couleur par domaine. |
+| `color` | Couleur de la tuile. Sans cette option : `accent_color` de la carte s'il est défini, sinon une couleur par domaine. |
 | `state_entity` | Entité dont l'état est affiché à la place, par exemple un `binary_sensor` qui indique si une machine répond. |
 | `confirm` | `true`, ou le texte de la question, pour demander une confirmation avant d'agir. |
-| `danger` | `true` pour un bouton de confirmation rouge (redémarrage, coupure). |
+| `danger` | `true` pour un bouton de confirmation rouge (redémarrage, coupure). Sans cette option, le bouton de confirmation reste neutre. |
 | `service` | Service à appeler, au format `domaine.service`, à la place de l'action par défaut. |
 | `data` | Données envoyées au service. |
 | `target` | Cible du service. Par défaut, l'entité `entity`. |
-| `navigation_path` | Ouvre une vue du tableau de bord, par exemple `/dashboard-maison/cameras`. |
+| `navigation_path` | Ouvre une vue du tableau de bord, par exemple `/dashboard-maison/cameras`. Le chemin doit commencer par une seule barre oblique : `//site` ou une adresse `https://` sont refusés. |
 
 Options de la carte :
 
@@ -38,7 +38,7 @@ Options de la carte :
 | `columns` | automatique | Nombre de colonnes des tuiles, de 1 à 6. La carte repasse à deux colonnes sur un téléphone. |
 | `show_header` | si `name` est défini | Force l'affichage ou le masquage de l'en-tête. |
 
-Les options visuelles communes `theme`, `accent_color`, `card_background`, `show_grid` et `glass_opacity` sont acceptées.
+Les options visuelles communes `theme`, `accent_color`, `card_background`, `background_image`, `show_grid` et `glass_opacity` sont acceptées. La carte suit les couleurs du thème choisi (clair avec `halo` et `aurora`, sombre avec `carbon` et `mono`) ; `accent_color` colore l'en-tête et devient la couleur des tuiles sans `color`.
 
 ## Action par défaut selon le domaine
 
@@ -57,8 +57,9 @@ Une tuile est mise en avant (icône pleine et halo) quand l'entité affichée es
 ## Gestes
 
 - **Appui** : lance l'action, ou ouvre la confirmation si `confirm` est défini.
-- **Appui long ou clic droit** : ouvre la fiche Home Assistant de l'entité affichée.
-- Une tuile dont l'entité est indisponible est grisée et ne réagit pas.
+- **Appui long ou clic droit** : ouvre la fiche Home Assistant de l'entité affichée, même quand la tuile est indisponible.
+- Une tuile dont l'entité est indisponible est grisée et l'appui simple ne fait rien. Une entité absente de Home Assistant affiche « Entité introuvable ».
+- **Échap** ferme la confirmation.
 
 ## Exemple
 

@@ -1,9 +1,14 @@
 import { css, html, nothing, type TemplateResult } from "lit";
-import { AuralisBaseCard } from "./auralis-base-card";
+import { AuralisBaseCard, configuredAccent, configuredBackground, type ConfirmState } from "./auralis-base-card";
 import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
-import { fireMoreInfo } from "../utils/actions";
 import { domainOf, entity, friendlyName, isAvailable } from "../utils/entities";
+import { relativeTime } from "../utils/format";
+import { isInternalPath, navigate } from "../utils/navigation";
+import { optionalMatch, safeColor } from "../utils/validate";
+import { BOOLEAN, ENTITY, ICON, listSelector, TEXT, YAML, type FormListField } from "../utils/form";
+
+export { relativeTime } from "../utils/format";
 
 export interface ActionItemConfig {
   name?: string;
@@ -32,18 +37,33 @@ export interface ActionsCardConfig extends BaseCardConfig {
   show_header?: boolean;
 }
 
+/** Champs d'une action dans l'éditeur visuel (`data` et `target` restent en YAML). */
+export const ACTION_ITEM_FIELDS: Record<string, FormListField> = {
+  name: { label: "Nom", selector: TEXT },
+  entity: { label: "Entité visée", selector: ENTITY },
+  icon: { label: "Icône", selector: ICON },
+  color: { label: "Couleur (#RRGGBB)", selector: TEXT },
+  state_entity: { label: "Entité dont l’état est affiché", selector: ENTITY },
+  service: { label: "Service (domaine.service)", selector: TEXT },
+  data: { label: "Données du service (YAML)", selector: YAML },
+  target: { label: "Cible du service (YAML)", selector: YAML },
+  navigation_path: { label: "Vue à ouvrir (/chemin)", selector: TEXT },
+  confirm: { label: "Confirmation : question à poser (vide = aucune, « oui » = question par défaut)", selector: TEXT },
+  danger: { label: "Bouton de confirmation rouge", selector: BOOLEAN },
+};
+
 export type ResolvedAction =
   | { kind: "service"; domain: string; service: string; data: Record<string, unknown>; target?: Record<string, unknown> }
   | { kind: "navigate"; path: string }
   | { kind: "more-info"; entity: string };
 
-type RunStatus = "pending" | "done" | "error";
+export type RunStatus = "pending" | "done" | "error";
 
 const ENTITY_ID = /^[a-z_]+\.[a-z0-9_]+$/;
 const SERVICE_ID = /^[a-z_]+\.[a-z0-9_]+$/;
-const SAFE_COLOR = /^[#\w(),.%\s-]+$/;
 const FEEDBACK_DELAY = 2_500;
 const HOLD_DELAY = 550;
+const DEFAULT_TONE = "#79d6f2";
 
 const DOMAIN_COLORS: Record<string, string> = {
   button: "#ff8a5b", input_button: "#ff8a5b", script: "#b79cff", scene: "#ffb454", automation: "#5bb8ff",
@@ -57,7 +77,27 @@ const DOMAIN_ICONS: Record<string, string> = {
   lock: "mdi:lock-outline", media_player: "mdi:play-circle-outline", siren: "mdi:alarm-light-outline",
 };
 const TOGGLE_DOMAINS = new Set(["switch", "light", "input_boolean", "fan", "cover", "media_player", "siren", "humidifier"]);
-const ON_STATES = new Set(["on", "open", "opening", "unlocked", "playing", "home", "active", "running"]);
+/** États « allumés » d'une action, partagés avec les commandes de la carte Caméras. */
+export const ON_STATES: ReadonlySet<string> = new Set(["on", "open", "opening", "unlocked", "playing", "home", "active", "running"]);
+
+/** Entrée d'action valide : une cible (entité, service ou vue) et des options bien formées. */
+export function isValidActionItem(item: ActionItemConfig | null | undefined): boolean {
+  return Boolean(item) && typeof item === "object"
+    && Boolean(item!.entity || item!.service || item!.navigation_path)
+    && optionalMatch(item!.entity, ENTITY_ID) && optionalMatch(item!.state_entity, ENTITY_ID) && optionalMatch(item!.service, SERVICE_ID)
+    && (item!.navigation_path === undefined || item!.navigation_path === "" || isInternalPath(item!.navigation_path))
+    && (item!.data === undefined || (typeof item!.data === "object" && item!.data !== null && !Array.isArray(item!.data)))
+    && (item!.target === undefined || (typeof item!.target === "object" && item!.target !== null && !Array.isArray(item!.target)));
+}
+
+/** Entrée nettoyée : couleur acceptée seulement si elle est sûre à injecter dans un style. */
+export function normalizeActionItem(item: ActionItemConfig): ActionItemConfig {
+  // L'éditeur visuel saisit la confirmation comme un texte : « non » ou un champ vide la retirent.
+  const confirm = typeof item.confirm === "string" && /^(\s*|false|non|no|faux)$/i.test(item.confirm.trim())
+    ? false
+    : item.confirm;
+  return { ...item, color: safeColor(item.color), confirm };
+}
 
 /** Action exécutée par un appui : service explicite, navigation, action par défaut du domaine, ou fiche de l'entité. */
 export function resolveAction(item: ActionItemConfig, state?: HassEntity): ResolvedAction | undefined {
@@ -77,19 +117,6 @@ export function resolveAction(item: ActionItemConfig, state?: HassEntity): Resol
   if (domain === "lock") return call(state?.state === "locked" ? "unlock" : "lock");
   if (TOGGLE_DOMAINS.has(domain)) return call("toggle");
   return { kind: "more-info", entity: item.entity };
-}
-
-/** Durée écoulée en français court : « à l’instant », « il y a 5 min », « hier »… */
-export function relativeTime(time: number, now: number): string {
-  const seconds = Math.round((time - now) / 1000);
-  if (!Number.isFinite(seconds)) return "";
-  if (Math.abs(seconds) < 45) return "à l’instant";
-  const format = new Intl.RelativeTimeFormat("fr", { numeric: "auto", style: "short" });
-  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [["minute", 60], ["hour", 3_600], ["day", 86_400], ["month", 2_592_000], ["year", 31_536_000]];
-  const limits = [3_600, 86_400, 2_592_000, 31_536_000, Number.POSITIVE_INFINITY];
-  const index = limits.findIndex((limit) => Math.abs(seconds) < limit);
-  const [unit, size] = units[index];
-  return format.format(Math.round(seconds / size), unit);
 }
 
 function timestamp(value: unknown): number | undefined {
@@ -132,51 +159,200 @@ export function isOn(state?: HassEntity): boolean {
   return ON_STATES.has(state.state);
 }
 
+/** Nom affiché d'une action : le sien, celui de l'entité, ou une description de ce qu'elle fait. */
+export function actionLabel(item: ActionItemConfig, hass?: HomeAssistant): string {
+  if (item.name?.trim()) return item.name.trim();
+  if (item.entity) return friendlyName(entity(hass, item.entity), item.entity);
+  return item.navigation_path ? "Ouvrir" : item.service ?? "Action";
+}
+
+/** Icône d'une action : la sienne, celle de l'entité, puis celle du domaine. */
+export function actionIcon(item: ActionItemConfig, hass?: HomeAssistant): string {
+  const state = entity(hass, item.state_entity || item.entity);
+  const own = entity(hass, item.entity)?.attributes.icon;
+  return item.icon || (typeof own === "string" ? own : undefined) || (typeof state?.attributes.icon === "string" ? state.attributes.icon : undefined)
+    || (item.navigation_path && !item.entity ? "mdi:arrow-right-circle-outline" : DOMAIN_ICONS[domainOf(item.entity ?? item.service)] ?? "mdi:gesture-tap");
+}
+
+/** Couleur d'une action : la sienne, sinon `accent` (accent_color de la carte), sinon celle du domaine. */
+export function actionTone(item: ActionItemConfig, accent?: string): string {
+  return item.color ?? accent ?? (item.navigation_path && !item.entity ? DEFAULT_TONE : DOMAIN_COLORS[domainOf(item.entity ?? item.service)] ?? DEFAULT_TONE);
+}
+
+/** Entité de l'action absente de Home Assistant, ou indisponible : l'appui est refusé. */
+export function actionUnavailable(item: ActionItemConfig, hass?: HomeAssistant): boolean {
+  const own = entity(hass, item.entity);
+  return Boolean(item.entity) && (!own || own.state === "unavailable");
+}
+
+/**
+ * Confirmation d'une action : question personnalisée ou « Lancer « … » ? ». Le bouton n'est
+ * rouge qu'avec `danger: true` ; sinon il reste neutre.
+ */
+export function actionConfirmation(item: ActionItemConfig, label: string, action: () => Promise<unknown> | void): ConfirmState {
+  return {
+    title: label,
+    message: confirmQuestion(item.confirm) ?? `Lancer « ${label} » ?`,
+    confirmLabel: "Confirmer",
+    danger: item.danger === true,
+    action,
+  };
+}
+
+/** Ce dont le lanceur d'actions a besoin de la carte qui l'utilise. */
+export interface ActionHost {
+  hass?: HomeAssistant;
+  moreInfo(entityId: string): void;
+  navigate(path: string): unknown;
+  isPending(key: string): boolean;
+  runCommand(key: string, action: () => Promise<unknown>, options: { errorMessage?: string }): Promise<boolean>;
+}
+
+/**
+ * Lanceur commun aux cartes Actions et Caméras : appelle le service (avec état « en cours »
+ * et message d'erreur visible), ouvre la vue ou la fiche. Retourne le résultat d'un service.
+ */
+export async function runActionItem(host: ActionHost, key: string, item: ActionItemConfig, label: string): Promise<"done" | "error" | undefined> {
+  const hass = host.hass;
+  if (!hass || host.isPending(key)) return undefined;
+  const action = resolveAction(item, entity(hass, item.entity));
+  if (!action) return undefined;
+  if (action.kind === "more-info") {
+    host.moreInfo(action.entity);
+    return undefined;
+  }
+  if (action.kind === "navigate") {
+    await host.navigate(action.path);
+    return undefined;
+  }
+  const ok = await host.runCommand(key, () => hass.callService(action.domain, action.service, action.data, action.target), {
+    errorMessage: `« ${label} » a échoué.`,
+  });
+  return ok ? "done" : "error";
+}
+
+/** Retour « Fait » / « Échec » affiché quelques secondes sur un bouton d'action. */
+/**
+ * Question personnalisée d'une confirmation. `true`, ou un texte saisi comme « oui » / « true »
+ * dans l'éditeur visuel, garde la question par défaut.
+ */
+export function confirmQuestion(confirm: unknown): string | undefined {
+  if (typeof confirm !== "string") return undefined;
+  const text = confirm.trim();
+  return text && !/^(true|oui|yes|vrai)$/i.test(text) ? text : undefined;
+}
+
+export class StatusFlash {
+  private status = new Map<string, "done" | "error">();
+  private timers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  constructor(private readonly onChange: (status: ReadonlyMap<string, "done" | "error">) => void, private readonly duration = FEEDBACK_DELAY) {}
+
+  get(key: string): "done" | "error" | undefined {
+    return this.status.get(key);
+  }
+
+  set(key: string, status: "done" | "error" | undefined): void {
+    clearTimeout(this.timers.get(key));
+    this.timers.delete(key);
+    if (status) {
+      this.status.set(key, status);
+      this.timers.set(key, setTimeout(() => this.set(key, undefined), this.duration));
+    } else {
+      this.status.delete(key);
+    }
+    this.onChange(new Map(this.status));
+  }
+
+  clear(): void {
+    for (const timer of this.timers.values()) clearTimeout(timer);
+    this.timers.clear();
+    if (!this.status.size) return;
+    this.status.clear();
+    this.onChange(new Map());
+  }
+}
+
+/** Appui long : ouvre la fiche de l'entité ; le clic qui termine l'appui est ignoré. */
+export class LongPress {
+  private timer?: ReturnType<typeof setTimeout>;
+  private fired = false;
+
+  constructor(private readonly delay = HOLD_DELAY) {}
+
+  start(onHold: () => void): void {
+    this.fired = false;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.fired = true;
+      onHold();
+    }, this.delay);
+  }
+
+  cancel(): void {
+    clearTimeout(this.timer);
+  }
+
+  /** Vrai une seule fois si le clic qui arrive termine un appui long. */
+  consumeClick(): boolean {
+    const fired = this.fired;
+    this.fired = false;
+    return fired;
+  }
+}
+
+/**
+ * En-tête commun des cartes Actions, Caméras et Multimédia, posé sur les classes partagées
+ * `.header`, `.title-wrap`, `h2` et `.status-line`. Les cartes sombres (image, vidéo, pochette)
+ * redéfinissent `--header-badge-bg`, `--header-badge-border` et `--header-muted`.
+ */
+export const cardHeaderStyles = css`
+  .header { gap:11px; margin-bottom:14px; }
+  .header .badge { display:grid; width:40px; height:40px; flex:0 0 auto; place-items:center; border:1px solid var(--header-badge-border, var(--auralis-border)); border-radius:14px; background:var(--header-badge-bg, var(--auralis-layer)); color:color-mix(in oklab,var(--machine-accent, var(--auralis-info)),#000 var(--auralis-shade)); }
+  .header .badge ha-icon { --mdc-icon-size:22px; color:inherit; }
+  .header h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .header .status-line { margin-top:4px; color:var(--header-muted, var(--auralis-muted)); font-size:var(--auralis-text-xs); }
+`;
+
 export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
   static properties = {
     ...AuralisBaseCard.properties,
     status: { state: true },
-    confirming: { state: true },
     now: { state: true },
   };
 
-  static styles = [AuralisBaseCard.styles, css`
-    .act-shell, .act-content { min-height:0; }
-    .act-shell { padding:16px; }
+  static styles = [AuralisBaseCard.styles, cardHeaderStyles, css`
+    .machine-shell.act-shell { min-height:0; padding:16px; background:var(--act-background, var(--auralis-card)); color:var(--auralis-text); }
+    .act-shell:not(.has-image)::before { display:none; }
     .act-shell.compact { padding:12px; }
-    .act-header { display:flex; align-items:center; gap:11px; margin-bottom:14px; }
-    .act-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
-    .act-header .badge ha-icon { --mdc-icon-size:22px; }
-    .act-header h2 { overflow:hidden; font-size:19px; text-overflow:ellipsis; white-space:nowrap; }
-    .act-header .machine-status { margin-top:4px; }
+    .act-content { min-height:0; }
     .act-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
     .act-grid.fixed { grid-template-columns:repeat(var(--act-columns),minmax(0,1fr)); }
-    .act { --tone:var(--item-tone,#79d6f2); position:relative; display:flex; min-width:0; min-height:74px; align-items:center; gap:11px; padding:12px; overflow:hidden; border:1px solid color-mix(in srgb,var(--tone) 26%,rgba(195,211,229,.14)); border-radius:18px; background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 10%,transparent),transparent 65%),rgba(9,14,20,var(--machine-glass-alpha,.84)); color:#f4f8fc; cursor:pointer; text-align:start; backdrop-filter:blur(12px); touch-action:manipulation; user-select:none; -webkit-user-select:none; transition:border-color .15s ease, background .2s ease, transform .1s ease; }
+    .act { --tone:var(--item-tone,var(--auralis-info)); position:relative; display:flex; min-width:0; min-height:74px; align-items:center; gap:11px; padding:12px; overflow:hidden; border:1px solid color-mix(in srgb,var(--tone) 26%,var(--auralis-border)); border-radius:18px; background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 10%,transparent),transparent 65%),color-mix(in srgb,var(--auralis-layer) calc(var(--machine-glass-alpha,.84) * 100%),transparent); color:var(--auralis-text); cursor:pointer; text-align:start; backdrop-filter:blur(12px); touch-action:manipulation; user-select:none; -webkit-user-select:none; transition:border-color .15s ease, background .2s ease, transform .1s ease; }
     .act:hover { border-color:color-mix(in srgb,var(--tone) 70%,transparent); }
     .act:active { transform:scale(.98); }
     .act:focus-visible { outline:2px solid var(--tone); outline-offset:2px; }
-    .act.on { border-color:color-mix(in srgb,var(--tone) 70%,transparent); background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 30%,transparent),color-mix(in srgb,var(--tone) 8%,transparent) 70%),rgba(9,14,20,var(--machine-glass-alpha,.84)); }
-    .act.done { --tone:#5bd69b; }
-    .act.error { --tone:#ff6b74; }
-    .act:disabled { cursor:not-allowed; opacity:.5; }
-    .act-icon { position:relative; display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border-radius:14px; background:color-mix(in srgb,var(--tone) 18%,rgba(12,19,27,.8)); color:var(--tone); }
-    .act.on .act-icon { background:var(--tone); color:#111820; box-shadow:0 0 18px color-mix(in srgb,var(--tone) 55%,transparent); }
+    .act.on { border-color:color-mix(in srgb,var(--tone) 70%,transparent); background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 30%,transparent),color-mix(in srgb,var(--tone) 8%,transparent) 70%),color-mix(in srgb,var(--auralis-layer) calc(var(--machine-glass-alpha,.84) * 100%),transparent); }
+    .act.done { --tone:var(--auralis-healthy); }
+    .act.error { --tone:var(--auralis-danger); }
+    .act[aria-disabled="true"] { cursor:not-allowed; opacity:.5; }
+    .act[aria-disabled="true"]:active { transform:none; }
+    .act-icon { position:relative; display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border-radius:14px; background:color-mix(in srgb,var(--tone) 18%,var(--auralis-layer)); color:color-mix(in oklab,var(--tone),#000 var(--auralis-shade)); }
+    .act.on .act-icon { background:var(--tone); color:var(--act-on-ink,#111820); box-shadow:0 0 18px color-mix(in srgb,var(--tone) 55%,transparent); }
     .act-icon ha-icon { --mdc-icon-size:23px; }
     .act-icon .spinner { position:absolute; inset:3px; border:2px solid color-mix(in srgb,var(--tone) 25%,transparent); border-top-color:var(--tone); border-radius:12px; animation:spin .8s linear infinite; }
     .act-text { display:grid; min-width:0; gap:3px; }
-    .act-name { display:-webkit-box; overflow:hidden; font-size:13.5px; font-weight:720; line-height:1.25; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
-    .act-caption { overflow:hidden; color:#a7b4c2; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
-    .act.on .act-caption, .act.done .act-caption, .act.error .act-caption { color:var(--tone); }
-    .act-flag { margin-inline-end:4px; color:color-mix(in srgb,var(--tone) 70%,#a7b4c2); vertical-align:-2px; --mdc-icon-size:13px; }
+    .act-name { display:-webkit-box; overflow:hidden; font-size:var(--auralis-text-md); font-weight:720; line-height:1.25; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
+    .act-caption { overflow:hidden; color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-overflow:ellipsis; white-space:nowrap; }
+    .act.on .act-caption, .act.done .act-caption, .act.error .act-caption { color:color-mix(in oklab,var(--tone),#000 var(--auralis-shade)); }
+    .act-flag { margin-inline-end:4px; color:color-mix(in oklab,color-mix(in srgb,var(--tone) 70%,var(--auralis-muted)),#000 var(--auralis-shade)); vertical-align:-2px; --mdc-icon-size:13px; }
     .act-row .act-name { display:block; white-space:nowrap; }
     .act-row { display:flex; flex-wrap:wrap; gap:8px; }
-    .act-row .act { min-height:0; gap:8px; padding:6px 14px 6px 6px; border-radius:999px; }
+    .act-row .act { min-height:var(--auralis-target); gap:8px; padding:6px 14px 6px 6px; border-radius:999px; }
     .act-row .act-icon { width:32px; height:32px; border-radius:50%; }
     .act-row .act-icon .spinner { border-radius:50%; }
     .act-row .act-icon ha-icon { --mdc-icon-size:18px; }
-    .act-row .act-name { font-size:12.5px; }
-    .confirm-text { margin:0; color:var(--auralis-text); font-size:14px; line-height:1.5; }
-    .confirm-actions { grid-template-columns:1fr 1fr; margin-top:18px; }
+    .act-row .act-name { font-size:var(--auralis-text-sm); }
     @keyframes spin { to { transform:rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .act-icon .spinner { animation-duration:2.4s; } .act { transition:none; } }
     @container (max-width:360px) {
@@ -187,13 +363,12 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     @container (max-width:200px) { .act-grid, .act-grid.fixed { grid-template-columns:1fr; } }
   `];
 
-  private status = new Map<number, RunStatus>();
-  private confirming?: number;
+  /** Retours « Fait » / « Échec », par indice d'action. */
+  private status: ReadonlyMap<string, "done" | "error"> = new Map();
   private now = Date.now();
-  private timers = new Map<number, number>();
   private clock?: number;
-  private holdTimer?: number;
-  private held = false;
+  private readonly flash = new StatusFlash((status) => { this.status = status; });
+  private readonly hold = new LongPress();
 
   static getStubConfig(hass?: HomeAssistant): Partial<ActionsCardConfig> {
     const ids = Object.keys(hass?.states ?? {}).filter((id) => /^(script|scene|button)\./.test(id)).slice(0, 4);
@@ -202,15 +377,15 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", theme: "Thème", actions: "Actions (entity, name, icon, color, confirm, service, data…)",
-      layout: "Présentation", columns: "Colonnes (vide = automatique)", show_header: "Afficher l’en-tête",
-      accent_color: "Couleur d’accent", card_background: "Fond de la carte",
+      name: "Titre", icon: "Icône", theme: "Thème", actions: "Actions",
+      layout: "Présentation", columns: "Colonnes (vide = automatique)", show_header: "Afficher l’en-tête (par défaut si un titre est saisi)",
+      accent_color: "Couleur d’accent (couleur des tuiles sans color)", card_background: "Fond de la carte",
     };
     return {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
-        { name: "actions", required: true, selector: { object: {} } },
+        { name: "actions", required: true, selector: listSelector(ACTION_ITEM_FIELDS, { label: "name", description: "entity" }) },
         { name: "layout", selector: { select: { options: [{ value: "tiles", label: "Tuiles" }, { value: "compact", label: "Pastilles" }] } } },
         { name: "columns", selector: { number: { min: 1, max: 6, step: 1, mode: "box" } } },
         { name: "show_header", selector: { boolean: {} } },
@@ -224,14 +399,7 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
 
   public setConfig(config: ActionsCardConfig): void {
     const actions = Array.isArray(config?.actions) ? config.actions : [];
-    const optional = (value: unknown, pattern: RegExp): boolean => value === undefined || value === null || value === "" || (typeof value === "string" && pattern.test(value));
-    const invalid = actions.find((item) => !item || typeof item !== "object"
-      || !(item.entity || item.service || item.navigation_path)
-      || !optional(item.entity, ENTITY_ID) || !optional(item.state_entity, ENTITY_ID) || !optional(item.service, SERVICE_ID)
-      || !optional(item.navigation_path, /^\/[^\s]*$/)
-      || (item.data !== undefined && (typeof item.data !== "object" || Array.isArray(item.data)))
-      || (item.target !== undefined && (typeof item.target !== "object" || Array.isArray(item.target))));
-    if (!actions.length || invalid) {
+    if (!actions.length || actions.some((item) => !isValidActionItem(item))) {
       throw new Error("Configurez au moins une action avec entity (ex. script.reveil), service (domaine.service) ou navigation_path (/chemin).");
     }
     const columns = Number(config.columns);
@@ -240,70 +408,45 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
       theme: config.theme || "carbon",
       layout: config.layout === "compact" ? "compact" : "tiles",
       columns: config.columns !== undefined && Number.isFinite(columns) ? Math.round(Math.min(6, Math.max(1, columns))) : undefined,
-      actions: actions.map((item) => ({ ...item, color: typeof item.color === "string" && SAFE_COLOR.test(item.color.trim()) ? item.color.trim() : undefined })),
+      actions: actions.map(normalizeActionItem),
     };
-    this.status = new Map();
-    this.confirming = undefined;
+    // Les retours et l'appui long en cours visaient l'ancienne liste.
+    this.flash.clear();
+    this.hold.cancel();
+    this.confirmState = null;
   }
 
   public connectedCallback(): void {
     super.connectedCallback();
     this.now = Date.now();
+    window.clearInterval(this.clock);
     this.clock = window.setInterval(() => { this.now = Date.now(); }, 30_000);
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearInterval(this.clock);
-    window.clearTimeout(this.holdTimer);
-    for (const timer of this.timers.values()) window.clearTimeout(timer);
-    this.timers.clear();
+    this.hold.cancel();
+    this.flash.clear();
   }
 
-  protected closeDialog(): void {
-    super.closeDialog();
-    this.confirming = undefined;
-  }
-
-  private label(item: ActionItemConfig): string {
-    if (item.name?.trim()) return item.name.trim();
-    if (item.entity) return friendlyName(entity(this.hass, item.entity), item.entity);
-    return item.navigation_path ? "Ouvrir" : item.service ?? "Action";
-  }
-
-  private tone(item: ActionItemConfig): string {
-    return item.color ?? (item.navigation_path && !item.entity ? "#79d6f2" : DOMAIN_COLORS[domainOf(item.entity ?? item.service)] ?? "#79d6f2");
-  }
-
-  private icon(item: ActionItemConfig): string {
-    const state = entity(this.hass, item.state_entity || item.entity);
-    const own = entity(this.hass, item.entity)?.attributes.icon;
-    return item.icon || (typeof own === "string" ? own : undefined) || (typeof state?.attributes.icon === "string" ? state.attributes.icon : undefined)
-      || (item.navigation_path && !item.entity ? "mdi:arrow-right-circle-outline" : DOMAIN_ICONS[domainOf(item.entity ?? item.service)] ?? "mdi:gesture-tap");
-  }
-
-  private setStatus(index: number, status: RunStatus | undefined): void {
-    const next = new Map(this.status);
-    if (status) next.set(index, status);
-    else next.delete(index);
-    this.status = next;
-    window.clearTimeout(this.timers.get(index));
-    this.timers.delete(index);
-    if (status === "done" || status === "error") {
-      this.timers.set(index, window.setTimeout(() => this.setStatus(index, undefined), FEEDBACK_DELAY));
-    }
+  /** Accès de la carte pour le lanceur d'actions commun. */
+  private actionHost(): ActionHost {
+    return {
+      hass: this.hass,
+      moreInfo: (id) => this.moreInfo(id),
+      navigate: (path) => navigate(path),
+      isPending: (key) => this.isPending(key),
+      runCommand: (key, action, options) => this.runCommand(key, action, options),
+    };
   }
 
   private press(index: number): void {
-    if (this.held) {
-      this.held = false;
-      return;
-    }
+    if (this.hold.consumeClick()) return;
     const item = this.config?.actions[index];
-    if (!item || this.status.get(index) === "pending") return;
+    if (!item || actionUnavailable(item, this.hass) || this.isPending(`action:${index}`)) return;
     if (item.confirm) {
-      this.confirming = index;
-      this.openDialog("confirm");
+      this.askConfirmation(actionConfirmation(item, actionLabel(item, this.hass), () => this.run(index)));
       return;
     }
     void this.run(index);
@@ -311,54 +454,22 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
 
   private async run(index: number): Promise<void> {
     const item = this.config?.actions[index];
-    if (!item || !this.hass) return;
-    const action = resolveAction(item, entity(this.hass, item.entity));
-    if (!action) return;
-    if (action.kind === "more-info") {
-      fireMoreInfo(this, action.entity);
-      return;
-    }
-    if (action.kind === "navigate") {
-      window.history.pushState(null, "", action.path);
-      window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
-      return;
-    }
-    this.setStatus(index, "pending");
-    try {
-      await this.hass.callService(action.domain, action.service, action.data, action.target);
-      this.setStatus(index, "done");
-    } catch (error) {
-      this.setStatus(index, "error");
-      console.warn("Auralis Actions : échec de l’action", action, error);
-    }
+    if (!item) return;
+    const result = await runActionItem(this.actionHost(), `action:${index}`, item, actionLabel(item, this.hass));
+    if (result) this.flash.set(String(index), result);
   }
 
-  private async confirm(): Promise<void> {
-    const index = this.confirming;
-    this.closeDialog();
-    if (index !== undefined) await this.run(index);
-  }
-
-  private startHold(index: number): void {
-    this.held = false;
-    window.clearTimeout(this.holdTimer);
-    const target = this.config?.actions[index];
-    const id = target?.state_entity || target?.entity;
+  private startHold(item: ActionItemConfig): void {
+    const id = item.state_entity || item.entity;
     if (!id) return;
-    this.holdTimer = window.setTimeout(() => {
-      this.held = true;
-      fireMoreInfo(this, id);
-    }, HOLD_DELAY);
-  }
-
-  private cancelHold(): void {
-    window.clearTimeout(this.holdTimer);
+    this.hold.start(() => this.moreInfo(id));
   }
 
   private caption(item: ActionItemConfig, status?: RunStatus): string {
     if (status === "pending") return "En cours…";
     if (status === "done") return "Fait";
     if (status === "error") return "Échec";
+    if (item.entity && !entity(this.hass, item.entity)) return "Entité introuvable";
     const state = entity(this.hass, item.state_entity || item.entity);
     if (state) return stateCaption(state, this.now, this.hass);
     if (item.navigation_path) return "Ouvrir la vue";
@@ -366,26 +477,27 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
   }
 
   private renderAction(item: ActionItemConfig, index: number): TemplateResult {
-    const status = this.status.get(index);
-    const own = entity(this.hass, item.entity);
+    const status: RunStatus | undefined = this.isPending(`action:${index}`) ? "pending" : this.status.get(String(index));
     const shown = entity(this.hass, item.state_entity || item.entity);
-    const unavailable = Boolean(item.entity) && (!own || own.state === "unavailable");
+    const unavailable = actionUnavailable(item, this.hass);
     const on = isOn(shown) && !status;
-    const label = this.label(item);
+    const label = actionLabel(item, this.hass);
     const caption = this.caption(item, status);
-    const icon = status === "done" ? "mdi:check" : status === "error" ? "mdi:alert-outline" : this.icon(item);
+    const icon = status === "done" ? "mdi:check" : status === "error" ? "mdi:alert-outline" : actionIcon(item, this.hass);
+    // Une tuile indisponible reste sensible à l'appui long et au clic droit (fiche de l'entité).
     return html`<button type="button" class="act ${on ? "on" : ""} ${status === "done" || status === "error" ? status : ""}"
-      style=${`--item-tone:${this.tone(item)}`} ?disabled=${unavailable} aria-busy=${status === "pending" ? "true" : "false"}
+      style=${`--item-tone:${actionTone(item, configuredAccent(this.config))}`} aria-disabled=${unavailable ? "true" : "false"}
+      aria-busy=${status === "pending" ? "true" : "false"}
       aria-label=${`${label}${caption ? `, ${caption}` : ""}${item.confirm ? ", demande une confirmation" : ""}`}
       title=${this.config?.layout === "compact" && caption ? `${label} · ${caption}` : label}
       @click=${() => this.press(index)}
-      @pointerdown=${() => this.startHold(index)} @pointerup=${this.cancelHold} @pointerleave=${this.cancelHold} @pointercancel=${this.cancelHold}
+      @pointerdown=${() => this.startHold(item)} @pointerup=${() => this.hold.cancel()} @pointerleave=${() => this.hold.cancel()} @pointercancel=${() => this.hold.cancel()}
       @contextmenu=${(event: Event) => {
         const id = item.state_entity || item.entity;
         if (!id) return;
         event.preventDefault();
-        this.cancelHold();
-        fireMoreInfo(this, id);
+        this.hold.cancel();
+        this.moreInfo(id);
       }}>
       <span class="act-icon"><ha-icon .icon=${icon}></ha-icon>${status === "pending" ? html`<span class="spinner"></span>` : nothing}</span>
       <span class="act-text"><span class="act-name">${label}</span>
@@ -394,16 +506,12 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     </button>`;
   }
 
-  private renderConfirm(item: ActionItemConfig): TemplateResult {
-    const label = this.label(item);
-    const message = typeof item.confirm === "string" && item.confirm.trim() ? item.confirm.trim() : `Lancer « ${label} » ?`;
-    return this.renderDialog(label, this.icon(item), html`<div class="dialog-body">
-      <p class="confirm-text">${message}</p>
-      <div class="actions confirm-actions">
-        <button class="action" type="button" @click=${() => this.closeDialog()}>Annuler</button>
-        <button class="action ${item.danger ? "danger" : "primary"}" type="button" @click=${() => this.confirm()}>Confirmer</button>
-      </div>
-    </div>`);
+  /** Fond de la carte : celui configuré, l'image de fond, sinon la couleur du thème Auralis. */
+  private shellStyle(): string {
+    const config = this.config!;
+    const background = configuredBackground(config);
+    const custom = background ? background : config.background_image ? "var(--machine-base-background)" : undefined;
+    return `${this.machineStyle(DEFAULT_TONE)}${custom ? `;--act-background:${custom}` : ""}`;
   }
 
   protected render(): TemplateResult | typeof nothing {
@@ -411,23 +519,22 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     if (!config) return nothing;
     const compact = config.layout === "compact";
     const showHeader = config.show_header ?? Boolean(config.name);
-    const running = [...this.status.values()].filter((status) => status === "pending").length;
+    const running = config.actions.filter((_, index) => this.isPending(`action:${index}`)).length;
     const active = config.actions.filter((item) => isOn(entity(this.hass, item.state_entity || item.entity))).length;
     const summary = running ? `${running} en cours` : active ? `${active} actif${active > 1 ? "s" : ""} sur ${config.actions.length}` : `${config.actions.length} action${config.actions.length > 1 ? "s" : ""}`;
-    const confirming = this.dialog === "confirm" && this.confirming !== undefined ? config.actions[this.confirming] : undefined;
-    return html`<ha-card><div class="machine-shell act-shell ${compact ? "compact" : ""} ${this.machineGridClass()}" style=${this.machineStyle("#79d6f2")}>
+    return html`<ha-card><div class="machine-shell act-shell ${compact ? "compact" : ""} ${config.background_image ? "has-image" : ""} ${this.machineGridClass()}" style=${this.shellStyle()}>
       <div class="machine-content act-content">
-        ${showHeader ? html`<header class="act-header">
+        ${showHeader ? html`<header class="header">
           <span class="badge"><ha-icon .icon=${config.icon || "mdi:gesture-tap-button"}></ha-icon></span>
           <div class="title-wrap"><h2>${config.name || "Actions"}</h2>
-            <div class="machine-status"><span class="dot ${running ? "warning" : "healthy"}"></span>${summary}</div></div>
+            <div class="status-line"><span class="dot ${running ? "warning" : "healthy"}"></span>${summary}</div></div>
         </header>` : nothing}
         <div class=${compact ? "act-row" : `act-grid ${config.columns ? "fixed" : ""}`} style=${config.columns && !compact ? `--act-columns:${config.columns}` : ""}>
           ${config.actions.map((item, index) => this.renderAction(item, index))}
         </div>
       </div>
     </div></ha-card>
-    ${confirming ? this.renderConfirm(confirming) : nothing}`;
+    ${this.renderStandaloneConfirmation()}`;
   }
 
   public getCardSize(): number {

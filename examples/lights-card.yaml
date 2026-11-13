@@ -15,14 +15,14 @@ groups:
       - entity: scene.lecture_salon
         label: Lecture
         icon: mdi:book-open-page-variant-outline
-    # image: /local/auralis-cards/images/lumieres-salon.jpg
+    # background_image: /local/auralis-cards/images/lumieres-salon.jpg
   - name: Bureau
     icon: mdi:desk
     show_lights: true
     lights:
       - light.bureau
       - light.ruban_bureau
-    # image: /local/auralis-cards/images/lumieres-bureau.jpg
+    # background_image: /local/auralis-cards/images/lumieres-bureau.jpg
 entity_labels:
   light.plafonnier_salon: Plafonnier
   light.lampadaire_salon: Lampadaire

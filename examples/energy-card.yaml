@@ -1,15 +1,40 @@
 # Carte individuelle Lovelace. Ressource JavaScript : auralis-cards.js.
 type: custom:auralis-energy-card
 name: Consommation électrique globale
+# Par défaut, la carte suit le thème clair ou sombre de Home Assistant (auto).
 theme: carbon
 # Capteur d'énergie cumulée avec statistiques Recorder (total ou total_increasing).
+# Les consommations journalières viennent des statistiques horaires du Recorder :
+# « Aujourd'hui » s'arrête à la dernière heure compilée. L'heure du dernier relevé
+# est affichée au-dessus du graphique ; en cas d'échec, un nouvel essai a lieu après
+# 30 s, puis de plus en plus espacé jusqu'à 5 minutes.
 energy_entity: sensor.compteur_energie
 # Facultatif. L'unité affichée est celle du capteur, par exemple VA ou W.
 power_entity: sensor.compteur_puissance_apparente
 # Facultatif. Unité des consommations : par défaut kWh pour l'électricité,
 # ou l'unité du capteur pour un compteur de gaz ou d'eau (m³, L…).
+# L'index du compteur suit aussi cette unité (Wh → kWh, m³ → L…) et ces décimales.
 # unit: kWh
 # decimals: 1
+# Facultatif : coût de la consommation (voir docs/ENERGY_CARD.md).
+# Prix par kWh (ou par m³ pour un compteur de gaz), affiché sous chaque total,
+# dans le détail d'un jour et dans « Coût sur 7 jours ».
+# price: 0.2016
+# Ou le prix actuel lu sur un capteur (EUR/kWh, €/kWh, c€/kWh, EUR/MWh…) :
+# il s'applique aussi aux jours passés.
+# price_entity: sensor.prix_electricite
+# currency: "€"
+# subscription_per_day: 0.47
+# Heures creuses : chaque heure est tarifée selon sa plage (fuseau de Home Assistant).
+# offpeak_price: 0.1828
+# offpeak_hours:
+#   - "22:00-06:00"
+# show_cost: true
+# Facultatif : couleur de la semaine en cours et fond de la carte.
+# accent_color: "#FFB458"
+# card_background:
+#   mode: solid
+#   color: "#101923"
 # Dans une vue Sections, occupe toute la largeur de la section.
 grid_options:
   columns: full

@@ -23,8 +23,17 @@ export function isAvailable(state?: HassEntity): boolean {
   return Boolean(state && state.state !== "unknown" && state.state !== "unavailable");
 }
 
+/**
+ * Vrai quand on peut envoyer une commande à l'entité. Contrairement à `isAvailable`, l'état
+ * `unknown` est accepté : un bouton jamais pressé, un script jamais lancé ou un volet sans
+ * retour de position après un redémarrage restent commandables.
+ */
+export function isCommandable(state?: HassEntity): boolean {
+  return Boolean(state && state.state !== "unavailable");
+}
+
 export function canStopCover(state?: HassEntity): boolean {
-  if (!isAvailable(state)) return false;
+  if (!isCommandable(state)) return false;
   const features = state?.attributes.supported_features;
   return typeof features !== "number" || (features & 8) !== 0;
 }

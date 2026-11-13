@@ -1,4 +1,5 @@
 import type { LovelaceCardConfig } from "./home-assistant";
+import type { AlertLevel, AlertMetric } from "../utils/severity";
 
 export type AuralisTheme = "auto" | "halo" | "carbon" | "mono" | "aurora";
 export type CardBackgroundMode = "grid" | "solid" | "gradient";
@@ -21,6 +22,8 @@ export interface BaseCardConfig extends LovelaceCardConfig {
   glass_opacity?: number;
   card_background?: CardBackgroundConfig;
   show_grid?: boolean;
+  /** Seuils d'alerte des mesures (CPU, RAM, disques, températures). */
+  alert_levels?: Partial<Record<AlertMetric, AlertLevel>>;
 }
 
 export interface NavbarItemConfig {
@@ -118,6 +121,17 @@ export interface RoomClimatePopupConfig {
 export interface RoomCardConfig extends BaseCardConfig {
   type: "custom:auralis-room-card";
   subtitle?: string;
+  /** Masque l'en-tête (icône, nom, sous-titre, pastilles de climat) avec `false`. */
+  show_header?: boolean;
+  /**
+   * Zone Home Assistant (identifiant ou nom, sans tenir compte de la casse) : remplit chaque
+   * option non renseignée (lumières, volets, capteurs, thermostat, lecteur, télévision, nom).
+   */
+  area?: string;
+  /** Entités de la zone à ignorer : identifiants ou motifs (`light.veilleuse_*`). */
+  area_exclude?: string[];
+  /** Reprend aussi les interrupteurs `switch.*` de la zone (hors prises) comme lumières. */
+  area_include_switches?: boolean;
   lights?: string[];
   covers?: string[];
   left_controls?: RoomSideControlConfig[];
@@ -149,6 +163,10 @@ export interface CoversCardConfig extends BaseCardConfig {
   type: "custom:auralis-covers-card";
   groups: CoversGroupConfig[];
   group_columns?: number;
+  /** Alias de `group_columns`. */
+  columns?: number;
+  /** En-tête (icône, nom, état) : affiché par défaut quand `name` est renseigné. */
+  show_header?: boolean;
   entity_labels?: Record<string, string>;
 }
 
@@ -165,6 +183,8 @@ export interface SwitchesCardConfig extends BaseCardConfig {
   switches?: string[];
   groups?: SwitchesGroupConfig[];
   group_columns?: number;
+  /** Alias de `group_columns`. */
+  columns?: number;
   show_header?: boolean;
   show_group_label?: boolean;
   entity_labels?: Record<string, string>;
@@ -192,7 +212,10 @@ export interface PcExtraSectionConfig {
 
 export interface PcCardConfig extends BaseCardConfig {
   type: "custom:auralis-pc-card";
-  online_entity: string;
+  /** Entité d'état de la machine (nom commun à toutes les cartes machines). */
+  status_entity?: string;
+  /** Ancien nom de `status_entity`, toujours accepté. */
+  online_entity?: string;
   uptime_entity?: string;
   last_boot_entity?: string;
   last_activity_entity?: string;

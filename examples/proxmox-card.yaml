@@ -18,6 +18,22 @@ memory_label_entity: sensor.jarvis_memory_used
 uptime_entity: sensor.jarvis_uptime
 version_entity: sensor.jarvis_version
 
+# Facultatif : seuils des couleurs ambre puis rouge (CPU, RAM, stockages, températures).
+# alert_levels:
+#   cpu: { warning: 80, critical: 95 }
+#   disk: { warning: 85, critical: 95 }
+
+# Facultatif : nœuds du cluster, listés dans la fenêtre « Détails du nœud »
+# avec leur état, CPU et RAM, et redémarrage ou arrêt confirmés.
+# nodes:
+#   - name: pve-02
+#     status_entity: binary_sensor.pve02_online
+#     cpu_entity: sensor.pve02_cpu_percent
+#     memory_entity: sensor.pve02_memory_percent
+#     temperature_entity: sensor.pve02_temperature
+#     restart_entity: button.pve02_reboot
+#     shutdown_entity: button.pve02_shutdown
+
 # Zone libre : liste sans limite, dans l'ordre souhaité. [] pour la masquer.
 # Libellés, icônes et entités sont personnalisables. Auralis >= 0.12.2.
 info_columns: 3
@@ -66,7 +82,10 @@ vms:
     entity: binary_sensor.jarvis_vm_home_assistant_running
     group: Maison
     start_entity: button.jarvis_vm_home_assistant_start
+    stop_entity: button.jarvis_vm_home_assistant_stop
     restart_entity: button.jarvis_vm_home_assistant_restart
+    # Bouton toujours affiché, actif seulement quand la VM fonctionne.
+    # console_url: https://jarvis.local:8006/?console=kvm&vmid=100
 containers:
   - name: Mosquitto
     entity: binary_sensor.jarvis_lxc_mosquitto_running

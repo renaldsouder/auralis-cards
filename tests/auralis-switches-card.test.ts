@@ -88,4 +88,45 @@ describe("Auralis switches card", () => {
     expect(groupHtml.strings.join("")).toContain('class="group-open"');
     expect(groupHtml.strings.join("")).not.toContain("group-arrow");
   });
+
+  it("accepts columns as an alias and only lower-case switch ids", () => {
+    const card = new SwitchesCard();
+    card.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.prise"], columns: 3 });
+    expect(card.config?.group_columns).toBe(3);
+    expect(() => card.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.Prise"] })).toThrow("switch.*");
+    expect(() => card.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.prise"], columns: 0 })).toThrow("entre 1 et 4");
+  });
+
+  it("shows the requested state until Home Assistant confirms it, and reverts on failure", async () => {
+    vi.stubGlobal("window", globalThis);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    let fail = false;
+    const callService = vi.fn(async (): Promise<unknown> => { if (fail) throw new Error("hors ligne"); return undefined; });
+    const hass: HomeAssistant = { states: { "switch.tv": state("switch.tv", "off") }, callService };
+    const card = new SwitchesCard();
+    card.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.tv"] });
+    card.hass = hass;
+    const internals = card as unknown as {
+      power(ids: string[], on: boolean): Promise<boolean>;
+      active(id: string): boolean;
+      awaiting(id: string): boolean;
+    };
+    expect(await internals.power(["switch.tv"], true)).toBe(true);
+    expect(internals.active("switch.tv")).toBe(true);
+    expect(internals.awaiting("switch.tv")).toBe(true);
+    hass.states["switch.tv"] = state("switch.tv", "on");
+    expect(internals.awaiting("switch.tv")).toBe(false);
+
+    fail = true;
+    expect(await internals.power(["switch.tv"], false)).toBe(false);
+    expect(internals.active("switch.tv")).toBe(true);
+    expect(internals.awaiting("switch.tv")).toBe(false);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+
+  it("offers a stub with the house switches", () => {
+    const stub = SwitchesCard.getStubConfig({ states: { "switch.cafe": state("switch.cafe", "off") }, callService: vi.fn() });
+    expect(stub.switches).toEqual(["switch.cafe"]);
+  });
 });

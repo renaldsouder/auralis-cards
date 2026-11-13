@@ -1,6 +1,6 @@
 {
   "name": "auralis-cards",
-  "version": "0.22.2",
+  "version": "0.23.0",
   "description": "Auralis Frame cards for rooms, covers, switches, lights, thermostats, room climate, connected fridges, energy and machines in Home Assistant.",
   "type": "module",
   "main": "dist/auralis-cards.js",

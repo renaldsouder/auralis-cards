@@ -3,6 +3,8 @@
 type: custom:auralis-actions-card
 name: Actions rapides
 icon: mdi:lightning-bolt-outline
+# Facultatif : couleur des tuiles qui n'ont pas de color.
+# accent_color: "#79D6F2"
 actions:
   # Script : « En cours » pendant l'exécution, sinon « Lancé il y a … ».
   - entity: script.wake_skynet
@@ -31,7 +33,7 @@ actions:
     data:
       message: À table !
 
-  # Navigation vers une autre vue.
+  # Navigation vers une autre vue (chemin du tableau de bord, commençant par une seule « / »).
   - name: Caméras
     icon: mdi:cctv
     navigation_path: /dashboard-maison/cameras

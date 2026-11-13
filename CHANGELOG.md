@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.23.0
+
+### Nouvelles cartes
+- **Onglets** (`auralis-tabs-card`) : plusieurs cartes, Auralis ou non, sous des onglets avec icônes, pastilles (`badge_entity`), onglet par défaut et mémorisation du dernier onglet. Voir [docs/TABS_CARD.md](docs/TABS_CARD.md).
+- **Batteries et alertes** (`auralis-batteries-card`) : piles faibles et appareils indisponibles de toute la maison, trouvés automatiquement. Voir [docs/BATTERIES_CARD.md](docs/BATTERIES_CARD.md).
+- **Veille d'écran** (`auralis-screensaver-card`) : horloge, date, météo et valeurs en plein écran après quelques minutes sans contact ; le premier toucher réveille sans actionner ce qui est dessous. Voir [docs/SCREENSAVER_CARD.md](docs/SCREENSAVER_CARD.md).
+- **Arrosage** (`auralis-irrigation-card`) : état des vannes, temps restant, prochain arrosage, arrosage minuté par la minuterie de la vanne (jamais par le navigateur), pause de la programmation, pile, erreurs et pluie prévue. Voir [docs/IRRIGATION_CARD.md](docs/IRRIGATION_CARD.md).
+
+### Pour toutes les cartes
+- Une carte ne se redessine plus que lorsqu'une entité qu'elle affiche change : beaucoup moins de travail pour une tablette allumée en permanence.
+- Commandes : état « en cours » sur le bouton et message visible quand Home Assistant refuse une commande. Un bouton jamais pressé (`unknown`) ou un volet sans position reste commandable.
+- Fenêtres de détail : Échap ferme, le focus va dans la fenêtre puis revient au bouton d'origine. Une fenêtre ouverte juste après en avoir fermé une autre ne se referme plus toute seule.
+- Appui long ou clic droit : fiche Home Assistant de l'entité.
+- Seuils d'alerte `alert_levels` (CPU, RAM, disques, températures) : mesures en ambre puis en rouge.
+- Lisibilité : aucun texte sous 11 px, cibles tactiles de 44 px, titres harmonisés, « Indisponible » écrit en toutes lettres.
+- Thème clair : les surfaces et les fenêtres suivent le thème ; les façades photo (machines, météo, média, caméras) restent sombres.
+- Éditeur visuel : libellés en français partout, exemples valides dans le sélecteur de cartes.
+
+### Cartes maison
+- **Pièce** : `area` remplit la carte depuis une zone Home Assistant (lumières, volets, capteurs, thermostat, lecteur) ; `area_exclude`, `area_include_switches`. « Luminosité générale » ne règle que les lumières allumées. Thermostat : un seul envoi après plusieurs appuis, « — » sans consigne. Fenêtre des volets avec position et fiche par volet. Accepte des `switch.*` dans `lights`.
+- **Lumières** : curseurs fluides, réglages de groupe sans allumer les lumières éteintes, blancs en température de couleur, `background_image` (alias de `image`), `show_header`.
+- **Volets** : en-tête (`name`, `icon`, `show_header`), position volet par volet, `columns` (alias de `group_columns`), thème clair ; un volet ouvert à 5 % ne compte plus comme ouvert.
+- **Prises** : tout allumer ou éteindre dans la fenêtre, état demandé affiché jusqu'à confirmation, `columns`.
+- **Thermostats** : consigne sans attente (envoi groupé), minimum et maximum réglables en mode auto, thème clair.
+- **Climat** : minimum, maximum et moyenne calculés sur les vraies mesures.
+
+### Cartes machines et mesures
+- **UNRAID, Proxmox, PC** : commandes de nouveau disponibles avec des `button.*` jamais pressés ; démarrage et arrêt groupés avec bilan des échecs ; machines indisponibles distinguées des machines arrêtées ; seuils d'alerte sur barres, cadrans, températures et onduleur.
+- **UNRAID** : `healthy_disks_entity`, `total_disks_entity` et `disk_temperature_entity` affichés ; commandes du serveur seulement en ligne.
+- **Proxmox** : `nodes` affichés dans la fenêtre du cluster, avec leurs commandes.
+- **PC** : `status_entity` (`online_entity` reste accepté), bouton de réveil sur la carte, `icon` utilisé.
+- **Énergie** : coût du jour, de J−7 et des 7 jours (`price`, `price_entity`, `currency`, `subscription_per_day`, heures creuses `offpeak_price` / `offpeak_hours`) ; nouvel essai 30 s après une erreur ; index dans l'unité choisie. Voir [docs/ENERGY_CARD.md](docs/ENERGY_CARD.md).
+- **Frigo** : plus de « 0 °C » sans mesure, seuils `fridge_alert_above` et `freezer_alert_above`, réglage groupé de la consigne, tuile congélateur masquée sans congélateur, `status_entity`.
+
+### Cartes récentes
+- **Navigation** : une seule barre par tableau de bord, conservée d'une vue à l'autre ; position `left` complète ; marge du bas qui tient compte des téléphones à encoche.
+- **Caméras** : image suivante demandée seulement après réception de la précédente, à la taille de la tuile ; pause derrière la fenêtre ; nouvel essai du direct. `show_header` n'est plus affiché par défaut sans `name`.
+- **Média** : curseur de position stable, lecteur qui ne change plus sous le doigt, échec signalé pour chaque commande.
+- **Météo** : nouvel essai des prévisions, prévisions conservées pendant une coupure, vigilance cliquable, pluie heure par heure, `accent_color` appliqué.
+- **Actions** : « Entité introuvable », `accent_color` sur les tuiles, fiche par appui long même indisponible, confirmation rouge seulement avec `danger: true`.
+
 ## 0.22.2
 
 - Barre de navigation : une barre de plus s’ajoutait à chaque changement de vue. La carte, déjà retirée de la page par Home Assistant, terminait une mise à jour et recréait sa barre flottante, que plus rien ne supprimait. Une carte retirée de la page ne crée plus de barre.

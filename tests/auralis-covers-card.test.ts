@@ -49,6 +49,7 @@ describe("Auralis covers groups", () => {
     expect(internals.groupStats(config.groups[0])).toEqual({
       total: 3,
       open: 1,
+      fullyOpen: 1,
       closed: 0,
       opening: 0,
       closing: 1,
@@ -156,5 +157,57 @@ describe("Auralis covers groups", () => {
     card.setConfig({ ...config, group_columns: 2 });
     expect(render()).toContain("groups-grid");
     expect(render()).toContain("--group-columns:2");
+
+    card.setConfig({ ...config, columns: 3 });
+    expect(render()).toContain("--group-columns:3");
+    expect(() => card.setConfig({ ...config, columns: 9 })).toThrow("columns doit");
+  });
+
+  it("only calls a group fully open when the positions say so", () => {
+    const cover = (value: string, position?: number): HassEntity => ({
+      entity_id: "cover.x", state: value, attributes: position === undefined ? {} : { current_position: position },
+    });
+    expect(module.coverFullyOpen(cover("open", 5))).toBe(false);
+    expect(module.coverFullyOpen(cover("open", 100))).toBe(true);
+    expect(module.coverFullyOpen(cover("open"))).toBe(true);
+    expect(module.coverFullyOpen(cover("unavailable", 100))).toBe(false);
+    expect(module.coverSupportsPosition({ ...cover("open"), attributes: { supported_features: 15 } })).toBe(true);
+    expect(module.coverSupportsPosition({ ...cover("open"), attributes: { supported_features: 11 } })).toBe(false);
+
+    const card = new module.AuralisCoversCard();
+    card.setConfig({ type: "custom:auralis-covers-card", groups: [{ name: "Salon", covers: ["cover.a", "cover.b"] }] });
+    card.hass = {
+      states: { "cover.a": { ...cover("open", 5), entity_id: "cover.a" }, "cover.b": { ...cover("open", 100), entity_id: "cover.b" } },
+      callService: vi.fn(async () => undefined),
+    } satisfies HomeAssistant;
+    const internals = card as unknown as {
+      groupStats(group: CoversCardConfig["groups"][number]): unknown;
+      groupStatus(stats: unknown): { label: string; tone: string };
+    };
+    expect(internals.groupStatus(internals.groupStats(card.config!.groups[0])).label).toBe("2/2 ouverts");
+  });
+
+  it("offers a valid stub built from the house covers", () => {
+    const stub = module.AuralisCoversCard.getStubConfig({ states: { "cover.baie": state("cover.baie", "open") }, callService: vi.fn() });
+    expect(stub.groups).toEqual([{ name: "Maison", covers: ["cover.baie"] }]);
+    const card = new module.AuralisCoversCard();
+    expect(() => card.setConfig({ type: "custom:auralis-covers-card", ...stub } as CoversCardConfig)).not.toThrow();
+    expect(() => card.setConfig({ type: "custom:auralis-covers-card", ...module.AuralisCoversCard.getStubConfig() } as CoversCardConfig)).not.toThrow();
+  });
+
+  it("sets a cover position through the shared popup and keeps the dragged value until it returns", async () => {
+    const callService = vi.fn(async () => undefined);
+    const card = new module.AuralisCoversCard();
+    card.setConfig(config);
+    card.hass = {
+      states: { "cover.baie": { ...state("cover.baie", "open"), attributes: { supported_features: 15, current_position: 30 } } },
+      callService,
+    } satisfies HomeAssistant;
+    const host = (card as unknown as { coverHost: import("../src/cards/auralis-covers-card").CoverPopupHost }).coverHost;
+    host.setDragValue("cover:position:cover.baie", 70);
+    expect(host.dragValue("cover:position:cover.baie")).toBe(70);
+    await host.command("cover:position:cover.baie", () => card.hass!.callService("cover", "set_cover_position", { position: 70 }, { entity_id: "cover.baie" }), "échec");
+    expect(callService).toHaveBeenCalledWith("cover", "set_cover_position", { position: 70 }, { entity_id: "cover.baie" });
+    expect(module.coverStateLabel(card.hass, "cover.baie")).toBe("Ouvert à 30 %");
   });
 });

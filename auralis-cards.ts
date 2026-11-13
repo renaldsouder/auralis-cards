@@ -15,8 +15,12 @@ import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
 import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
 import { AuralisCamerasCard } from "./src/cards/auralis-cameras-card";
 import { AuralisMediaCard } from "./src/cards/auralis-media-card";
+import { AuralisTabsCard } from "./src/cards/auralis-tabs-card";
+import { AuralisScreensaverCard } from "./src/cards/auralis-screensaver-card";
+import { AuralisBatteriesCard } from "./src/cards/auralis-batteries-card";
+import { AuralisIrrigationCard } from "./src/cards/auralis-irrigation-card";
 
-const VERSION = "0.22.2";
+const VERSION = "0.23.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -34,6 +38,10 @@ if (!customElements.get("auralis-weather-card")) customElements.define("auralis-
 if (!customElements.get("auralis-actions-card")) customElements.define("auralis-actions-card", AuralisActionsCard);
 if (!customElements.get("auralis-cameras-card")) customElements.define("auralis-cameras-card", AuralisCamerasCard);
 if (!customElements.get("auralis-media-card")) customElements.define("auralis-media-card", AuralisMediaCard);
+if (!customElements.get("auralis-tabs-card")) customElements.define("auralis-tabs-card", AuralisTabsCard);
+if (!customElements.get("auralis-screensaver-card")) customElements.define("auralis-screensaver-card", AuralisScreensaverCard);
+if (!customElements.get("auralis-batteries-card")) customElements.define("auralis-batteries-card", AuralisBatteriesCard);
+if (!customElements.get("auralis-irrigation-card")) customElements.define("auralis-irrigation-card", AuralisIrrigationCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -46,6 +54,33 @@ if (!customElements.get("orbit-navbar-card")) customElements.define("orbit-navba
 window.customCards = window.customCards || [];
 
 const cards = [
+  {
+    type: "auralis-tabs-card",
+    name: "Auralis · Onglets",
+    description: "Range plusieurs cartes, Auralis ou non, sous des onglets avec icônes et pastilles.",
+    preview: false,
+  },
+  {
+    type: "auralis-screensaver-card",
+    name: "Auralis · Veille d'écran",
+    description: "Écran de veille plein écran pour tablette murale : horloge, date, météo et valeurs, réveil au premier toucher.",
+    preview: false,
+  },
+  {
+    type: "auralis-batteries-card",
+    name: "Auralis · Batteries et alertes",
+    description: "Liste les piles faibles et les appareils indisponibles de la maison, découverts automatiquement.",
+    preview: false,
+  },
+  {
+    type: "auralis-irrigation-card",
+    name: "Auralis · Arrosage",
+    description: "Vannes d’arrosage : état, temps restant, prochain arrosage, arrosage minuté sûr, pile, erreurs et pluie prévue.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => /^(switch|valve)\.[a-z0-9_]*(arros|irrig)/.test(entityId)
+      ? { config: { type: "custom:auralis-irrigation-card", valve_entity: entityId } }
+      : null,
+  },
   {
     type: "auralis-navbar-card",
     name: "Auralis · Navigation",

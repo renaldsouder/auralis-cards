@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { hasOpenAuralisDialog, setAuralisDialogOpen } from "../src/utils/dialog-visibility";
+import { dialogHistorySettled, hasOpenAuralisDialog, setAuralisDialogOpen } from "../src/utils/dialog-visibility";
 
-function mockHistory(): { position: () => number; length: () => number } {
+function mockHistory(options: { asyncBack?: boolean } = {}): { position: () => number; length: () => number; flushBack: () => void } {
+  let pendingBack = 0;
   const entries = [
     { url: "http://homeassistant.local/accueil", state: { view: "accueil" } },
     { url: "http://homeassistant.local/salon", state: { view: "salon" } },
@@ -18,14 +19,28 @@ function mockHistory(): { position: () => number; length: () => number } {
         index++;
       },
       back() {
+        // Un vrai navigateur traite history.back() plus tard : le mode asynchrone le reproduit.
+        if (options.asyncBack) { pendingBack++; return; }
         index--;
         listeners.forEach((listener) => listener());
       },
     },
+    setTimeout: (fn: () => void, ms: number) => globalThis.setTimeout(fn, ms),
+    clearTimeout: (id: number) => globalThis.clearTimeout(id),
     addEventListener(_type: string, listener: () => void) { listeners.add(listener); },
     removeEventListener(_type: string, listener: () => void) { listeners.delete(listener); },
   });
-  return { position: () => index, length: () => entries.length };
+  return {
+    position: () => index,
+    length: () => entries.length,
+    flushBack: () => {
+      while (pendingBack > 0) {
+        pendingBack--;
+        index--;
+        listeners.forEach((listener) => listener());
+      }
+    },
+  };
 }
 
 describe("Auralis dialog and navbar visibility", () => {
@@ -84,6 +99,28 @@ describe("Auralis dialog and navbar visibility", () => {
     expect(window.location.href).toBe("http://homeassistant.local/accueil");
   });
 
+  it("waits for the dialog history step to be removed before navigating", async () => {
+    const history = mockHistory();
+    const listeners: Array<() => void> = [];
+    // history.back() asynchrone, comme dans un vrai navigateur.
+    const back = window.history.back.bind(window.history);
+    (window.history as { back: () => void }).back = () => { listeners.push(back); };
+    (window as unknown as { setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout }).setTimeout = setTimeout;
+    (window as unknown as { clearTimeout: typeof clearTimeout }).clearTimeout = clearTimeout;
+    await expect(dialogHistorySettled()).resolves.toBeUndefined();
+
+    setAuralisDialogOpen(first, true, vi.fn());
+    setAuralisDialogOpen(first, false);
+    let settled = false;
+    const waiting = dialogHistorySettled().then(() => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    listeners.shift()!();
+    await waiting;
+    expect(settled).toBe(true);
+    expect(history.position()).toBe(1);
+  });
+
   it("closes one dialog per back gesture when several are open", () => {
     mockHistory();
     const closeFirst = vi.fn(() => setAuralisDialogOpen(first, false));
@@ -99,5 +136,28 @@ describe("Auralis dialog and navbar visibility", () => {
     window.history.back();
     expect(closeFirst).toHaveBeenCalledOnce();
     expect(hasOpenAuralisDialog()).toBe(false);
+  });
+
+  it("keeps a dialog opened while the previous one is still leaving the history", async () => {
+    const history = mockHistory({ asyncBack: true });
+    const closeSecond = vi.fn(() => setAuralisDialogOpen(second, false));
+    setAuralisDialogOpen(first, true, vi.fn());
+
+    // Fermeture d'une fenêtre et ouverture d'une autre dans le même instant.
+    setAuralisDialogOpen(first, false);
+    setAuralisDialogOpen(second, true, closeSecond);
+    history.flushBack();
+    await dialogHistorySettled();
+    await Promise.resolve();
+
+    expect(closeSecond).not.toHaveBeenCalled();
+    expect(hasOpenAuralisDialog()).toBe(true);
+    expect(history.position()).toBe(2);
+
+    // Le geste retour ferme ensuite bien la seconde fenêtre.
+    window.history.back();
+    history.flushBack();
+    expect(closeSecond).toHaveBeenCalledOnce();
+    expect(history.position()).toBe(1);
   });
 });

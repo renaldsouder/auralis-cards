@@ -1,10 +1,12 @@
-import { LitElement, html, nothing, type CSSResultGroup, type TemplateResult } from "lit";
+import { LitElement, html, nothing, type CSSResultGroup, type PropertyValues, type TemplateResult } from "lit";
 import type { BaseCardConfig, AuralisTheme } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
 import { setAuralisDialogOpen } from "../utils/dialog-visibility";
-import { activateEntity } from "../utils/actions";
-import { entity } from "../utils/entities";
+import { activateEntity, fireMoreInfo } from "../utils/actions";
+import { entity, isCommandable } from "../utils/entities";
+import { collectEntityIds, hassChangeMatters } from "../utils/watch";
+import { alertLevel, severity, severityClass } from "../utils/severity";
 
 /** Durée pendant laquelle un réveil demandé reste affiché « en cours ». */
 export const WAKE_WINDOW = 180_000;
@@ -26,11 +28,35 @@ export function configuredBackground(config?: BaseCardConfig): string | undefine
   return value && !UNSAFE_CSS.test(value) ? value : undefined;
 }
 
-interface ConfirmState {
+/** Durée d'affichage d'un message de retour (échec ou confirmation d'une commande). */
+export const FEEDBACK_DURATION = 6_000;
+
+export interface ConfirmState {
   title: string;
   message: string;
   confirmLabel: string;
-  action: () => Promise<void> | void;
+  action: () => Promise<unknown> | void;
+  /** `false` pour un bouton de confirmation neutre ; rouge par défaut. */
+  danger?: boolean;
+}
+
+export interface ActionFeedback {
+  tone: "error" | "success";
+  message: string;
+}
+
+/** Message lisible d'une erreur Home Assistant ou JavaScript. */
+export function actionErrorMessage(error: unknown, fallback = "La commande a échoué."): string {
+  const message = typeof error === "object" && error && "message" in error ? (error as { message?: unknown }).message : undefined;
+  return typeof message === "string" && message.trim() ? `${fallback} ${message.trim()}` : fallback;
+}
+
+/** Élément actif réel, y compris à l'intérieur des shadow roots. */
+function deepActiveElement(): HTMLElement | undefined {
+  if (typeof document === "undefined") return undefined;
+  let active = document.activeElement as HTMLElement | null;
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement as HTMLElement;
+  return active ?? undefined;
 }
 
 export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends LitElement {
@@ -40,6 +66,8 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     dialog: { state: true },
     confirmState: { state: true },
     wakeRequestedAt: { state: true },
+    pendingActions: { state: true },
+    feedback: { state: true },
   };
 
   static styles: CSSResultGroup = sharedStyles;
@@ -49,7 +77,147 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   protected dialog: string | null = null;
   protected confirmState: ConfirmState | null = null;
   protected wakeRequestedAt?: number;
+  /** Commandes en cours, par clé (`power`, `light.salon`, `vm:231`…). */
+  protected pendingActions: ReadonlySet<string> = new Set();
+  /** Dernier retour d'une commande, affiché quelques secondes en haut de l'écran. */
+  protected feedback?: ActionFeedback;
   private wakeTimer?: number;
+  private feedbackTimer?: number;
+  private feedbackNode?: HTMLElement;
+  private watched?: { config: TConfig | undefined; ids: Set<string> };
+  private shownDialog: string | null = null;
+  private dialogOpener?: HTMLElement;
+  private confirmShown = false;
+  private confirmOpener?: HTMLElement;
+
+  /**
+   * Ne redessine la carte que si une entité qu'elle cite a changé. Home Assistant envoie un
+   * nouvel objet `hass` à chaque changement d'état de la maison : sans ce filtre, toutes les
+   * cartes se redessinent plusieurs fois par seconde sur une tablette murale.
+   */
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    if (!changed.has("hass") || changed.size > 1) return true;
+    return hassChangeMatters(changed.get("hass") as HomeAssistant | undefined, this.hass, this.watchedEntityIds());
+  }
+
+  /** Entités suivies : toutes celles de la configuration, plus `extraWatchedEntities()`. */
+  protected watchedEntityIds(): Set<string> {
+    if (this.watched?.config !== this.config) {
+      const ids = collectEntityIds(this.config);
+      for (const id of this.extraWatchedEntities()) ids.add(id);
+      this.watched = { config: this.config, ids };
+    }
+    return this.watched!.ids;
+  }
+
+  /** Entités lues par la carte sans figurer dans sa configuration (ex. `sun.sun` par défaut). */
+  protected extraWatchedEntities(): string[] {
+    return [];
+  }
+
+  protected isPending(key: string): boolean {
+    return this.pendingActions.has(key);
+  }
+
+  /**
+   * Lance une commande avec un état « en cours » et un message visible en cas d'échec.
+   * Une même clé ne peut pas être relancée tant que la précédente n'a pas répondu.
+   * Retourne `true` si la commande a réussi.
+   */
+  protected async runCommand(
+    key: string,
+    action: () => Promise<unknown> | unknown,
+    options: { errorMessage?: string; successMessage?: string } = {},
+  ): Promise<boolean> {
+    if (this.pendingActions.has(key)) return false;
+    this.pendingActions = new Set([...this.pendingActions, key]);
+    try {
+      await action();
+      if (options.successMessage) this.showFeedback("success", options.successMessage);
+      return true;
+    } catch (error) {
+      console.warn("Auralis : échec de la commande", key, error);
+      this.showFeedback("error", actionErrorMessage(error, options.errorMessage));
+      return false;
+    } finally {
+      const next = new Set(this.pendingActions);
+      next.delete(key);
+      this.pendingActions = next;
+    }
+  }
+
+  protected showFeedback(tone: ActionFeedback["tone"], message: string): void {
+    this.feedback = { tone, message };
+    window.clearTimeout(this.feedbackTimer);
+    this.feedbackTimer = window.setTimeout(() => { this.feedback = undefined; }, FEEDBACK_DURATION);
+  }
+
+  /** Ouvre la fiche Home Assistant d'une entité. */
+  protected moreInfo(entityId?: string): void {
+    fireMoreInfo(this, entityId);
+  }
+
+  /**
+   * Message de retour posé hors du rendu Lit, à la fin de la shadow root : chaque carte en
+   * profite sans modifier son gabarit. Lit ne touche qu'à ses propres nœuds.
+   */
+  private syncFeedbackNode(): void {
+    const root = this.renderRoot;
+    if (!root || typeof document === "undefined") return;
+    if (!this.feedback) {
+      this.feedbackNode?.toggleAttribute("hidden", true);
+      return;
+    }
+    if (!this.feedbackNode) {
+      this.feedbackNode = document.createElement("div");
+      this.feedbackNode.className = "auralis-feedback";
+      this.feedbackNode.setAttribute("role", "status");
+      this.feedbackNode.setAttribute("aria-live", "polite");
+    }
+    if (this.feedbackNode.parentNode !== root) root.appendChild(this.feedbackNode);
+    this.feedbackNode.dataset.tone = this.feedback.tone;
+    this.feedbackNode.textContent = this.feedback.message;
+    this.feedbackNode.toggleAttribute("hidden", false);
+  }
+
+  /**
+   * Focus sur la fenêtre (ou la confirmation) à l'ouverture, retour à l'élément d'origine à la
+   * fermeture. Une confirmation ouverte depuis une fenêtre rend ensuite le focus à cette fenêtre.
+   */
+  private syncDialogFocus(): void {
+    if (this.dialog !== this.shownDialog) {
+      const opened = this.shownDialog === null && this.dialog !== null;
+      const closed = this.shownDialog !== null && this.dialog === null;
+      this.shownDialog = this.dialog;
+      if (opened) {
+        this.dialogOpener = deepActiveElement();
+        this.renderRoot.querySelector<HTMLElement>(".dialog:not(.confirm-dialog) [data-dialog-close], .dialog:not(.confirm-dialog) [aria-label='Fermer']")
+          ?.focus({ preventScroll: true });
+      } else if (closed) {
+        const opener = this.dialogOpener;
+        this.dialogOpener = undefined;
+        if (opener?.isConnected) opener.focus({ preventScroll: true });
+      }
+    }
+    const confirmShown = this.confirmState !== null;
+    if (confirmShown === this.confirmShown) return;
+    this.confirmShown = confirmShown;
+    if (confirmShown) {
+      this.confirmOpener = deepActiveElement();
+      this.renderRoot.querySelector<HTMLElement>(".confirm-dialog [data-dialog-close]")?.focus({ preventScroll: true });
+    } else {
+      const opener = this.confirmOpener;
+      this.confirmOpener = undefined;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    }
+  }
+
+  private readonly handleKeydown = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape" || (this.dialog === null && this.confirmState === null)) return;
+    event.stopPropagation();
+    if (this.confirmState) this.confirmState = null;
+    else this.closeDialog();
+  };
 
   protected get theme(): Exclude<AuralisTheme, "auto"> {
     const configured = this.config?.theme || "auto";
@@ -115,13 +283,17 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     return (this.config?.show_grid ?? defaultGrid) ? "show-grid" : "";
   }
 
+  /** Cadrans CPU et RAM, colorés en ambre puis en rouge au-delà des seuils `alert_levels`. */
   protected renderResourceGauges(cpu?: number, memory?: number): TemplateResult {
-    const metrics = [{ label: "CPU", value: cpu }, { label: "RAM", value: memory }]
-      .filter((metric): metric is { label: string; value: number } =>
-        metric.value !== undefined && Number.isFinite(metric.value));
+    const metrics = [
+      { label: "CPU", value: cpu, metric: "cpu" as const },
+      { label: "RAM", value: memory, metric: "memory" as const },
+    ].filter((item): item is { label: string; value: number; metric: "cpu" | "memory" } =>
+      item.value !== undefined && Number.isFinite(item.value));
     if (!metrics.length) return html``;
     return html`<div class="machine-resource-gauges">
-      ${metrics.map(({ label, value }) => html`<div class="machine-gauge"
+      ${metrics.map(({ label, value, metric }) => html`<div
+        class="machine-gauge ${severityClass(severity(value, alertLevel(this.config?.alert_levels, metric)))}"
         style=${`--value:${Math.min(100, Math.max(0, value))}`}
         role="meter" aria-label=${label} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${value}>
         <div class="machine-gauge-content"><strong>${Math.round(value)}%</strong><small>${label}</small></div>
@@ -132,18 +304,23 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   protected updated(): void {
     this.syncTheme();
     setAuralisDialogOpen(this, this.dialog !== null && this.isConnected, this.closeDialogOnBack);
+    this.syncDialogFocus();
+    this.syncFeedbackNode();
   }
 
   private readonly closeDialogOnBack = (): void => this.closeDialog();
 
   public connectedCallback(): void {
     super.connectedCallback();
+    window.addEventListener("keydown", this.handleKeydown);
     if (this.dialog !== null) setAuralisDialogOpen(this, true, this.closeDialogOnBack);
   }
 
   public disconnectedCallback(): void {
+    window.removeEventListener("keydown", this.handleKeydown);
     setAuralisDialogOpen(this, false);
     window.clearTimeout(this.wakeTimer);
+    window.clearTimeout(this.feedbackTimer);
     super.disconnectedCallback();
   }
 
@@ -153,11 +330,13 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     this.wakeRequestedAt = Date.now();
     window.clearTimeout(this.wakeTimer);
     this.wakeTimer = window.setTimeout(() => { this.wakeRequestedAt = undefined; }, WAKE_WINDOW);
-    try {
-      await activateEntity(this.hass, entityId);
-    } catch (error) {
+    const hass = this.hass;
+    const ok = await this.runCommand(`wake:${entityId}`, () => activateEntity(hass, entityId), {
+      errorMessage: "Le réveil a échoué.",
+    });
+    if (!ok) {
+      window.clearTimeout(this.wakeTimer);
       this.wakeRequestedAt = undefined;
-      console.warn("Auralis : échec du réveil", entityId, error);
     }
   }
 
@@ -166,7 +345,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     if (online || !entityId) return nothing;
     const state = entity(this.hass, entityId);
     // Un bouton jamais utilisé est « unknown » : il reste utilisable.
-    const usable = Boolean(state) && state!.state !== "unavailable";
+    const usable = isCommandable(state);
     const pending = this.wakeRequestedAt !== undefined && Date.now() - this.wakeRequestedAt < WAKE_WINDOW;
     return html`<button class=${className} type="button" ?disabled=${!usable || pending} @click=${() => this.requestWake(entityId)}>
       <ha-icon .icon=${pending ? "mdi:timer-sand" : "mdi:power"}></ha-icon>${pending ? "Démarrage demandé…" : label}</button>`;
@@ -185,10 +364,11 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     this.confirmState = confirmState;
   }
 
+  /** Lance l'action confirmée ; une erreur est affichée au lieu d'être ignorée. */
   protected async runConfirmation(): Promise<void> {
     const current = this.confirmState;
     this.confirmState = null;
-    if (current) await current.action();
+    if (current) await this.runCommand(`confirm:${current.title}`, () => current.action());
   }
 
   protected renderDialog(title: string, icon: string, content: TemplateResult, dialogClass = ""): TemplateResult {
@@ -200,7 +380,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
           <header class="dialog-header">
             <span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span>
             <div class="title-wrap"><h2>${title}</h2></div>
-            <button class="icon-button" aria-label="Fermer" @click=${this.closeDialog}>
+            <button class="icon-button" aria-label="Fermer" data-dialog-close @click=${this.closeDialog}>
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </header>
@@ -211,16 +391,27 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     `;
   }
 
+  /**
+   * Confirmation affichée sur la carte elle-même, hors fenêtre de détail (tuile, rail
+   * de commandes). Les cartes l'ajoutent à leur rendu quand `confirmState` est posé.
+   */
+  protected renderStandaloneConfirmation(): TemplateResult | typeof nothing {
+    if (!this.confirmState || this.dialog !== null) return nothing;
+    return html`<div class="dialog-backdrop" @click=${(event: MouseEvent) => event.target === event.currentTarget && (this.confirmState = null)}>
+      ${this.renderConfirmation()}
+    </div>`;
+  }
+
   private renderConfirmation(): TemplateResult {
     const state = this.confirmState!;
     return html`
-      <section class="dialog" role="alertdialog" aria-modal="true" style="position:fixed;max-width:430px;">
+      <section class="dialog confirm-dialog" role="alertdialog" aria-modal="true" aria-label=${state.title}>
         <header class="dialog-header"><h2>${state.title}</h2></header>
         <div class="dialog-body">
-          <p class="muted" style="font-size:14px;line-height:1.5;">${state.message}</p>
-          <div class="actions" style="margin-top:18px;grid-template-columns:1fr 1fr;">
-            <button class="action" @click=${() => (this.confirmState = null)}>Annuler</button>
-            <button class="action danger" @click=${this.runConfirmation}>${state.confirmLabel}</button>
+          <p class="confirm-message">${state.message}</p>
+          <div class="actions confirm-actions">
+            <button class="action" type="button" data-dialog-close @click=${() => (this.confirmState = null)}>Annuler</button>
+            <button class="action ${state.danger === false ? "primary" : "danger"}" type="button" @click=${this.runConfirmation}>${state.confirmLabel}</button>
           </div>
         </div>
       </section>
@@ -231,7 +422,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     return 6;
   }
 
-  public getGridOptions(): Record<string, number> {
+  public getGridOptions(): Record<string, number | string> {
     return { rows: 6, min_rows: 4, columns: 6, min_columns: 3 };
   }
 }

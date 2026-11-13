@@ -24,10 +24,10 @@ type Internals = {
   view(player: MediaCardConfig["players"] extends (infer P)[] | undefined ? P : never, index: number): View;
   views(): View[];
   currentView(): View | undefined;
-  stepVolume(view: View, direction: 1 | -1): Promise<void>;
-  playPause(view: View): Promise<void>;
-  selectSource(view: View, source: string): Promise<void>;
-  togglePower(view: View): Promise<void>;
+  stepVolume(view: View, direction: 1 | -1): Promise<boolean>;
+  playPause(view: View): Promise<boolean>;
+  selectSource(view: View, source: string): Promise<boolean>;
+  togglePower(view: View): Promise<boolean>;
 };
 
 beforeAll(async () => {
@@ -137,5 +137,76 @@ describe("Auralis media card", () => {
     card.hass = { ...card.hass, states: { ...card.hass.states, "media_player.salon": state("media_player.salon", "on", { supported_features: 1024 }) } } as HomeAssistant;
     await internals.stepVolume(internals.views()[1], -1);
     expect(callService).toHaveBeenLastCalledWith("media_player", "volume_down", {}, { entity_id: "media_player.salon" });
+  });
+
+  it("flags the control whose service failed, whatever service it called", async () => {
+    const callService = vi.fn(async () => undefined);
+    const card = new media.AuralisMediaCard();
+    const internals = card as unknown as Internals & { failed?: string; feedback?: { tone: string; message: string } };
+    card.setConfig({ type: "custom:auralis-media-card", entity: "media_player.salon" });
+    // Lecture sans pause possible : la carte appelle media_stop, et c'est le bouton Lecture qui doit clignoter.
+    card.hass = { states: { "media_player.salon": state("media_player.salon", "playing", { supported_features: 4096 | 16384 }) }, callService } as HomeAssistant;
+    callService.mockRejectedValueOnce(new Error("refusé"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await internals.playPause(internals.views()[0]);
+    expect(callService).toHaveBeenLastCalledWith("media_player", "media_stop", {}, { entity_id: "media_player.salon" });
+    expect(internals.failed).toBe("media_player.salon:play");
+    expect(internals.feedback).toMatchObject({ tone: "error" });
+    expect(internals.feedback?.message).toContain("Lecture/pause");
+
+    callService.mockRejectedValueOnce(new Error("refusé"));
+    await internals.selectSource(internals.views()[0], "tv");
+    expect(internals.failed).toBe("media_player.salon:source");
+    warn.mockRestore();
+  });
+
+  it("keeps a dragged slider value until release, with a maximum hold", () => {
+    vi.useFakeTimers();
+    const changes = vi.fn();
+    const held = new media.HeldValue(changes, 1_500, 10_000);
+    held.drag("media_player.a", 42);
+    expect(held.get("media_player.a")).toBe(42);
+    expect(held.get("media_player.b")).toBeUndefined();
+    // Le défilement de la lecture ne ramène pas le curseur pendant le glissement.
+    vi.advanceTimersByTime(5_000);
+    expect(held.get("media_player.a")).toBe(42);
+    // Doigt levé sans « change » : on rend la main après le délai de confirmation.
+    held.release();
+    vi.advanceTimersByTime(1_500);
+    expect(held.get("media_player.a")).toBeUndefined();
+    // Glissement abandonné sans aucun relâchement : libéré au bout de la durée maximale.
+    held.drag("media_player.a", 10);
+    vi.advanceTimersByTime(10_000);
+    expect(held.dragging).toBe(false);
+    held.hold("media_player.a", 0.5);
+    vi.advanceTimersByTime(1_499);
+    expect(held.get("media_player.a")).toBe(0.5);
+    vi.advanceTimersByTime(1);
+    expect(held.get("media_player.a")).toBeUndefined();
+    vi.useRealTimers();
+  });
+
+  it("does not switch players under the finger and releases a choice that turned off", () => {
+    const off = { playing: false, powered: false };
+    const on = { playing: false, powered: true };
+    const playing = { playing: true, powered: true };
+    expect(media.resolvePlayer([on, playing], { pinned: false })).toBe(1);
+    // Fenêtre ouverte ou action récente : le lecteur affiché reste celui de l'utilisateur.
+    expect(media.resolvePlayer([on, playing], { shown: 0, pinned: true })).toBe(0);
+    expect(media.resolvePlayer([on, playing], { shown: 0, pinned: false })).toBe(1);
+    expect(media.resolvePlayer([on, playing], { chosen: 0, pinned: false })).toBe(0);
+    // Le lecteur choisi s'éteint pendant qu'un autre joue : le choix tombe.
+    expect(media.releasesChoice([off, playing], 0)).toBe(true);
+    expect(media.releasesChoice([off, on], 0)).toBe(false);
+    expect(media.resolvePlayer([off, playing], { chosen: 0, pinned: false })).toBe(1);
+    expect(media.resolvePlayer([off, playing], { chosen: 0, shown: 0, pinned: true })).toBe(0);
+  });
+
+  it("words the off panel like the state label", () => {
+    expect(media.offLabel("receiver", state("media_player.a", "off"))).toBe("Ampli éteint.");
+    expect(media.offLabel("speaker", state("media_player.a", "standby"))).toBe("Enceinte en veille.");
+    expect(media.offLabel("tv", state("media_player.a", "unknown"))).toBe("Télévision : état inconnu.");
+    expect(media.offLabel("tv", state("media_player.a", "unavailable"))).toBe("Lecteur indisponible.");
+    expect(media.offLabel("tv", undefined)).toBe("Entité introuvable.");
   });
 });

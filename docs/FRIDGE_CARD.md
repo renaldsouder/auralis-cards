@@ -16,7 +16,26 @@ Copiez `auralis-cards.js` dans `config/www/auralis-cards/`, puis déclarez `/loc
 
 ## Entités et commandes
 
-Tous les champs sont facultatifs ; les valeurs non configurées ou indisponibles affichent `—`. Les identifiants du YAML sont des exemples à remplacer. Les températures et mesures viennent des entités `sensor.*`. Les portes, la connexion et l'alerte sont prévues pour des `binary_sensor.*` (`on` signifie ouvert ou actif). Les consignes modifiables attendent des entités `number.*`, dont la plage et le pas sont lus avant chaque commande. Le mode accepte `select.*` ou `input_select.*`. Les fonctions rapides acceptent `switch.*` ou `button.*` ; le verrouillage accepte aussi `lock.*`. Une commande n'est envoyée que si l'entité correspondante est disponible.
+Tous les champs sont facultatifs ; les valeurs non configurées ou indisponibles affichent `—`. Les identifiants du YAML sont des exemples à remplacer. Les températures et mesures viennent des entités `sensor.*`. Les portes, la connexion et l'alerte sont prévues pour des `binary_sensor.*` (`on` signifie ouvert ou actif). Les consignes modifiables attendent des entités `number.*`, dont la plage et le pas sont lus avant chaque commande. Le mode accepte `select.*` ou `input_select.*`. Les fonctions rapides acceptent `switch.*` ou `button.*` ; le verrouillage accepte aussi `lock.*`. Une commande n'est envoyée que si l'entité correspondante n'est pas `unavailable` : un bouton jamais pressé (état `unknown`) reste utilisable. En cas d'échec, un message s'affiche quelques secondes en haut de l'écran.
+
+La connexion de l'appareil se déclare avec `status_entity`, le nom commun à toutes les cartes machines ; l'ancien nom `connected_entity` reste accepté. Sans entité de congélateur (`freezer_temperature_entity`, `freezer_target_entity` ou `freezer_climate_entity`), la tuile **Congélateur** n'est pas affichée et le réfrigérateur occupe toute la largeur.
+
+### État et alertes
+
+L'en-tête résume l'état de l'appareil : **Alerte du réfrigérateur** en rouge, **Porte ouverte** en ambre, **Hors ligne** ou **Indisponible** en gris, sinon **Fonctionnement normal**. Une porte dont le capteur ne répond pas affiche « état inconnu » au lieu d'être signalée comme fermée.
+
+Les températures passent en rouge au-delà d'un seuil réglable :
+
+```yaml
+fridge_alert_above: 8     # °C, valeur par défaut
+freezer_alert_above: -12  # °C, valeur par défaut
+```
+
+### Consignes
+
+Les boutons − et + modifient d'abord la consigne affichée ; la commande part après une courte pause (0,7 s). Plusieurs appuis rapides donnent donc une seule commande avec la bonne valeur. Si l'appareil refuse la commande, la consigne affichée revient à sa valeur réelle. Quand le mode actuel ne figure pas dans la liste proposée, le choix du mode affiche « Choisir un mode… » au lieu de présélectionner une option au hasard.
+
+Le thème suit par défaut celui de Home Assistant (`theme: auto`) pour la fenêtre de détails ; la façade photographique reste sombre dans tous les thèmes.
 
 ### Frigo exposé comme thermostat
 

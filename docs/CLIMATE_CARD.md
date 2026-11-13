@@ -29,10 +29,11 @@ Options de la carte :
 | `columns` | automatique | Nombre de colonnes, de 1 à 6. La carte repasse à deux puis une colonne quand elle est étroite. |
 | `low_battery` | `20` | Pourcentage à partir duquel une batterie est signalée. |
 | `show_summary` | `true` | Affiche le bandeau de résumé. |
+| `show_header` | `true` | Affiche l'en-tête (icône, `name`, état des capteurs). |
 | `thresholds` | voir ci-dessous | Paliers de couleur des pièces intérieures. |
 | `outdoor_thresholds` | voir ci-dessous | Paliers de couleur des pièces `outdoor: true`. |
 
-Les options visuelles communes `theme`, `accent_color`, `card_background`, `show_grid`, `background_image`, `background_position`, `image_opacity` et `image_brightness` sont acceptées.
+Les options visuelles communes `theme`, `accent_color`, `card_background`, `show_grid`, `background_image`, `background_position`, `image_opacity` et `image_brightness` sont acceptées. Le fond et le texte suivent le thème (`halo` et `aurora` clairs, `carbon` et `mono` sombres) ; avec une image de fond, la carte garde un voile sombre et un texte clair.
 
 ## Paliers de couleur
 
@@ -71,6 +72,7 @@ Un appui sur une tuile ouvre la fenêtre de la pièce : température actuelle, b
 ## Données et limites
 
 - Les courbes viennent de l'historique Home Assistant (Recorder). Un capteur exclu de l'enregistrement affiche « Aucun historique », sans valeur inventée.
+- Le minimum, le maximum et la moyenne sont calculés sur les mesures brutes de la période (et la mesure actuelle), pas sur les points du tracé, qui sont des moyennes par intervalle et écrêteraient les pics. La moyenne est pondérée par la durée de chaque valeur.
 - Toutes les températures des tuiles sont chargées en une seule requête, renouvelée toutes les cinq minutes. Les courbes de la fenêtre ne sont chargées qu'à son ouverture.
 - La période de 7 jours suppose que le Recorder conserve au moins sept jours (dix par défaut).
 - Un capteur indisponible reste visible, atténué, et il est compté dans le résumé. Il n'entre pas dans la moyenne.

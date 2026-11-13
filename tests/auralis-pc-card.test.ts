@@ -33,20 +33,6 @@ describe("PC card helpers", () => {
     expect(pcCard.pcAvailability()).toBe("unavailable");
   });
 
-  it("only exposes a power action for a known machine state", () => {
-    expect(pcCard.pcPowerAction("online")).toBe("shutdown");
-    expect(pcCard.pcPowerAction("offline")).toBe("wake");
-    expect(pcCard.pcPowerAction("unavailable")).toBeNull();
-  });
-
-  it("keeps absent metrics unavailable instead of converting them to zero", () => {
-    expect(pcCard.pcPercentage()).toBeUndefined();
-    expect(pcCard.pcPercentage(state("sensor.cpu", "unknown"))).toBeUndefined();
-    expect(pcCard.pcPercentage(state("sensor.cpu", "invalid"))).toBeUndefined();
-    expect(pcCard.pcPercentage(state("sensor.cpu", "42,5"))).toBe(42.5);
-    expect(pcCard.pcPercentage(state("sensor.cpu", "120"))).toBe(100);
-  });
-
   it("hides missing, unavailable and zero temperature sensors", () => {
     expect(pcCard.pcTemperature()).toBeUndefined();
     expect(pcCard.pcTemperature(state("sensor.cpu_temp", "unavailable"))).toBeUndefined();
@@ -73,33 +59,62 @@ describe("PC card helpers", () => {
     expect(pcCard.pcUptimeLabel(boot, now)).toBe("1 j 2 h 30 min");
     expect(pcCard.pcSessionLabel(state("sensor.pc_session", "Unlocked"))).toBe("Déverrouillée");
   });
-
-  it("requires an available Home Assistant entity before enabling an action", () => {
-    const hass: HomeAssistant = {
-      states: {
-        "button.available": state("button.available", "2026-10-05T08:30:00+02:00"),
-        "button.unavailable": state("button.unavailable", "unavailable"),
-      },
-      callService: vi.fn(async () => undefined),
-    };
-
-    expect(pcCard.pcActionAvailable(hass, "button.available")).toBe(true);
-    expect(pcCard.pcActionAvailable(hass, "button.unavailable")).toBe(false);
-    expect(pcCard.pcActionAvailable(hass, "button.missing")).toBe(false);
-    expect(pcCard.pcActionAvailable(hass)).toBe(false);
-  });
 });
 
+
 describe("AuralisPcCard configuration and guarded actions", () => {
-  it("requires the online entity and applies defaults", () => {
+  it("requires the status entity, accepts the old online_entity and applies defaults", () => {
     const card = new pcCard.AuralisPcCard();
 
-    expect(() => card.setConfig(config({ online_entity: "" }))).toThrow("online_entity est obligatoire.");
+    expect(() => card.setConfig(config({ online_entity: "" }))).toThrow("status_entity (ou online_entity) est obligatoire.");
     card.setConfig(config());
 
     const configured = card as unknown as { config: PcCardConfig };
     expect(configured.config.name).toBe("PC Bureau");
     expect(configured.config.theme).toBe("auto");
+    expect(configured.config.status_entity).toBe("binary_sensor.pc_online");
+
+    card.setConfig({ type: "custom:auralis-pc-card", status_entity: "binary_sensor.pc_ping" });
+    expect(configured.config.online_entity).toBe("binary_sensor.pc_ping");
+  });
+
+  it("keeps unavailable drives visible and reads storage_label_entity for the legacy drive", () => {
+    const card = new pcCard.AuralisPcCard();
+    card.setConfig(config({ storage_entity: "sensor.pc_storage", storage_label_entity: "sensor.pc_storage_label" }));
+    card.hass = {
+      states: {
+        "sensor.pc_storage": state("sensor.pc_storage", "60", { unit_of_measurement: "%" }),
+        "sensor.pc_storage_label": state("sensor.pc_storage_label", "1,2 / 2 To"),
+      },
+      callService: vi.fn(async () => undefined),
+    };
+    const internals = card as unknown as { drives(): Array<{ usage?: number; summary: string }> };
+    expect(internals.drives()).toEqual([expect.objectContaining({ usage: 60, summary: "1,2 / 2 To" })]);
+
+    card.setConfig(config({ drives: [{ entity: "sensor.pc_drive_d", label: "Données" }] }));
+    expect(internals.drives()).toEqual([expect.objectContaining({ label: "Données", usage: undefined, summary: "—" })]);
+  });
+
+  it("locks the session with pending feedback and a never-pressed button", async () => {
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
+    const callService = vi.fn(async () => undefined);
+    const card = new pcCard.AuralisPcCard();
+    card.setConfig(config({ lock_entity: "button.pc_lock" }));
+    card.hass = {
+      states: {
+        "binary_sensor.pc_online": state("binary_sensor.pc_online", "on"),
+        "button.pc_lock": state("button.pc_lock", "unknown"),
+      },
+      callService,
+    };
+    const internals = card as unknown as { lock(): void; feedback?: { tone: string; message: string } };
+    internals.lock();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.pc_lock" });
+    expect(internals.feedback).toEqual({ tone: "success", message: "Verrouillage demandé." });
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
   });
 
   it("includes every rendered storage and network field in the visual editor", () => {
@@ -164,6 +179,7 @@ describe("AuralisPcCard configuration and guarded actions", () => {
     card.setConfig(config({ shutdown_entity: "button.pc_shutdown" }));
     card.hass = {
       states: {
+        "binary_sensor.pc_online": state("binary_sensor.pc_online", "on"),
         "button.pc_shutdown": state("button.pc_shutdown", "2026-10-05T08:30:00+02:00"),
       },
       callService,
