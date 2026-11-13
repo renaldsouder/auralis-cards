@@ -217,7 +217,8 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
         place-items: center;
         padding: 0 6px;
         border-radius: 999px;
-        background: var(--auralis-danger);
+        /* Rouge assombri : le chiffre blanc reste lisible (plus de 4,5:1) dans tous les thèmes. */
+        background: color-mix(in srgb, var(--auralis-danger) 70%, #000);
         color: #fff;
         font-size: var(--auralis-text-xs);
         font-weight: 760;
