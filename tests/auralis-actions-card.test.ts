@@ -11,12 +11,12 @@ const ago = (seconds: number): string => new Date(NOW - seconds * 1000).toISOStr
 const plain = (text: string): string => text.replace(/\s/g, " ");
 
 type Internals = {
-  status: Map<number, string>;
+  status: ReadonlyMap<string, string>;
   dialog: string | null;
-  confirming?: number;
+  confirmState: { title: string; message: string; danger?: boolean; action(): Promise<unknown> | void } | null;
   press(index: number): void;
   run(index: number): Promise<void>;
-  confirm(): Promise<void>;
+  caption(item: unknown): string;
 };
 
 beforeAll(async () => {
@@ -118,18 +118,71 @@ describe("Auralis actions card", () => {
 
     internals.press(0);
     expect(callService).not.toHaveBeenCalled();
-    expect(internals.dialog).toBe("confirm");
-    expect(internals.confirming).toBe(0);
-    await internals.confirm();
+    // Confirmation commune (askConfirmation) : bouton rouge seulement avec danger: true.
     expect(internals.dialog).toBeNull();
+    expect(internals.confirmState).toMatchObject({ title: "button.reboot_freebox", message: "Redémarrer la Freebox ?", danger: true });
+    await internals.confirmState!.action();
     expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.reboot_freebox" });
-    expect(internals.status.get(0)).toBe("done");
+    expect(internals.status.get("0")).toBe("done");
 
     callService.mockRejectedValueOnce(new Error("refusé"));
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     await internals.run(1);
     expect(callService).toHaveBeenLastCalledWith("script", "turn_on", {}, { entity_id: "script.wake_skynet" });
-    expect(internals.status.get(1)).toBe("error");
+    expect(internals.status.get("1")).toBe("error");
     warn.mockRestore();
+  });
+
+  it("keeps a neutral confirm button without danger and refuses missing entities", () => {
+    const callService = vi.fn(async () => undefined);
+    const card = new actions.AuralisActionsCard();
+    const internals = card as unknown as Internals;
+    card.setConfig({ type: "custom:auralis-actions-card", actions: [
+      { entity: "script.arrosage", name: "Arrosage", confirm: true },
+      { entity: "switch.absent" },
+    ] });
+    card.hass = { states: { "script.arrosage": state("script.arrosage", "off") }, callService } as HomeAssistant;
+    internals.press(0);
+    expect(internals.confirmState).toMatchObject({ message: "Lancer « Arrosage » ?", danger: false });
+
+    internals.press(1);
+    expect(callService).not.toHaveBeenCalled();
+    expect(internals.caption(card.config!.actions[1])).toBe("Entité introuvable");
+    expect(actions.actionUnavailable(card.config!.actions[1], card.hass)).toBe(true);
+  });
+
+  it("rejects paths that would leave the dashboard and colours tiles with accent_color", () => {
+    const card = new actions.AuralisActionsCard();
+    for (const path of ["//evil.example", "/\\evil.example", "https://example.com"]) {
+      expect(() => card.setConfig({ type: "custom:auralis-actions-card", actions: [{ navigation_path: path }] })).toThrow();
+    }
+    expect(actions.isValidActionItem({ navigation_path: "/dashboard-auralis/cameras" })).toBe(true);
+    expect(actions.actionTone({ entity: "script.a" }, "#123456")).toBe("#123456");
+    expect(actions.actionTone({ entity: "script.a", color: "#abcdef" }, "#123456")).toBe("#abcdef");
+    expect(actions.actionTone({ entity: "script.a" })).toBe("#b79cff");
+  });
+
+  it("flashes a result for a while and ignores the click that ends a long press", () => {
+    vi.useFakeTimers();
+    const seen: Array<ReadonlyMap<string, string>> = [];
+    const flash = new actions.StatusFlash((status) => seen.push(status), 1_000);
+    flash.set("0", "done");
+    expect(flash.get("0")).toBe("done");
+    vi.advanceTimersByTime(1_000);
+    expect(flash.get("0")).toBeUndefined();
+    expect(seen.at(-1)?.size).toBe(0);
+
+    const hold = new actions.LongPress(500);
+    const onHold = vi.fn();
+    hold.start(onHold);
+    vi.advanceTimersByTime(500);
+    expect(onHold).toHaveBeenCalledOnce();
+    expect(hold.consumeClick()).toBe(true);
+    expect(hold.consumeClick()).toBe(false);
+    hold.start(onHold);
+    hold.cancel();
+    vi.advanceTimersByTime(1_000);
+    expect(onHold).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { hasOpenAuralisDialog, setAuralisDialogOpen } from "../src/utils/dialog-visibility";
+import { dialogHistorySettled, hasOpenAuralisDialog, setAuralisDialogOpen } from "../src/utils/dialog-visibility";
 
 function mockHistory(): { position: () => number; length: () => number } {
   const entries = [
@@ -82,6 +82,28 @@ describe("Auralis dialog and navbar visibility", () => {
 
     window.history.back();
     expect(window.location.href).toBe("http://homeassistant.local/accueil");
+  });
+
+  it("waits for the dialog history step to be removed before navigating", async () => {
+    const history = mockHistory();
+    const listeners: Array<() => void> = [];
+    // history.back() asynchrone, comme dans un vrai navigateur.
+    const back = window.history.back.bind(window.history);
+    (window.history as { back: () => void }).back = () => { listeners.push(back); };
+    (window as unknown as { setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout }).setTimeout = setTimeout;
+    (window as unknown as { clearTimeout: typeof clearTimeout }).clearTimeout = clearTimeout;
+    await expect(dialogHistorySettled()).resolves.toBeUndefined();
+
+    setAuralisDialogOpen(first, true, vi.fn());
+    setAuralisDialogOpen(first, false);
+    let settled = false;
+    const waiting = dialogHistorySettled().then(() => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    listeners.shift()!();
+    await waiting;
+    expect(settled).toBe(true);
+    expect(history.position()).toBe(1);
   });
 
   it("closes one dialog per back gesture when several are open", () => {

@@ -1,6 +1,9 @@
+# Une seule barre flottante par tableau de bord : si plusieurs vues ont leur carte navbar,
+# la barre suit la dernière carte connectée (celle de la vue affichée) et reste en place
+# d'une vue à l'autre, sans clignoter ni perdre son défilement.
 type: custom:auralis-navbar-card
 theme: carbon
-position: bottom  # position sur ordinateur et repli par défaut
+position: bottom  # inline, top, bottom, left ou right ; left et right réservent 176 px à côté du menu latéral
 phone_position: bottom
 tablet_position: right  # tablette Android, portrait et paysage
 height_desktop: 76  # largeur > 1024 px

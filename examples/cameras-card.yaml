@@ -2,15 +2,18 @@
 # Remplacez les identifiants d'entités par les vôtres.
 type: custom:auralis-cameras-card
 name: Caméras
-layout: grid # grid (mosaïque) ou featured (une grande et des vignettes)
+layout: grid # grid (mosaïque) ou featured (une grande et des vignettes ; la caméra en mouvement passe en grand)
 aspect_ratio: "16:9"
+# Intervalle minimal entre deux images : une caméra plus lente s'affiche à son rythme.
 refresh_interval: 10
+# L'en-tête est affiché dès qu'un titre est défini ; show_header: false le masque.
 cameras:
   - entity: camera.allee
     name: Allée
     icon: mdi:gate
     motion_entity: binary_sensor.allee_mouvement
-    # Boutons de la fenêtre, au format de la carte Actions.
+    # Boutons de la fenêtre, au format et avec le comportement de la carte Actions
+    # (color, state_entity, confirm, danger, appui long pour la fiche…).
     actions:
       - entity: light.projecteur_allee
         name: Projecteur
@@ -19,6 +22,7 @@ cameras:
         name: Sirène
         icon: mdi:alarm-light-outline
         confirm: Déclencher la sirène extérieure ?
+        danger: true # bouton de confirmation rouge
   - entity: camera.jardin
     name: Jardin
     icon: mdi:flower-outline
