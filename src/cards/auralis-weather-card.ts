@@ -1,12 +1,13 @@
 import { css, html, nothing, svg, type TemplateResult } from "lit";
-import { AuralisBaseCard } from "./auralis-base-card";
+import { AuralisBaseCard, configuredAccent } from "./auralis-base-card";
 import {
   chartPaths, chartRange, gradientStops, normalizeThresholds, OUTDOOR_THRESHOLDS, temperatureBand, type ClimateThreshold,
 } from "./auralis-climate-card";
 import type { BaseCardConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
-import { fireMoreInfo } from "../utils/actions";
 import { entity, formatNumber, friendlyName, isAvailable, numericState } from "../utils/entities";
+import { clockTime, dayKey, formatTime, hourOf } from "../utils/format";
+import { optionalMatch } from "../utils/validate";
 
 export type ForecastType = "daily" | "hourly" | "twice_daily";
 
@@ -107,6 +108,14 @@ const WEATHER_ID = /^weather\.[a-z0-9_]+$/;
 const SENSOR_ID = /^sensor\.[a-z0-9_]+$/;
 const ENTITY_ID = /^[a-z_]+\.[a-z0-9_]+$/;
 const DIRECTIONS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+/** Premier nouvel essai d'abonnement aux prévisions, puis doublé à chaque échec, jusqu'à 5 min. */
+const RETRY_FIRST = 30_000;
+const RETRY_MAX = 300_000;
+
+/** Délai avant le nouvel essai n° `attempt` (0 pour le premier) : 30 s, 1 min, 2 min, 4 min, puis 5 min. */
+export function forecastRetryDelay(attempt: number): number {
+  return Math.min(RETRY_MAX, RETRY_FIRST * 2 ** Math.max(0, Math.floor(attempt)));
+}
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const toNumber = (value: unknown): number | undefined => {
@@ -238,6 +247,8 @@ interface WeatherView {
   nextRising?: number;
   nextSetting?: number;
   alert?: AlertLevel;
+  /** Unité de précipitations du service météo (mm par défaut). */
+  precipitationUnit: string;
 }
 
 type Unsubscribe = () => unknown;
@@ -265,8 +276,13 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .eyebrow-line::first-letter { text-transform:uppercase; }
     .chip { --band:#93a2b5; display:inline-flex; min-height:30px; align-items:center; gap:7px; padding:5px 11px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,.42); color:#c5d0dd; font-size:11px; white-space:nowrap; backdrop-filter:blur(10px); }
     .chip strong { color:#fff; font-weight:700; }
-    .chip ha-icon { --mdc-icon-size:15px; color:var(--band); }
+    .chip ha-icon { --mdc-icon-size:15px; color:var(--weather-accent,var(--band)); }
+    .chips .chip { border-color:color-mix(in srgb,var(--weather-accent,rgb(195,211,229)) 22%,transparent); }
     .chip.alert { border-color:color-mix(in srgb,var(--band) 55%,transparent); background:color-mix(in srgb,var(--band) 16%,rgba(9,14,20,.5)); color:var(--band); font-weight:700; }
+    .chip.alert ha-icon { color:var(--band); }
+    button.chip { position:relative; font-family:inherit; cursor:pointer; }
+    button.chip::after { position:absolute; inset:-7px -4px; content:""; }
+    button.chip:focus-visible { outline:2px solid var(--band); outline-offset:2px; }
     .hero, .forecast { width:100%; margin:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:start; cursor:pointer; }
     .hero { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:14px; margin-top:6px; }
     .hero:focus-visible, .forecast:focus-visible, .tabs button:focus-visible { outline:2px solid var(--condition,var(--auralis-info)); outline-offset:3px; border-radius:16px; }
@@ -278,7 +294,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .place span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .now { display:grid; min-width:0; justify-items:end; text-align:end; }
     .now-main { display:flex; align-items:center; gap:10px; }
-    .now-icon { --mdc-icon-size:60px; color:var(--condition); filter:drop-shadow(0 0 18px color-mix(in srgb,var(--condition) 55%,transparent)); animation:float 7s ease-in-out infinite; }
+    .now-icon { --mdc-icon-size:60px; color:var(--condition); filter:drop-shadow(0 0 18px color-mix(in srgb,var(--weather-accent,var(--condition)) 55%,transparent)); animation:float 7s ease-in-out infinite; }
     .now-temp { color:var(--band); font-size:46px; font-weight:720; letter-spacing:-.05em; line-height:1; white-space:nowrap; }
     .now-temp small { margin-inline-start:2px; color:#cfd9e5; font-size:18px; font-weight:520; letter-spacing:0; }
     .now-label { margin-top:7px; color:#f4f7fb; font-size:14px; font-weight:680; }
@@ -287,10 +303,10 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .forecast { display:grid; grid-auto-columns:minmax(54px,1fr); grid-auto-flow:column; gap:4px; margin-top:14px; padding:10px 8px; overflow-x:auto; border:1px solid rgba(195,211,229,.14); border-radius:20px; background:rgba(6,10,16,.42); backdrop-filter:blur(12px); scrollbar-width:none; }
     .forecast::-webkit-scrollbar { display:none; }
     .slot { --condition:#c3cfdc; --band:#fff; display:flex; min-width:0; flex-direction:column; align-items:center; gap:5px; padding:5px 2px 6px; border-radius:14px; }
-    .slot.current { background:rgba(255,255,255,.07); }
-    .slot-label { color:#c9d3df; font-size:11px; font-weight:680; white-space:nowrap; }
+    .slot.current { background:color-mix(in srgb,var(--weather-accent,#fff) 9%,transparent); }
+    .slot-label { color:#c9d3df; font-size:var(--auralis-text-xs); font-weight:680; white-space:nowrap; }
     .slot ha-icon { --mdc-icon-size:25px; color:var(--condition); filter:drop-shadow(0 0 8px color-mix(in srgb,var(--condition) 35%,transparent)); }
-    .slot-rain { min-height:12px; color:#86c4ff; font-size:9.5px; font-weight:750; }
+    .slot-rain { min-height:13px; color:#86c4ff; font-size:var(--auralis-text-xs); font-weight:750; white-space:nowrap; }
     .slot-high { color:var(--band); font-size:14px; font-weight:760; }
     .slot-low { color:#8fa0b4; font-size:11px; font-weight:600; }
     .track { position:relative; width:6px; height:44px; border-radius:999px; background:rgba(255,255,255,.08); }
@@ -310,7 +326,6 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
       .now-temp { font-size:31px; }
       .now-temp small { font-size:15px; }
       .now-label { font-size:13px; }
-      .now-sub { font-size:10px; }
     }
     @container (max-width:280px) {
       .hero { grid-template-columns:1fr; align-items:start; gap:10px; }
@@ -332,17 +347,17 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .plot { position:relative; height:132px; }
     .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
     .plot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); }
-    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:rgba(11,17,24,.7); color:var(--auralis-muted); font-size:10px; }
+    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:rgba(11,17,24,.7); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .plot .axis.top { top:2px; }
     .plot .axis.bottom { bottom:2px; }
-    .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:10px; }
-    .legend { display:flex; gap:12px; padding-top:6px; color:var(--auralis-muted); font-size:10px; }
+    .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .legend { display:flex; gap:12px; padding-top:6px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .legend i { display:inline-block; width:9px; height:9px; margin-inline-end:5px; border-radius:3px; vertical-align:-1px; }
-    .hours { display:grid; grid-auto-columns:58px; grid-auto-flow:column; gap:6px; margin-top:10px; padding-bottom:4px; overflow-x:auto; }
-    .hour { --condition:#c3cfdc; --band:#fff; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; border:1px solid var(--auralis-border); border-radius:14px; background:rgba(255,255,255,.03); color:var(--auralis-muted); font-size:11px; }
+    .hours { display:grid; grid-auto-columns:62px; grid-auto-flow:column; gap:6px; margin-top:10px; padding-bottom:4px; overflow-x:auto; }
+    .hour { --condition:#c3cfdc; --band:#fff; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; border:1px solid var(--auralis-border); border-radius:14px; background:rgba(255,255,255,.03); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .hour ha-icon { --mdc-icon-size:22px; color:var(--condition); }
     .hour strong { color:var(--band); font-size:13px; }
-    .hour .slot-rain { font-size:10px; }
+    .hour .amount { min-height:13px; color:#86c4ff; white-space:nowrap; }
     .days { display:grid; gap:6px; }
     .day-row { --condition:#c3cfdc; display:grid; grid-template-columns:64px 24px minmax(0,1fr) 34px minmax(54px,1.3fr) 34px; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--auralis-border); border-radius:14px; background:rgba(255,255,255,.03); font-size:12px; }
     .day-row > strong { font-size:12px; }
@@ -367,6 +382,10 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
   private clockTimer?: number;
   private subscriptionKey?: string;
   private unsubscribers: Array<Promise<Unsubscribe | undefined>> = [];
+  private retryTimer?: ReturnType<typeof setTimeout>;
+  private retryAttempt = 0;
+  /** Entité des prévisions reçues : elles restent affichées tant qu'on suit la même entité. */
+  private forecastEntity?: string;
 
   static getStubConfig(hass?: HomeAssistant): Partial<WeatherCardConfig> {
     const first = Object.keys(hass?.states ?? {}).find((id) => id.startsWith("weather."));
@@ -379,7 +398,8 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
       sun_entity: "Entité soleil", alert_entity: "Entité de vigilance", forecast_type: "Prévisions affichées",
       forecast_count: "Nombre de prévisions", show_clock: "Afficher l’horloge", show_greeting: "Afficher la salutation",
       show_forecast: "Afficher les prévisions", dynamic_background: "Fond selon la météo", thresholds: "Paliers de couleur",
-      name: "Nom du lieu", icon: "Icône", theme: "Thème", accent_color: "Couleur d’accent", card_background: "Fond de la carte",
+      name: "Nom du lieu", icon: "Icône", theme: "Thème", accent_color: "Couleur d’accent (pastilles et halo, sinon selon le temps)",
+      card_background: "Fond de la carte",
     };
     return {
       schema: [
@@ -411,11 +431,10 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     if (!config || typeof config.entity !== "string" || !WEATHER_ID.test(config.entity)) {
       throw new Error("Configurez une entité météo : entity: weather.xxx");
     }
-    const optional = (id: unknown, pattern: RegExp): boolean => id === undefined || id === null || id === "" || (typeof id === "string" && pattern.test(id));
-    if (!optional(config.temperature_entity, SENSOR_ID) || !optional(config.humidity_entity, SENSOR_ID)) {
+    if (!optionalMatch(config.temperature_entity, SENSOR_ID) || !optionalMatch(config.humidity_entity, SENSOR_ID)) {
       throw new Error("temperature_entity et humidity_entity doivent être des capteurs (sensor.*).");
     }
-    if (!optional(config.sun_entity, /^sun\.[a-z0-9_]+$/) || !optional(config.alert_entity, ENTITY_ID)) {
+    if (!optionalMatch(config.sun_entity, /^sun\.[a-z0-9_]+$/) || !optionalMatch(config.alert_entity, ENTITY_ID)) {
       throw new Error("sun_entity doit être une entité sun.* et alert_entity un identifiant d’entité valide.");
     }
     const type = config.forecast_type && config.forecast_type in DEFAULT_COUNTS ? config.forecast_type : "daily";
@@ -440,12 +459,19 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearTimeout(this.clockTimer);
+    clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
     this.unsubscribeForecasts();
   }
 
   protected updated(): void {
     super.updated();
     this.syncForecasts();
+  }
+
+  /** Le soleil (`sun.sun` par défaut) règle le jour et la nuit : la carte suit ses changements. */
+  protected extraWatchedEntities(): string[] {
+    return [this.config?.sun_entity || "sun.sun"];
   }
 
   /** Réveil à chaque nouvelle minute pour l'horloge, la salutation et les libellés « Auj. ». */
@@ -457,11 +483,15 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     }, 60_000 - (Date.now() % 60_000) + 50);
   }
 
-  /** Types à suivre : celui du bandeau, plus les heures et les jours pour la fenêtre de détail. */
+  /**
+   * Types à suivre : celui du bandeau, plus les heures et les jours pour la fenêtre de détail
+   * (le jour et la nuit remplacent les jours quand l'entité ne propose pas `daily`).
+   */
   private wantedTypes(state: HassEntity): ForecastType[] {
     const supported = forecastTypes(state.attributes.supported_features);
     const strip = this.stripType(supported);
-    return supported.filter((type) => type === strip || type === "hourly" || type === "daily");
+    const days: ForecastType = supported.includes("daily") ? "daily" : "twice_daily";
+    return supported.filter((type) => type === strip || type === "hourly" || type === days);
   }
 
   private stripType(supported: ForecastType[]): ForecastType {
@@ -470,30 +500,67 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     return (["daily", "twice_daily", "hourly"] as ForecastType[]).find((type) => supported.includes(type)) ?? wanted;
   }
 
-  /** Abonnements weather/subscribe_forecast : recréés seulement quand l'entité ou les types changent. */
+  /**
+   * Abonnements weather/subscribe_forecast : recréés seulement quand l'entité ou les types changent.
+   * Une entité brièvement indisponible perd ses `supported_features` : on garde alors les
+   * abonnements et les dernières prévisions au lieu de tout effacer.
+   */
   private syncForecasts(): void {
     const config = this.config;
     const connection = this.hass?.connection;
     const state = entity(this.hass, config?.entity);
     if (!config || !connection || !state || !this.isConnected) return;
+    const sameEntity = this.forecastEntity === config.entity;
+    if (state.state === "unavailable" || state.state === "unknown") {
+      if (!sameEntity && this.forecastEntity !== undefined) {
+        this.unsubscribeForecasts();
+        this.forecasts = {};
+        this.forecastEntity = undefined;
+      }
+      return;
+    }
     const types = this.wantedTypes(state);
     const key = `${config.entity}/${types.join(",")}`;
     if (key === this.subscriptionKey) return;
     this.unsubscribeForecasts();
+    clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
     this.subscriptionKey = key;
-    this.forecasts = {};
+    if (!sameEntity) {
+      this.forecasts = {};
+      this.retryAttempt = 0;
+    }
+    this.forecastEntity = config.entity;
     this.forecastError = false;
     for (const type of types) {
       const subscription = connection.subscribeMessage<{ forecast?: unknown }>((message) => {
         if (this.subscriptionKey !== key) return;
+        this.retryAttempt = 0;
+        this.forecastError = false;
         this.forecasts = { ...this.forecasts, [type]: parseForecast(message?.forecast) };
       }, { type: "weather/subscribe_forecast", forecast_type: type, entity_id: config.entity })
         .catch(() => {
-          if (this.subscriptionKey === key) this.forecastError = true;
+          if (this.subscriptionKey === key) {
+            this.forecastError = true;
+            this.scheduleRetry(key);
+          }
           return undefined;
         });
       this.unsubscribers.push(subscription);
     }
+  }
+
+  /** Nouvel essai après un échec d'abonnement : 30 s, puis le double à chaque fois, 5 min au plus. */
+  private scheduleRetry(key: string): void {
+    if (this.retryTimer !== undefined) return;
+    const delay = forecastRetryDelay(this.retryAttempt);
+    this.retryAttempt++;
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = undefined;
+      if (this.subscriptionKey !== key || !this.isConnected) return;
+      this.unsubscribeForecasts();
+      this.syncForecasts();
+    }, delay);
   }
 
   private unsubscribeForecasts(): void {
@@ -514,21 +581,18 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     return (type === "hourly") === hourly ? legacy : [];
   }
 
-  private format(time: number, options: Intl.DateTimeFormatOptions, locale = "fr-FR"): string {
-    try {
-      return new Intl.DateTimeFormat(locale, { ...options, timeZone: this.hass?.config?.time_zone }).format(time);
-    } catch {
-      return new Intl.DateTimeFormat(locale, options).format(time);
-    }
+  /** Formats en cache (utils/format), dans le fuseau de Home Assistant. */
+  private format(time: number, options: Intl.DateTimeFormatOptions): string {
+    return formatTime(time, options, this.hass?.config?.time_zone);
   }
 
   /** Jour civil triable (AAAA-MM-JJ) dans le fuseau de Home Assistant. */
   private dayKey(time: number): string {
-    return this.format(time, { year: "numeric", month: "2-digit", day: "2-digit" }, "en-CA");
+    return dayKey(time, this.hass?.config?.time_zone);
   }
 
   private hourOf(time: number): number {
-    return Number(this.format(time, { hour: "numeric", hourCycle: "h23" }).replace(/\D/g, "")) || 0;
+    return hourOf(time, this.hass?.config?.time_zone);
   }
 
   private dayLabel(time: number): string {
@@ -540,7 +604,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
   }
 
   private clock(time: number): string {
-    return this.format(time, { hour: "2-digit", minute: "2-digit" });
+    return clockTime(time, this.hass?.config?.time_zone);
   }
 
   private reading(id?: string): number | undefined {
@@ -614,6 +678,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
       nextRising: sun.rising,
       nextSetting: sun.setting,
       alert: alert ? alertLevel(alert.state) : undefined,
+      precipitationUnit: typeof attributes.precipitation_unit === "string" ? attributes.precipitation_unit : "mm",
     };
   }
 
@@ -625,11 +690,16 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     return value === undefined ? "—" : `${formatNumber(value, digits)}°`;
   }
 
+  /**
+   * Couleurs de la carte : `--condition` suit toujours le temps (icônes) ; `--weather-accent`
+   * n'existe que si `accent_color` est configuré, et colore alors les pastilles et le halo.
+   */
   private shellStyle(view: WeatherView): string {
     const config = this.config!;
-    const base = this.machineStyle(view.style.color);
-    if (config.card_background || config.dynamic_background === false) return `${base};--condition:${view.style.color}`;
-    return `${base};--machine-base-background:${view.style.sky};--condition:${view.style.color}`;
+    const accent = configuredAccent(config);
+    const base = `${this.machineStyle(view.style.color)};--condition:${view.style.color}${accent ? `;--weather-accent:${accent}` : ""}`;
+    if (config.card_background || config.dynamic_background === false) return base;
+    return `${base};--machine-base-background:${view.style.sky}`;
   }
 
   private slots(view: WeatherView): { type: ForecastType; slots: Slot[] } {
@@ -703,15 +773,22 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     </button>`;
   }
 
+  /** Prévisions par jour du détail : les jours, sinon le jour et la nuit (entités qui ne proposent que twice_daily). */
+  private detailDays(state?: HassEntity): { type: ForecastType; entries: ForecastEntry[] } {
+    const daily = this.upcoming("daily", state);
+    if (daily.length) return { type: "daily", entries: daily.slice(0, 10) };
+    return { type: "twice_daily", entries: this.upcoming("twice_daily", state).slice(0, 14) };
+  }
+
   private openDetail(tab: "hourly" | "daily"): void {
-    const state = this.view().state;
+    const state = entity(this.hass, this.config?.entity);
     const hasHourly = this.upcoming("hourly", state).length > 0;
-    const hasDaily = this.upcoming("daily", state).length > 0;
+    const hasDaily = this.detailDays(state).entries.length > 0;
     this.detailTab = tab === "hourly" && !hasHourly && hasDaily ? "daily" : tab === "daily" && !hasDaily && hasHourly ? "hourly" : tab;
     this.openDialog("weather");
   }
 
-  private renderHourlyChart(entries: ForecastEntry[], sun: { rising?: number; setting?: number }): TemplateResult {
+  private renderHourlyChart(entries: ForecastEntry[], sun: { rising?: number; setting?: number }, unit: string, precipitationUnit: string): TemplateResult {
     const values = entries.map((entry) => entry.temperature);
     const [min, max] = chartRange(values, 4);
     const { line, area } = chartPaths(values, 300, 110, min, max);
@@ -719,7 +796,6 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     const stops = gradientStops(thresholds, min, max);
     const step = entries.length > 1 ? 300 / (entries.length - 1) : 300;
     const width = Math.max(2, step * 0.55);
-    const unit = this.view().temperatureUnit;
     const first = entries[0].time;
     const last = entries[entries.length - 1].time;
     const hasRain = entries.some((entry) => isNumber(entry.probability) && entry.probability > 0);
@@ -748,30 +824,35 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     <div class="hours">
       ${entries.map((entry, index) => {
         const style = conditionStyle(entry.condition, this.entryNight(entry, "hourly", sun));
-        return html`<div class="hour" style=${`--condition:${style.color};--band:${this.bandColor(entry.temperature)}`} title=${style.label}>
+        const amount = isNumber(entry.precipitation) && entry.precipitation > 0 ? `${formatNumber(entry.precipitation, 1)} ${precipitationUnit}` : "";
+        const title = [style.label, amount && `pluie ${amount}`, isNumber(entry.humidity) ? `humidité ${formatNumber(entry.humidity)} %` : ""].filter(Boolean).join(", ");
+        return html`<div class="hour" style=${`--condition:${style.color};--band:${this.bandColor(entry.temperature)}`} title=${title}>
           <span>${index === 0 ? "Maint." : this.format(entry.time, { hour: "2-digit" })}</span>
           <ha-icon .icon=${style.icon}></ha-icon>
           <strong>${this.degrees(entry.temperature)}</strong>
           <span class="slot-rain">${isNumber(entry.probability) && entry.probability > 0 ? `${formatNumber(entry.probability)} %` : ""}</span>
+          <span class="amount">${amount}</span>
         </div>`;
       })}
     </div>`;
   }
 
-  private renderDays(entries: ForecastEntry[]): TemplateResult {
+  private renderDays(entries: ForecastEntry[], type: ForecastType, sun: { rising?: number; setting?: number }): TemplateResult {
     const values = entries.flatMap((entry) => [entry.temperature, entry.low]).filter(isNumber);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const thresholds = this.config?.thresholds ?? OUTDOOR_THRESHOLDS;
     return html`<div class="days">
       ${entries.map((entry) => {
-        const style = conditionStyle(entry.condition, false);
+        const night = this.entryNight(entry, type, sun);
+        const style = conditionStyle(entry.condition, night);
+        const label = type === "twice_daily" ? `${this.dayLabel(entry.time)} ${night ? "nuit" : "jour"}` : this.dayLabel(entry.time);
         const high = entry.temperature;
         const low = entry.low ?? high;
         const position = high !== undefined ? rangePosition(low!, high, min, max) : undefined;
         const wind = entry.windSpeed !== undefined ? `, vent ${formatNumber(entry.windSpeed)}` : "";
         return html`<div class="day-row" style=${`--condition:${style.color}`} title=${`${style.label}${wind}`}>
-          <strong>${this.dayLabel(entry.time)}</strong>
+          <strong>${label}</strong>
           <ha-icon .icon=${style.icon}></ha-icon>
           <span class="day-cond"><span class="text">${style.label}</span>${entry.probability !== undefined && entry.probability >= 20 ? html` <b>${formatNumber(entry.probability)} %</b>` : nothing}</span>
           <span class="day-low">${entry.low === undefined ? "" : this.degrees(entry.low)}</span>
@@ -799,10 +880,10 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
       ["mdi:weather-sunset-down", "coucher", view.nextSetting === undefined ? undefined : this.clock(view.nextSetting)],
     ];
     const hourly = this.upcoming("hourly", view.state).slice(0, 24);
-    const daily = this.upcoming("daily", view.state).slice(0, 10);
+    const days = this.detailDays(view.state);
     const tabs = [
       ...(hourly.length ? [{ key: "hourly" as const, label: "Prochaines heures" }] : []),
-      ...(daily.length ? [{ key: "daily" as const, label: "Prochains jours" }] : []),
+      ...(days.entries.length ? [{ key: "daily" as const, label: days.type === "daily" ? "Prochains jours" : "Jour et nuit" }] : []),
     ];
     const tab = tabs.find((item) => item.key === this.detailTab)?.key ?? tabs[0]?.key;
     const sun = { rising: view.nextRising, setting: view.nextSetting };
@@ -829,14 +910,14 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
           @click=${() => { this.detailTab = item.key; }}>${item.label}</button>`)}
       </div>` : nothing}
       <section class="dialog-section">
-        ${tab === "hourly" ? html`<p class="dialog-section-title">Prochaines ${hourly.length} heures</p>${this.renderHourlyChart(hourly, sun)}`
-          : tab === "daily" ? html`<p class="dialog-section-title">Prochains jours</p>${this.renderDays(daily)}`
+        ${tab === "hourly" ? html`<p class="dialog-section-title">Prochaines ${hourly.length} heures</p>${this.renderHourlyChart(hourly, sun, view.temperatureUnit, view.precipitationUnit)}`
+          : tab === "daily" ? html`<p class="dialog-section-title">${days.type === "daily" ? "Prochains jours" : "Jour et nuit"}</p>${this.renderDays(days.entries, days.type, sun)}`
           : html`<p class="muted-note">${this.forecastError ? "Prévisions indisponibles" : "Aucune prévision pour le moment"}</p>`}
       </section>
       <div class="actions">
-        <button class="action" type="button" @click=${() => fireMoreInfo(this, this.config!.entity)}><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Service météo</button>
-        ${this.config?.temperature_entity ? html`<button class="action" type="button" @click=${() => fireMoreInfo(this, this.config!.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Capteur local</button>` : nothing}
-        ${this.config?.alert_entity ? html`<button class="action" type="button" @click=${() => fireMoreInfo(this, this.config!.alert_entity)}><ha-icon icon="mdi:alert-outline"></ha-icon>Vigilance</button>` : nothing}
+        <button class="action" type="button" @click=${() => this.moreInfo(this.config!.entity)}><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Service météo</button>
+        ${this.config?.temperature_entity ? html`<button class="action" type="button" @click=${() => this.moreInfo(this.config!.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Capteur local</button>` : nothing}
+        ${this.config?.alert_entity ? html`<button class="action" type="button" @click=${() => this.moreInfo(this.config!.alert_entity)}><ha-icon icon="mdi:alert-outline"></ha-icon>Vigilance</button>` : nothing}
       </div>
     </div>`);
   }
@@ -854,13 +935,14 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     ].filter(Boolean).join(" · ");
     const description = view.available
       ? `${view.place} : ${view.style.label}, ${view.temperature === undefined ? "" : `${formatNumber(view.temperature, 1)} ${view.temperatureUnit}`}. Voir le détail.`
-      : `${view.place} : météo indisponible`;
+      : `${view.place} : ${view.state ? "météo indisponible" : "entité introuvable"}`;
     return html`<ha-card><div class="machine-shell weather-shell ${this.machineGridClass()}" style=${this.shellStyle(view)}>
       ${view.style.stars && !config.card_background && config.dynamic_background !== false ? html`<div class="stars" aria-hidden="true"></div>` : nothing}
       <div class="machine-content weather-content">
         <div class="weather-top">
           <span class="eyebrow-line">${eyebrow}</span>
-          ${view.alert ? html`<span class="chip alert" style=${`--band:${view.alert.color}`}><ha-icon icon="mdi:alert-outline"></ha-icon>${view.alert.label}</span>` : nothing}
+          ${view.alert ? html`<button type="button" class="chip alert" style=${`--band:${view.alert.color}`} aria-label=${`${view.alert.label}, ouvrir la fiche`}
+            @click=${() => this.moreInfo(config.alert_entity)}><ha-icon icon="mdi:alert-outline"></ha-icon>${view.alert.label}</button>` : nothing}
         </div>
         <button type="button" class="hero" aria-label=${description} @click=${() => this.openDetail("hourly")}>
           <span class="hero-left">
@@ -873,7 +955,7 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
               <ha-icon class="now-icon" .icon=${view.style.icon}></ha-icon>
               <span class="now-temp">${view.temperature === undefined ? "—" : formatNumber(view.temperature, 1)}<small>${view.temperature === undefined ? "" : view.temperatureUnit}</small></span>
             </span>
-            <span class="now-label">${view.available ? view.style.label : "Indisponible"}</span>
+            <span class="now-label">${view.available ? view.style.label : view.state ? "Indisponible" : "Entité introuvable"}</span>
             ${sub ? html`<span class="now-sub">${sub}</span>` : nothing}
           </span>
         </button>

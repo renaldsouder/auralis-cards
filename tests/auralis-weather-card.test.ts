@@ -129,6 +129,82 @@ describe("Auralis weather card", () => {
     expect(internals.forecasts.hourly).toBeUndefined();
   });
 
+  it("retries a failed forecast subscription with a growing delay", async () => {
+    vi.useFakeTimers();
+    expect([0, 1, 2, 3, 4, 9].map(weather.forecastRetryDelay)).toEqual([30_000, 60_000, 120_000, 240_000, 300_000, 300_000]);
+    const subscribeMessage = vi.fn(async () => { throw new Error("weather/subscribe_forecast inconnu"); });
+    const card = new weather.AuralisWeatherCard();
+    Object.defineProperty(card, "isConnected", { value: true });
+    const internals = card as unknown as Internals & { forecastError: boolean };
+    card.setConfig({ ...config, forecast_type: "daily" });
+    card.hass = {
+      states: { "weather.maison": state("weather.maison", "cloudy", { supported_features: 1 }) },
+      callService: vi.fn(async () => undefined),
+      connection: { subscribeMessage: subscribeMessage as never },
+    };
+    internals.syncForecasts();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(internals.forecastError).toBe(true);
+    expect(subscribeMessage).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(subscribeMessage).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(subscribeMessage).toHaveBeenCalledTimes(2);
+    // Deuxième échec : nouvel essai une minute plus tard.
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(subscribeMessage).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(subscribeMessage).toHaveBeenCalledTimes(3);
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it("keeps the last forecasts while the weather entity is briefly unavailable", () => {
+    const subscribeMessage = vi.fn(async () => () => undefined);
+    const card = new weather.AuralisWeatherCard();
+    Object.defineProperty(card, "isConnected", { value: true });
+    const internals = card as unknown as Internals;
+    card.setConfig(config);
+    const hass = (value: string, attributes: Record<string, unknown>): HomeAssistant => ({
+      states: { "weather.maison": state("weather.maison", value, attributes) },
+      callService: vi.fn(async () => undefined),
+      connection: { subscribeMessage: subscribeMessage as never },
+    });
+    card.hass = hass("sunny", { supported_features: 3 });
+    internals.syncForecasts();
+    expect(subscribeMessage).toHaveBeenCalledTimes(2);
+    const daily = weather.parseForecast([{ datetime: "2026-11-12T00:00:00Z", temperature: 12 }]);
+    internals.forecasts = { daily };
+    card.hass = hass("unavailable", {});
+    internals.syncForecasts();
+    expect(subscribeMessage).toHaveBeenCalledTimes(2);
+    expect(internals.forecasts.daily).toBe(daily);
+    card.hass = hass("sunny", { supported_features: 3 });
+    internals.syncForecasts();
+    expect(subscribeMessage).toHaveBeenCalledTimes(2);
+    expect(internals.forecasts.daily).toBe(daily);
+  });
+
+  it("follows the sun entity and falls back to day/night forecasts in the detail", () => {
+    const card = new weather.AuralisWeatherCard();
+    const internals = card as unknown as Internals & {
+      extraWatchedEntities(): string[];
+      detailDays(state?: HassEntity): { type: string; entries: ForecastEntry[] };
+    };
+    card.setConfig(config);
+    expect(internals.extraWatchedEntities()).toEqual(["sun.sun"]);
+    card.setConfig({ ...config, sun_entity: "sun.maison" });
+    expect(internals.extraWatchedEntities()).toEqual(["sun.maison"]);
+
+    card.hass = { config: { time_zone: "Europe/Paris" }, states: {}, callService: vi.fn(async () => undefined) };
+    internals.now = NOW;
+    internals.forecasts = { twice_daily: weather.parseForecast([
+      { datetime: "2026-11-12T06:00:00Z", temperature: 12, is_daytime: true },
+      { datetime: "2026-11-12T18:00:00Z", temperature: 5, is_daytime: false },
+    ]) };
+    expect(internals.detailDays(state("weather.maison", "sunny", { supported_features: 4 }))).toMatchObject({ type: "twice_daily", entries: [{ temperature: 12 }, { temperature: 5 }] });
+  });
+
   it("prefers local sensors and summarises today from the forecasts", () => {
     const card = new weather.AuralisWeatherCard();
     const internals = card as unknown as Internals;
