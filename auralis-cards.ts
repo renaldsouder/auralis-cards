@@ -16,6 +16,7 @@ import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
 import { AuralisCamerasCard } from "./src/cards/auralis-cameras-card";
 import { AuralisMediaCard } from "./src/cards/auralis-media-card";
 import { AuralisTabsCard } from "./src/cards/auralis-tabs-card";
+import { AuralisScreensaverCard } from "./src/cards/auralis-screensaver-card";
 
 const VERSION = "0.22.2";
 
@@ -36,6 +37,7 @@ if (!customElements.get("auralis-actions-card")) customElements.define("auralis-
 if (!customElements.get("auralis-cameras-card")) customElements.define("auralis-cameras-card", AuralisCamerasCard);
 if (!customElements.get("auralis-media-card")) customElements.define("auralis-media-card", AuralisMediaCard);
 if (!customElements.get("auralis-tabs-card")) customElements.define("auralis-tabs-card", AuralisTabsCard);
+if (!customElements.get("auralis-screensaver-card")) customElements.define("auralis-screensaver-card", AuralisScreensaverCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -52,6 +54,12 @@ const cards = [
     type: "auralis-tabs-card",
     name: "Auralis · Onglets",
     description: "Range plusieurs cartes, Auralis ou non, sous des onglets avec icônes et pastilles.",
+    preview: false,
+  },
+  {
+    type: "auralis-screensaver-card",
+    name: "Auralis · Veille d'écran",
+    description: "Écran de veille plein écran pour tablette murale : horloge, date, météo et valeurs, réveil au premier toucher.",
     preview: false,
   },
   {
