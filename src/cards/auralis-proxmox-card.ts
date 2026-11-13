@@ -31,9 +31,11 @@ import {
   selectionBar,
   sendWorkloadCommand,
   storageBar,
+  storageFormFields,
   workloadActionEntity,
   workloadConfirmation,
   workloadCounts,
+  workloadFormFields,
   workloadRow,
   workloadState,
   workloadToolbar,
@@ -41,6 +43,44 @@ import {
   type WorkloadFilter,
   type WorkloadState,
 } from "../utils/machines";
+import { BOOLEAN, COMMAND, ENTITY, ICON, listSelector, numberSelector, SENSOR, TEMPERATURE, TEXT, YAML, type FormListField, type FormSelector } from "../utils/form";
+
+/** Tuile d'information (`info_items`) dans l'éditeur visuel. */
+const INFO_ITEM_FIELDS: Record<string, FormListField> = {
+  entity: { label: "Entité", required: true, selector: ENTITY },
+  label: { label: "Libellé", selector: TEXT },
+  icon: { label: "Icône", selector: ICON },
+  attribute: { label: "Attribut lu à la place de l’état", selector: TEXT },
+  format: { label: "Format", selector: { select: { mode: "dropdown", options: [
+    { value: "state", label: "État" }, { value: "duration", label: "Durée" },
+    { value: "datetime", label: "Date et heure" }, { value: "ratio", label: "Rapport (valeur / total)" },
+  ] } } },
+  unit: { label: "Unité", selector: TEXT },
+  precision: { label: "Décimales", selector: numberSelector(0, 4) },
+  duration_unit: { label: "Unité de la durée", selector: { select: { mode: "dropdown", options: [
+    { value: "seconds", label: "Secondes" }, { value: "minutes", label: "Minutes" },
+    { value: "hours", label: "Heures" }, { value: "days", label: "Jours" },
+  ] } } },
+  total_entity: { label: "Entité du total (rapport)", selector: ENTITY },
+  total_attribute: { label: "Attribut du total", selector: TEXT },
+  active_entity: { label: "Entité d’activité", selector: ENTITY },
+  active_state: { label: "État actif", selector: TEXT },
+  active_text: { label: "Texte quand actif", selector: TEXT },
+  show: { label: "Afficher la tuile", selector: BOOLEAN },
+  hide_unavailable: { label: "Masquer si indisponible", selector: BOOLEAN },
+};
+
+/** Nœud du cluster (`nodes`) dans l'éditeur visuel. */
+const NODE_FIELDS: Record<string, FormListField> = {
+  name: { label: "Nom", required: true, selector: TEXT },
+  status_entity: { label: "Entité d’état", required: true, selector: ENTITY },
+  icon: { label: "Icône", selector: ICON },
+  cpu_entity: { label: "Charge CPU (%)", selector: SENSOR },
+  memory_entity: { label: "Mémoire utilisée (%)", selector: SENSOR },
+  temperature_entity: { label: "Température", selector: TEMPERATURE },
+  restart_entity: { label: "Commande de redémarrage", selector: COMMAND },
+  shutdown_entity: { label: "Commande d’arrêt", selector: COMMAND },
+};
 
 type WorkloadTab = "vm" | "container";
 
@@ -53,6 +93,9 @@ const FORM_LABELS: Record<string, string> = {
   temperature_entity: "Température",
   storages: "Espaces de stockage",
   disks: "Disques physiques",
+  nodes: "Nœuds du cluster",
+  vms: "Machines virtuelles",
+  containers: "Conteneurs",
   cluster_usage_entity: "Charge du cluster (%, ancien champ)",
   memory_label_entity: "Mémoire (texte affiché)",
   storage_entity: "Stockage utilisé (%, ancien champ)",
@@ -168,59 +211,49 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
   }
 
   static getConfigForm(): Record<string, unknown> {
+    const field = (name: string, selector: FormSelector) => ({ name, selector });
+    const workloads = listSelector(workloadFormFields({ vm: true, node: true }), { label: "name", description: "entity" });
     return {
       schema: [
-        { name: "name", selector: { text: {} } },
-        {
-          name: "theme",
-          selector: {
-            select: { options: ["auto", "halo", "carbon", "mono", "aurora"] },
-          },
-        },
-        { name: "status_entity", required: true, selector: { entity: {} } },
-        { name: "version_entity", selector: { entity: {} } },
-        { name: "quorum_entity", selector: { entity: {} } },
-        { name: "cpu_entity", selector: { entity: {} } },
-        { name: "uptime_entity", selector: { entity: {} } },
-        { name: "info_items", selector: { object: {} } },
+        { name: "name", selector: TEXT },
+        { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
+        { name: "status_entity", required: true, selector: ENTITY },
+        field("version_entity", ENTITY),
+        field("quorum_entity", ENTITY),
+        field("cpu_entity", SENSOR),
+        field("uptime_entity", SENSOR),
+        field("info_items", listSelector(INFO_ITEM_FIELDS, { label: "entity", description: "label" })),
         { name: "info_columns", selector: { number: { min: 1, max: 4, mode: "box" } } },
-        { name: "temperature_entity", selector: { entity: {} } },
-        { name: "network_down_entity", selector: { entity: {} } },
-        { name: "network_up_entity", selector: { entity: {} } },
-        { name: "storages", selector: { object: {} } },
-        { name: "disks", selector: { object: {} } },
-        { name: "cluster_usage_entity", selector: { entity: {} } },
-        { name: "memory_entity", selector: { entity: {} } },
-        { name: "memory_label_entity", selector: { entity: {} } },
-        { name: "storage_entity", selector: { entity: {} } },
-        { name: "storage_label_entity", selector: { entity: {} } },
-        { name: "ceph_entity", selector: { entity: {} } },
-        { name: "backup_entity", selector: { entity: {} } },
-        { name: "alerts_entity", selector: { entity: {} } },
-        { name: "backup_action_entity", selector: { entity: {} } },
-        { name: "restart_entity", selector: { entity: {} } },
-        { name: "shutdown_entity", selector: { entity: {} } },
-        { name: "wake_entity", selector: { entity: {} } },
-        { name: "background_image", selector: { text: {} } },
-        { name: "background_position", selector: { text: {} } },
+        field("temperature_entity", TEMPERATURE),
+        field("network_down_entity", SENSOR),
+        field("network_up_entity", SENSOR),
+        field("storages", listSelector(storageFormFields(), { label: "name", description: "usage_entity" })),
+        field("disks", listSelector(storageFormFields(), { label: "name", description: "status_entity" })),
+        field("nodes", listSelector(NODE_FIELDS, { label: "name", description: "status_entity" })),
+        field("vms", workloads),
+        field("containers", workloads),
+        field("cluster_usage_entity", SENSOR),
+        field("memory_entity", SENSOR),
+        field("memory_label_entity", SENSOR),
+        field("storage_entity", SENSOR),
+        field("storage_label_entity", SENSOR),
+        field("ceph_entity", ENTITY),
+        field("backup_entity", ENTITY),
+        field("alerts_entity", ENTITY),
+        field("backup_action_entity", COMMAND),
+        field("restart_entity", COMMAND),
+        field("shutdown_entity", COMMAND),
+        field("wake_entity", COMMAND),
+        { name: "background_image", selector: TEXT },
+        { name: "background_position", selector: TEXT },
         { name: "image_opacity", selector: { number: { min: 0, max: 100, step: 1, mode: "slider" } } },
-        { name: "card_background", selector: { object: {} } },
-        { name: "show_grid", selector: { boolean: {} } },
-        { name: "accent_color", selector: { text: {} } },
-        {
-          name: "image_brightness",
-          selector: { number: { min: 30, max: 100, step: 1, mode: "slider" } },
-        },
-        {
-          name: "glass_opacity",
-          selector: { number: { min: 0.45, max: 0.96, step: 0.01, mode: "slider" } },
-        },
+        { name: "card_background", selector: YAML },
+        { name: "show_grid", selector: BOOLEAN },
+        { name: "accent_color", selector: TEXT },
+        { name: "image_brightness", selector: { number: { min: 30, max: 100, step: 1, mode: "slider" } } },
+        { name: "glass_opacity", selector: { number: { min: 0.45, max: 0.96, step: 0.01, mode: "slider" } } },
       ],
       computeLabel: formLabels(FORM_LABELS),
-      computeHelper: (schema: { name?: string }) =>
-        schema.name === "backup_action_entity"
-          ? "Les nœuds, stockages, disques, VM et conteneurs se configurent en YAML."
-          : undefined,
     };
   }
 

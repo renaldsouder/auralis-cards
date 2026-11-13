@@ -3,6 +3,7 @@ import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { activateEntity, deactivateEntity } from "./actions";
 import { clamp, domainOf, entity, isActive, isAvailable, isCommandable, numericState } from "./entities";
 import { alertLevel, severity, severityClass, type AlertLevel, type AlertMetric, type Severity } from "./severity";
+import { BOOLEAN, COMMAND, ENTITY, ICON, numberSelector, SENSOR, TEMPERATURE, TEXT, type FormListField } from "./form";
 
 /*
  * Couche commune des cartes « machines et mesures » : UNRAID, Proxmox, PC, Énergie et Frigo.
@@ -484,6 +485,46 @@ export const COMMON_FORM_LABELS: Record<string, string> = {
 /** `computeLabel` d'un éditeur : libellés propres à la carte, puis libellés communs, puis la clé. */
 export function formLabels(own: Record<string, string>): (schema: { name?: string }) => string | undefined {
   return ({ name }) => (name ? own[name] ?? COMMON_FORM_LABELS[name] ?? name : undefined);
+}
+
+/**
+ * Champs d'un conteneur Docker, d'une VM ou d'un conteneur Proxmox dans l'éditeur visuel.
+ * `vm` ajoute la pause, la console et les ressources ; `node` le nœud Proxmox.
+ */
+export function workloadFormFields(options: { vm?: boolean; node?: boolean } = {}): Record<string, FormListField> {
+  return {
+    name: { label: "Nom", required: true, selector: TEXT },
+    entity: { label: "Entité d’état (interrupteur ou capteur)", required: true, selector: ENTITY },
+    icon: { label: "Icône", selector: ICON },
+    group: { label: "Groupe", selector: TEXT },
+    ...(options.node ? { node: { label: "Nœud", selector: TEXT } } : {}),
+    cpu_entity: { label: "Charge CPU (%)", selector: SENSOR },
+    start_entity: { label: "Commande de démarrage", selector: COMMAND },
+    stop_entity: { label: "Commande d’arrêt", selector: COMMAND },
+    restart_entity: { label: "Commande de redémarrage", selector: COMMAND },
+    ...(options.vm ? {
+      pause_entity: { label: "Commande de pause", selector: COMMAND },
+      resume_entity: { label: "Commande de reprise", selector: COMMAND },
+      ip_entity: { label: "Adresse IP", selector: ENTITY },
+      console_url: { label: "Adresse de la console", selector: TEXT },
+      vcpus: { label: "Processeurs virtuels", selector: numberSelector(1, 256) },
+      memory: { label: "Mémoire (texte, ex. 8 Go)", selector: TEXT },
+      storage: { label: "Stockage (texte, ex. 64 Go)", selector: TEXT },
+    } : {}),
+  };
+}
+
+/** Champs d'un disque ou d'un espace de stockage (Unraid, Proxmox) dans l'éditeur visuel. */
+export function storageFormFields(extra: Record<string, FormListField> = {}): Record<string, FormListField> {
+  return {
+    name: { label: "Nom", required: true, selector: TEXT },
+    usage_entity: { label: "Occupation (%)", selector: SENSOR },
+    capacity_entity: { label: "Capacité (texte affiché)", selector: SENSOR },
+    temperature_entity: { label: "Température", selector: TEMPERATURE },
+    status_entity: { label: "État", selector: ENTITY },
+    show_on_card: { label: "Afficher sur la carte", selector: BOOLEAN },
+    ...extra,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import type { HomeAssistant, LovelaceCardConfig } from "../types/home-assistant"
 import { AuralisBaseCard } from "./auralis-base-card";
 import { sharedStyles } from "../styles/shared";
 import { entity } from "../utils/entities";
+import { ENTITY, ICON, listSelector, numberSelector, TEXT, YAML } from "../utils/form";
 
 export interface TabConfig {
   /** Nom de l'onglet. `name` est accepté comme alias. */
@@ -323,7 +324,13 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
         { name: "swipe", selector: { boolean: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "accent_color", selector: { text: {} } },
-        { name: "tabs", selector: { object: {} } },
+        { name: "tabs", selector: listSelector({
+          label: { label: "Nom", selector: TEXT },
+          icon: { label: "Icône", selector: ICON },
+          badge_entity: { label: "Entité de la pastille", selector: ENTITY },
+          columns: { label: "Colonnes (1 à 4)", selector: numberSelector(1, 4) },
+          cards: { label: "Cartes de l’onglet (YAML)", selector: YAML },
+        }, { label: "label" }) },
       ],
       computeLabel: (schema: { name: string }) => ({
         name: "Nom (lecteurs d'écran)",
@@ -335,7 +342,7 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
         swipe: "Glisser pour changer d'onglet",
         theme: "Thème",
         accent_color: "Couleur d'accent",
-        tabs: "Onglets et cartes (YAML)",
+        tabs: "Onglets",
       } as Record<string, string>)[schema.name] ?? schema.name,
     };
   }

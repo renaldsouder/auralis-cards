@@ -6,6 +6,7 @@ import type { CoversCardConfig, CoversGroupConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { coverCommand, fireMoreInfo, setCoverPosition } from "../utils/actions";
 import { canStopCover, coverPosition, displayState, entity, friendlyName, isCommandable } from "../utils/entities";
+import { entitySelector, ICON, listSelector, TEXT } from "../utils/form";
 
 /* -------------------------------------------------------------------------------------------
  * Outils partagés par les cartes « maison » (Volets, Pièce, Lumières, Prises).
@@ -638,7 +639,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème",
-      group_columns: "Colonnes de groupes", groups: "Groupes (name, covers, icon, background_image, background_position)",
+      group_columns: "Colonnes de groupes", groups: "Groupes de volets",
       entity_labels: "Noms personnalisés", background_image: "Image de fond des groupes", accent_color: "Couleur d’accent",
       card_background: "Fond de la carte",
     };
@@ -649,7 +650,13 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         { name: "show_header", selector: { boolean: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
         { name: "group_columns", selector: { number: { min: 1, max: 4, step: 1, mode: "box" } } },
-        { name: "groups", selector: { object: {} } },
+        { name: "groups", selector: listSelector({
+          name: { label: "Nom", required: true, selector: TEXT },
+          covers: { label: "Volets", required: true, selector: entitySelector("cover", { multiple: true }) },
+          icon: { label: "Icône", selector: ICON },
+          background_image: { label: "Image de fond", selector: TEXT },
+          background_position: { label: "Cadrage de l’image", selector: TEXT },
+        }, { label: "name" }) },
         { name: "entity_labels", selector: { object: {} } },
         { name: "background_image", selector: { text: {} } },
         { name: "accent_color", selector: { text: {} } },

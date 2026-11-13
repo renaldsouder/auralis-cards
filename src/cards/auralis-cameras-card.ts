@@ -11,6 +11,7 @@ import { entity, friendlyName, isAvailable } from "../utils/entities";
 import { clockTime, relativeTime } from "../utils/format";
 import { navigate } from "../utils/navigation";
 import { bounded } from "../utils/validate";
+import { entitySelector, ICON, listSelector, TEXT, YAML } from "../utils/form";
 
 export interface CameraConfig {
   entity: string;
@@ -299,7 +300,7 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
 
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
-      name: "Titre", icon: "Icône", cameras: "Caméras (entity, name, motion_entity, actions)", layout: "Présentation",
+      name: "Titre", icon: "Icône", cameras: "Caméras", layout: "Présentation",
       columns: "Colonnes (vide = automatique)", aspect_ratio: "Format des images", refresh_interval: "Rafraîchissement minimal (secondes)",
       live: "Flux en direct dans la fenêtre", show_header: "Afficher l’en-tête (par défaut si un titre est saisi)", theme: "Thème",
       accent_color: "Couleur d’accent", card_background: "Fond de la carte",
@@ -308,7 +309,13 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
-        { name: "cameras", required: true, selector: { object: {} } },
+        { name: "cameras", required: true, selector: listSelector({
+          entity: { label: "Caméra", required: true, selector: entitySelector("camera") },
+          name: { label: "Nom", selector: TEXT },
+          icon: { label: "Icône", selector: ICON },
+          motion_entity: { label: "Détecteur de mouvement", selector: entitySelector("binary_sensor") },
+          actions: { label: "Commandes dans la fenêtre (YAML, comme la carte Actions)", selector: YAML },
+        }, { label: "entity", description: "name" }) },
         { name: "layout", selector: { select: { options: [{ value: "grid", label: "Mosaïque" }, { value: "featured", label: "Une grande et des vignettes" }] } } },
         { name: "columns", selector: { number: { min: 1, max: 4, step: 1, mode: "box" } } },
         { name: "aspect_ratio", selector: { select: { options: ["16:9", "4:3", "1:1", "9:16"], custom_value: true } } },
