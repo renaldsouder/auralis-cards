@@ -16,21 +16,38 @@ export const sharedStyles = css`
     --auralis-title-size: 20px;
     /* Taille minimale d'une cible tactile. */
     --auralis-target: 44px;
+  }
+
+  /*
+   * Thèmes. halo et aurora sont clairs, carbon et mono sombres ; « auto » choisit halo ou
+   * carbon selon le mode sombre de Home Assistant (voir syncTheme). Les surfaces planes
+   * (carte, tuiles, lignes, fenêtres, confirmations, formulaires) suivent ces jetons ; les
+   * façades photo (.machine-shell) restent sombres dans tous les thèmes.
+   *
+   * --auralis-surface : fond uni, à utiliser dans color-mix() (le fond d'aurora est un dégradé).
+   * --auralis-shade : part de noir mêlée aux couleurs vives (seuils, météo, accents) quand elles
+   * servent de texte ou d'icône sur une surface claire ; 0 % sur les thèmes sombres.
+   */
+  :host {
     --auralis-shadow: 0 18px 48px rgba(22, 30, 42, 0.1);
+    --auralis-surface: #eef3f9;
+    --auralis-shade: 45%;
     --auralis-bg: #eef3f9;
     --auralis-card: rgba(255, 255, 255, 0.88);
     --auralis-layer: rgba(245, 248, 252, 0.92);
     --auralis-text: #132039;
-    --auralis-muted: #6b7689;
+    --auralis-muted: #5f6a7d;
     --auralis-border: rgba(81, 97, 122, 0.12);
-    --auralis-info: #4388e8;
+    --auralis-info: #3b7be0;
     --auralis-healthy: #32b879;
     --auralis-active: #f1ae31;
     --auralis-danger: #df5f67;
-    --auralis-accent-soft: rgba(67, 136, 232, 0.12);
+    --auralis-accent-soft: rgba(59, 123, 224, 0.12);
   }
 
   :host([data-theme="carbon"]) {
+    --auralis-surface: #10151c;
+    --auralis-shade: 0%;
     --auralis-bg: #10151c;
     --auralis-card: #18202a;
     --auralis-layer: #202a36;
@@ -46,6 +63,8 @@ export const sharedStyles = css`
   }
 
   :host([data-theme="mono"]) {
+    --auralis-surface: #090909;
+    --auralis-shade: 0%;
     --auralis-bg: #090909;
     --auralis-card: #111;
     --auralis-layer: #171717;
@@ -61,17 +80,30 @@ export const sharedStyles = css`
   }
 
   :host([data-theme="aurora"]) {
+    --auralis-surface: #e9eefc;
     --auralis-bg: linear-gradient(145deg, #e8e4ff, #e5f7ff 52%, #def9ee);
     --auralis-card: rgba(255, 255, 255, 0.7);
     --auralis-layer: rgba(255, 255, 255, 0.58);
     --auralis-text: #172347;
-    --auralis-muted: #65708c;
+    --auralis-muted: #5b6682;
     --auralis-border: rgba(72, 88, 135, 0.12);
-    --auralis-info: #558af2;
+    --auralis-info: #4275dc;
     --auralis-healthy: #38bd91;
     --auralis-active: #886bf1;
     --auralis-danger: #dd657d;
     --auralis-accent-soft: rgba(123, 101, 237, 0.12);
+  }
+
+  /*
+   * Encres : couleurs d'état assombries pour le texte et les icônes sur fond clair. Redéclarées
+   * sur la fenêtre, qui peut recevoir son propre --auralis-active (accent_color des cartes).
+   */
+  :host,
+  .dialog-backdrop {
+    --auralis-info-ink: color-mix(in oklab, var(--auralis-info), #000 var(--auralis-shade));
+    --auralis-healthy-ink: color-mix(in oklab, var(--auralis-healthy), #000 var(--auralis-shade));
+    --auralis-active-ink: color-mix(in oklab, var(--auralis-active), #000 var(--auralis-shade));
+    --auralis-danger-ink: color-mix(in oklab, var(--auralis-danger), #000 var(--auralis-shade));
   }
 
   ha-card {
@@ -101,9 +133,16 @@ export const sharedStyles = css`
     margin-bottom: 16px;
   }
 
-  .header ha-icon {
-    --mdc-icon-size: 30px;
-    color: var(--auralis-info);
+  /* Pastille d'icône des en-têtes de carte : cible de 44 px, icône de 24 px à la couleur de la pastille. */
+  .header .tile-icon {
+    width: var(--auralis-target);
+    height: var(--auralis-target);
+    flex: 0 0 auto;
+  }
+
+  .header .tile-icon ha-icon {
+    --mdc-icon-size: 24px;
+    color: inherit;
   }
 
   .title-wrap {
@@ -281,13 +320,13 @@ export const sharedStyles = css`
   .action.primary {
     border-color: color-mix(in srgb, var(--auralis-healthy) 45%, transparent);
     background: color-mix(in srgb, var(--auralis-healthy) 13%, var(--auralis-layer));
-    color: var(--auralis-healthy);
+    color: var(--auralis-healthy-ink);
   }
 
   .action.danger {
     border-color: color-mix(in srgb, var(--auralis-danger) 46%, transparent);
     background: color-mix(in srgb, var(--auralis-danger) 9%, var(--auralis-layer));
-    color: var(--auralis-danger);
+    color: var(--auralis-danger-ink);
   }
 
   .action[disabled],
@@ -317,16 +356,7 @@ export const sharedStyles = css`
     backdrop-filter: blur(8px);
     overscroll-behavior: contain;
     touch-action: none;
-    --auralis-bg: #0b1118;
-    --auralis-card: #101923;
-    --auralis-layer: #17222e;
-    --auralis-text: #f4f8fc;
-    --auralis-muted: #93a2b5;
-    --auralis-border: rgba(169, 190, 214, 0.16);
-    --auralis-info: #72a5ff;
-    --auralis-healthy: #54d7a4;
-    --auralis-active: #ffb64d;
-    --auralis-danger: #ff727c;
+    /* Pas de jetons propres : la fenêtre suit le thème de la carte, claire en halo et aurora. */
     color: var(--auralis-text);
   }
 
@@ -356,7 +386,7 @@ export const sharedStyles = css`
     gap: 12px;
     padding: 16px 20px;
     border-bottom: 1px solid var(--auralis-border);
-    background: color-mix(in srgb, var(--auralis-bg) 92%, transparent);
+    background: color-mix(in srgb, var(--auralis-surface) 92%, transparent);
     backdrop-filter: blur(16px);
   }
 
@@ -373,7 +403,11 @@ export const sharedStyles = css`
     margin-bottom: 16px;
     border: 1px solid var(--auralis-border);
     border-radius: 20px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--auralis-text) 5%, transparent),
+      color-mix(in srgb, var(--auralis-text) 1.5%, transparent)
+    );
   }
 
   .dialog-overview .eyebrow,
@@ -405,7 +439,7 @@ export const sharedStyles = css`
     padding: 10px 12px;
     border: 1px solid var(--auralis-border);
     border-radius: 15px;
-    background: rgba(255, 255, 255, 0.035);
+    background: color-mix(in srgb, var(--auralis-text) 3.5%, transparent);
     text-align: center;
   }
 
@@ -505,7 +539,7 @@ export const sharedStyles = css`
     gap: 10px;
     padding: 14px 20px;
     border-top: 1px solid var(--auralis-border);
-    background: color-mix(in srgb, var(--auralis-bg) 94%, transparent);
+    background: color-mix(in srgb, var(--auralis-surface) 94%, transparent);
     backdrop-filter: blur(16px);
   }
 
@@ -515,7 +549,23 @@ export const sharedStyles = css`
     text-align: center;
   }
 
+  /*
+   * Façade photo : sombre dans tous les thèmes, texte clair. Les jetons neutres y prennent des
+   * valeurs sombres pour que tuiles et puces restent lisibles sur l'image, même en halo. Les
+   * cartes planes qui réutilisent cette coquille (Climat, Thermostat, Actions sans image)
+   * rendent ces jetons au thème avec « inherit ».
+   */
   .machine-shell {
+    --auralis-text: #f4f7fb;
+    --auralis-muted: #a7b4c2;
+    --auralis-border: rgba(195, 211, 229, 0.16);
+    --auralis-layer: rgba(9, 14, 20, var(--machine-glass-alpha, 0.84));
+    --auralis-card: rgba(11, 17, 24, 0.93);
+    --auralis-shade: 0%;
+    --auralis-info-ink: var(--auralis-info);
+    --auralis-healthy-ink: var(--auralis-healthy);
+    --auralis-active-ink: var(--auralis-active);
+    --auralis-danger-ink: var(--auralis-danger);
     --machine-accent: #7898ff;
     position: relative;
     min-height: 530px;
@@ -525,6 +575,21 @@ export const sharedStyles = css`
     background: var(--machine-base-background, #090d12);
     color: #f7f9fc;
     container-type: inline-size;
+  }
+
+  .machine-shell.act-shell:not(.has-image),
+  .machine-shell.climate-shell:not(.has-image),
+  .machine-shell.thermostat-shell:not(.has-image) {
+    --auralis-text: inherit;
+    --auralis-muted: inherit;
+    --auralis-border: inherit;
+    --auralis-layer: inherit;
+    --auralis-card: inherit;
+    --auralis-shade: inherit;
+    --auralis-info-ink: inherit;
+    --auralis-healthy-ink: inherit;
+    --auralis-active-ink: inherit;
+    --auralis-danger-ink: inherit;
   }
 
   .machine-shell::before {
@@ -684,14 +749,15 @@ export const sharedStyles = css`
   .machine-bar.sev-warning,
   .sev-warning {
     --machine-accent: var(--auralis-active);
-    --sev-color: var(--auralis-active);
+    /* Encre : assombrie sur fond clair, couleur vive sur la façade et les thèmes sombres. */
+    --sev-color: var(--auralis-active-ink);
   }
 
   .machine-gauge.sev-critical,
   .machine-bar.sev-critical,
   .sev-critical {
     --machine-accent: var(--auralis-danger);
-    --sev-color: var(--auralis-danger);
+    --sev-color: var(--auralis-danger-ink);
   }
 
   .machine-gauge-content {
@@ -899,6 +965,19 @@ export const sharedStyles = css`
     .machine-gauge {
       margin-top: 36px;
     }
+  }
+
+  /* Barres de la façade réutilisées dans une fenêtre, qui peut être claire. */
+  .dialog .machine-bar {
+    color: var(--auralis-muted);
+  }
+
+  .dialog .machine-bar strong {
+    color: var(--auralis-text);
+  }
+
+  .dialog .machine-bar .track {
+    background: color-mix(in srgb, var(--auralis-text) 12%, transparent);
   }
 
   @media (min-width: 700px) {
