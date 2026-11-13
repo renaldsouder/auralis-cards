@@ -149,23 +149,68 @@ describe("Auralis navbar configuration", () => {
     const internals = card as unknown as {
       isConnected: boolean;
       setAttribute: (name: string, value: string) => void;
-      overlay?: { remove: () => void };
+      portalKey?: unknown;
       syncOverlay: () => void;
     };
     internals.setAttribute = vi.fn();
     card.setConfig(config({ position: "bottom" }));
     internals.isConnected = false;
-    const stale = { remove: vi.fn() };
-    internals.overlay = stale;
+    internals.portalKey = undefined;
 
     // A route change finishes its update after Home Assistant removed the view.
     internals.syncOverlay();
 
     expect(append).not.toHaveBeenCalled();
-    expect(stale.remove).toHaveBeenCalled();
-    expect(internals.overlay).toBeUndefined();
+    expect(internals.portalKey).toBeUndefined();
     vi.unstubAllGlobals();
     vi.stubGlobal("HTMLElement", class {});
+  });
+
+  it("shares one bar per dashboard: the last connected card wins, the bar outlives a view switch", () => {
+    vi.useFakeTimers();
+    const removed = vi.fn();
+    const registry = new navbar.PortalRegistry<string, string>(removed, 1_000);
+    expect(registry.acquire("salon", "vue-a")).toBe("vue-a");
+    registry.acquire("salon", "vue-b");
+    expect(registry.active("salon")).toBe("vue-b");
+    expect(registry.count("salon")).toBe(2);
+    // La carte active part : la précédente reprend la main.
+    expect(registry.release("salon", "vue-b")).toBe("vue-a");
+    // Changement de vue : l'ancienne carte part avant que la nouvelle arrive.
+    expect(registry.release("salon", "vue-a")).toBeUndefined();
+    vi.advanceTimersByTime(500);
+    registry.acquire("salon", "vue-c");
+    vi.advanceTimersByTime(1_000);
+    expect(removed).not.toHaveBeenCalled();
+    expect(registry.active("salon")).toBe("vue-c");
+    // Plus aucune carte : la barre disparaît après le délai.
+    registry.release("salon", "vue-c");
+    vi.advanceTimersByTime(1_000);
+    expect(removed).toHaveBeenCalledWith("salon");
+    expect(registry.active("salon")).toBeUndefined();
+    vi.useRealTimers();
+  });
+
+  it("scrolls the active item just enough to show it", () => {
+    expect(navbar.nearestScroll(40, 76, 0, 300)).toBe(0);
+    expect(navbar.nearestScroll(400, 76, 0, 300)).toBe(176);
+    expect(navbar.nearestScroll(20, 76, 100, 300)).toBe(20);
+    expect(navbar.nearestScroll(0, 400, 50, 300)).toBe(0);
+  });
+
+  it("places a side bar next to the Home Assistant sidebar", () => {
+    const placement = navbar.navbarOverlayPlacement(
+      { left: 256, right: 1200 },
+      { offsetLeft: 0, offsetTop: 0, width: 1280, height: 800 },
+      800,
+    );
+    expect(placement).toMatchObject({ insetLeft: 256, insetRight: 80 });
+  });
+
+  it("labels its editor fields in French", () => {
+    const form = navbar.AuralisNavbarCard.getConfigForm() as { computeLabel: (field: { name: string }) => string };
+    expect(form.computeLabel({ name: "position" })).toBe("Position");
+    expect(form.computeLabel({ name: "hide_native_header" })).toContain("en-tête");
   });
 
   it("returns to an editable card footprint while dashboard editing is active", () => {
