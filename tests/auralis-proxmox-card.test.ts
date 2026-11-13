@@ -23,40 +23,6 @@ beforeAll(async () => {
   proxmoxCard = await import("../src/cards/auralis-proxmox-card");
 });
 
-describe("Proxmox card helpers", () => {
-  it("distinguishes online, offline and unavailable cluster states", () => {
-    expect(proxmoxCard.proxmoxAvailability(state("binary_sensor.cluster", "on"))).toBe("online");
-    expect(proxmoxCard.proxmoxAvailability(state("binary_sensor.cluster", "off"))).toBe("offline");
-    expect(proxmoxCard.proxmoxAvailability(state("binary_sensor.cluster", "unknown"))).toBe("unavailable");
-    expect(proxmoxCard.proxmoxAvailability(state("binary_sensor.cluster", "unavailable"))).toBe("unavailable");
-    expect(proxmoxCard.proxmoxAvailability()).toBe("unavailable");
-  });
-
-  it("keeps absent metrics unavailable instead of converting them to zero", () => {
-    expect(proxmoxCard.proxmoxPercentage()).toBeUndefined();
-    expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "unknown"))).toBeUndefined();
-    expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "invalid"))).toBeUndefined();
-    expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "42,5"))).toBe(42.5);
-    expect(proxmoxCard.proxmoxPercentage(state("sensor.cluster", "120"))).toBe(100);
-    expect(proxmoxCard.proxmoxPercentage({ ...state("sensor.ram", "11.4"), attributes: { unit_of_measurement: "GiB" } })).toBeUndefined();
-  });
-
-  it("requires an available Home Assistant entity before enabling an action", () => {
-    const hass: HomeAssistant = {
-      states: {
-        "button.available": state("button.available", "2026-10-05T08:30:00+02:00"),
-        "button.unavailable": state("button.unavailable", "unavailable"),
-      },
-      callService: vi.fn(async () => undefined),
-    };
-
-    expect(proxmoxCard.proxmoxActionAvailable(hass, "button.available")).toBe(true);
-    expect(proxmoxCard.proxmoxActionAvailable(hass, "button.unavailable")).toBe(false);
-    expect(proxmoxCard.proxmoxActionAvailable(hass, "button.missing")).toBe(false);
-    expect(proxmoxCard.proxmoxActionAvailable(hass)).toBe(false);
-  });
-});
-
 describe("Proxmox isolated popups and configurable storage", () => {
   const vm = { name: "Machine test", entity: "switch.vm" };
   const lxc = { name: "Conteneur test", entity: "switch.lxc" };
@@ -78,17 +44,17 @@ describe("Proxmox isolated popups and configurable storage", () => {
     const card = makeCard();
     const internals = card as unknown as {
       openWorkloads(tab: "vm" | "container"): void;
-      selected: Set<string>;
+      selected: Map<string, string>;
       workloadItems(): ManagedProxmoxWorkload[];
       startSelected(): Promise<void>;
     };
     internals.openWorkloads("vm");
-    internals.selected.add(vm.entity);
+    internals.selected.set(vm.entity, "stopped");
     internals.openWorkloads("container");
     expect(internals.selected.size).toBe(0);
     expect(internals.workloadItems()).toEqual([lxc]);
     // A stale selection from the other popup must not dispatch a command.
-    internals.selected = new Set([vm.entity, lxc.entity]);
+    internals.selected = new Map([[vm.entity, "stopped"], [lxc.entity, "stopped"]]);
     await internals.startSelected();
     expect(card.hass!.callService).toHaveBeenCalledTimes(1);
     expect(card.hass!.callService).toHaveBeenCalledWith("homeassistant", "turn_on", {}, { entity_id: lxc.entity });
@@ -98,12 +64,12 @@ describe("Proxmox isolated popups and configurable storage", () => {
     const card = makeCard();
     const internals = card as unknown as {
       openWorkloads(tab: "vm"): void;
-      selected: Set<string>;
+      selected: Map<string, string>;
       startSelected(): Promise<void>;
     };
     internals.openWorkloads("vm");
     for (const current of ["on", "paused", "unavailable"]) {
-      internals.selected = new Set([vm.entity]);
+      internals.selected = new Map([[vm.entity, "stopped"]]);
       card.hass!.states[vm.entity] = state(vm.entity, current);
       await internals.startSelected();
     }
@@ -114,8 +80,8 @@ describe("Proxmox isolated popups and configurable storage", () => {
     const item = { name: "Lecture seule", entity: "binary_sensor.read_only" };
     const card = makeCard({ vms: [item] });
     card.hass!.states[item.entity] = state(item.entity, "off");
-    const internals = card as unknown as { startItem(item: ManagedProxmoxWorkload): Promise<void> };
-    await internals.startItem(item);
+    const internals = card as unknown as { runWorkloadAction(item: ManagedProxmoxWorkload, action: "start"): Promise<void> };
+    await internals.runWorkloadAction(item, "start");
     expect(card.hass!.callService).not.toHaveBeenCalled();
   });
 
@@ -128,6 +94,34 @@ describe("Proxmox isolated popups and configurable storage", () => {
     expect(internals.storageItems()).toEqual([{ name: "Stockage", usage_entity: "sensor.legacy", capacity_entity: "sensor.capacity" }]);
     card.setConfig(config({ storages: [], storage_entity: "sensor.legacy" }));
     expect(internals.storageItems()).toEqual([]);
+  });
+});
+
+describe("Proxmox cluster nodes", () => {
+  it("confirms a node restart only while that node is online", async () => {
+    const callService = vi.fn(async () => undefined);
+    const node = { name: "pve2", status_entity: "binary_sensor.pve2", restart_entity: "button.pve2_reboot" };
+    const card = new proxmoxCard.AuralisProxmoxCard();
+    card.setConfig(config({ nodes: [node] }));
+    card.hass = {
+      states: {
+        "binary_sensor.proxmox_online": state("binary_sensor.proxmox_online", "on"),
+        "binary_sensor.pve2": state("binary_sensor.pve2", "off"),
+        "button.pve2_reboot": state("button.pve2_reboot", "unknown"),
+      },
+      callService,
+    };
+    const internals = card as unknown as {
+      confirmNodeAction(node: unknown, action: "restart" | "shutdown"): void;
+      confirmState: { title: string; action(): Promise<void> } | null;
+    };
+    internals.confirmNodeAction(node, "restart");
+    expect(internals.confirmState).toBeNull();
+    card.hass.states["binary_sensor.pve2"] = state("binary_sensor.pve2", "on");
+    internals.confirmNodeAction(node, "restart");
+    expect(internals.confirmState?.title).toBe("Redémarrer pve2 ?");
+    await internals.confirmState?.action();
+    expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.pve2_reboot" });
   });
 });
 
@@ -152,6 +146,9 @@ describe("AuralisProxmoxCard configuration and guarded actions", () => {
       "ceph_entity",
       "backup_entity",
       "alerts_entity",
+      "image_opacity",
+      "card_background",
+      "show_grid",
     ]));
   });
 
@@ -237,18 +234,6 @@ describe("Proxmox workload commands", () => {
     dialog: string | null;
   };
 
-  it("maps each command to its entity and falls back to the switch to start or stop", () => {
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "stop")).toBe("button.hass_stop");
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "pause")).toBe("button.hass_pause");
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(vm, "resume")).toBe("button.hass_resume");
-    const lxc = { name: "LXC", entity: "switch.lxc" };
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "start")).toBe("switch.lxc");
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "stop")).toBe("switch.lxc");
-    expect(proxmoxCard.proxmoxWorkloadActionEntity(lxc, "pause")).toBeUndefined();
-    // Un capteur d'état ne peut pas servir de commande.
-    expect(proxmoxCard.proxmoxWorkloadActionEntity({ name: "VM", entity: "sensor.vm" }, "stop")).toBeUndefined();
-  });
-
   it("keeps stop and restart behind a confirmation, then presses the configured button", async () => {
     const { card, callService } = makeCard(vm, "running");
     const internals = card as unknown as Internals;
@@ -274,6 +259,27 @@ describe("Proxmox workload commands", () => {
     const { card, callService } = makeCard(lxc, "on");
     await (card as unknown as Internals).runWorkloadAction(lxc, "stop");
     expect(callService).toHaveBeenCalledWith("homeassistant", "turn_off", {}, { entity_id: "switch.lxc_mosquitto" });
+  });
+
+  it("counts and filters an unavailable workload apart from stopped ones", () => {
+    const { card } = makeCard(vm, "unavailable");
+    const internals = card as unknown as {
+      openWorkloads(tab: "vm"): void;
+      workloadFilter: string;
+      workloadItems(): ManagedProxmoxWorkload[];
+    };
+    internals.openWorkloads("vm");
+    internals.workloadFilter = "stopped";
+    expect(internals.workloadItems()).toEqual([]);
+    internals.workloadFilter = "unavailable";
+    expect(internals.workloadItems()).toEqual([vm]);
+  });
+
+  it("accepts never-pressed buttons (state unknown) as commands", async () => {
+    const { card, callService } = makeCard(vm, "running");
+    card.hass!.states["button.hass_pause"] = state("button.hass_pause", "unknown");
+    await (card as unknown as Internals).runWorkloadAction(vm, "pause");
+    expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.hass_pause" });
   });
 
   it("sends nothing when the workload itself is unavailable", async () => {

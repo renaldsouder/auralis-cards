@@ -13,7 +13,8 @@ background_position: center
 image_opacity: 35
 accent_color: "#7898FF"
 
-online_entity: binary_sensor.pc_bureau_online
+# Nom commun à toutes les cartes machines ; l'ancien online_entity reste accepté.
+status_entity: binary_sensor.pc_bureau_online
 cpu_entity: sensor.pc_bureau_cpu
 cpu_temperature_entity: sensor.pc_bureau_cpu_temperature
 gpu_entity: sensor.pc_bureau_gpu
@@ -34,9 +35,12 @@ drives:
 network_down_entity: sensor.pc_bureau_network_down
 network_up_entity: sensor.pc_bureau_network_up
 
-# Les commandes absentes ou indisponibles sont automatiquement masquées.
+# Les commandes absentes sont masquées, les commandes indisponibles grisées.
+# Un bouton jamais pressé (état « unknown ») reste utilisable.
+# La veille, le redémarrage et l'arrêt demandent une confirmation.
 lock_entity: button.pc_bureau_lock
 sleep_entity: button.pc_bureau_sleep
 restart_entity: button.pc_bureau_restart
 shutdown_entity: button.pc_bureau_shutdown
+# Affiche « Démarrer le PC » sur la carte quand le PC est hors ligne.
 wake_entity: button.pc_bureau_wake

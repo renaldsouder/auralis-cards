@@ -195,7 +195,10 @@ export interface PcExtraSectionConfig {
 
 export interface PcCardConfig extends BaseCardConfig {
   type: "custom:auralis-pc-card";
-  online_entity: string;
+  /** Entité d'état de la machine (nom commun à toutes les cartes machines). */
+  status_entity?: string;
+  /** Ancien nom de `status_entity`, toujours accepté. */
+  online_entity?: string;
   uptime_entity?: string;
   last_boot_entity?: string;
   last_activity_entity?: string;

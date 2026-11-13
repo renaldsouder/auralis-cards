@@ -48,6 +48,29 @@ export function energyProfile(state: HassEntity | undefined, config: Pick<Energy
   return { unit, units, decimals, eyebrow: "Énergie", title: "Consommation électrique", icon: "mdi:lightning-bolt", rateLabel: "Puissance instantanée", rateIcon: "mdi:flash-outline" };
 }
 
+const ENERGY_FACTORS: Record<string, number> = { Wh: 1, kWh: 1e3, MWh: 1e6, GWh: 1e9, TWh: 1e12 };
+const VOLUME_FACTORS: Record<string, number> = { mL: 0.001, L: 1, "m³": 1000 };
+
+/** Conversion d'un index entre deux unités de la même famille (énergie ou volume), sinon `undefined`. */
+export function convertMeterValue(value: number, from: string, to: string): number | undefined {
+  if (from === to) return value;
+  for (const factors of [ENERGY_FACTORS, VOLUME_FACTORS]) {
+    if (from in factors && to in factors) return (value * factors[from]) / factors[to];
+  }
+  return undefined;
+}
+
+/** Index du compteur dans l'unité et avec les décimales de la carte (unité du capteur si non convertible). */
+export function meterReading(state: HassEntity | undefined, profile: Pick<EnergyProfile, "unit" | "decimals">): string {
+  const amount = numericState(state, Number.NaN);
+  if (!Number.isFinite(amount)) return "—";
+  const native = typeof state?.attributes.unit_of_measurement === "string" ? state.attributes.unit_of_measurement.trim() : "";
+  const converted = native ? convertMeterValue(amount, native, profile.unit) : undefined;
+  return converted === undefined
+    ? [formatNumber(amount, profile.decimals), native].filter(Boolean).join(" ")
+    : `${formatNumber(converted, profile.decimals)} ${profile.unit}`;
+}
+
 interface DailyStatistic {
   start: number;
   change?: number | null;
@@ -61,6 +84,29 @@ interface DayComparison {
 
 const DAY = 86_400_000;
 const REFRESH_INTERVAL = 300_000;
+/** Premier nouvel essai après un échec, doublé à chaque échec jusqu'à REFRESH_INTERVAL. */
+const RETRY_DELAY = 30_000;
+
+/** Délai avant le prochain chargement : 5 min, ou 30 s, 1 min, 2 min… après des échecs. */
+export function historyRetryDelay(failures: number): number {
+  return failures > 0 ? Math.min(REFRESH_INTERVAL, RETRY_DELAY * 2 ** (failures - 1)) : REFRESH_INTERVAL;
+}
+
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Formats de date mis en cache par fuseau horaire : un Intl.DateTimeFormat coûte cher à créer. */
+function cachedFormatter(kind: "day" | "time", timeZone?: string): Intl.DateTimeFormat {
+  const key = `${kind}/${timeZone ?? ""}`;
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = kind === "day"
+      // ISO calendar labels let us shift whole days even when local days are 23 or 25 hours long.
+      ? new Intl.DateTimeFormat("sv-SE", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+      : new Intl.DateTimeFormat("fr-FR", { timeZone, hour: "2-digit", minute: "2-digit" });
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
 const shortDate = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", timeZone: "UTC" });
 const fullDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
@@ -70,6 +116,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     history: { state: true },
     historyError: { state: true },
     activeDay: { state: true },
+    updatedAt: { state: true },
   };
 
   static styles = [AuralisBaseCard.styles, css`
@@ -95,7 +142,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     }
     .energy-icon ha-icon { --mdc-icon-size: 22px; color: var(--energy-current); }
     .energy-header h2 { font-size: clamp(15px, 4.8cqw, 17px); letter-spacing: -.025em; }
-    .eyebrow { color: var(--auralis-muted); font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    .eyebrow { color: var(--auralis-muted); font-size: var(--auralis-text-xs); font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
     .energy-header .eyebrow { margin-bottom: 4px; }
     .totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .total {
@@ -112,12 +159,12 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     .previous { --series-color: var(--energy-previous); }
     .total strong, .tooltip-value strong { color: var(--series-color); }
     .chart-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; margin: 12px 0 7px; }
-    .chart-heading .muted { font-size: 10px; }
-    .chart { position: relative; padding-inline-start: 29px; }
+    .chart-heading .muted { font-size: var(--auralis-text-xs); }
+    .chart { position: relative; padding-inline-start: 32px; }
     .plot { position: relative; height: 104px; }
     .gridline { position: absolute; inset-inline: 0; border-top: 1px dashed var(--auralis-border); }
     .gridline:first-child { border-top-style: solid; }
-    .gridline span { position: absolute; inset-inline-end: calc(100% + 7px); top: 0; transform: translateY(-50%); color: var(--auralis-muted); font-size: 10px; }
+    .gridline span { position: absolute; inset-inline-end: calc(100% + 7px); top: 0; transform: translateY(-50%); color: var(--auralis-muted); font-size: var(--auralis-text-xs); }
     .day-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
     .day-grid.controls { position: absolute; inset: 0; }
     .chart-day {
@@ -137,7 +184,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     .bar { width: 37%; max-width: 22px; min-height: 2px; border-radius: 4px 4px 1px 1px; background: var(--series-color); }
     .bar.previous { opacity: .72; }
     .bar[hidden] { display: block; visibility: hidden; }
-    .date-label { padding-top: 6px; color: var(--auralis-muted); font-size: 10px; white-space: nowrap; text-align: center; }
+    .date-label { padding-top: 6px; color: var(--auralis-muted); font-size: var(--auralis-text-xs); white-space: nowrap; text-align: center; }
     .date-label:last-child { color: var(--auralis-text); font-weight: 700; }
     .tooltip {
       position: absolute;
@@ -154,17 +201,16 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     }
     .tooltip-value { display: flex; justify-content: space-between; gap: 14px; margin-top: 4px; color: var(--auralis-muted); }
     .empty-chart { display: grid; min-height: 135px; place-items: center; color: var(--auralis-muted); text-align: center; font-size: 12px; }
-    .readings { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 1px; margin-top: 8px; border-radius: var(--auralis-radius-lg); background: var(--auralis-border); }
+    .readings { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 1px; margin-top: 12px; overflow: hidden; border: 1px solid var(--auralis-border); border-radius: var(--auralis-radius-lg); background: var(--auralis-border); }
     .reading { display: flex; min-width: 0; min-height: 49px; align-items: center; justify-content: center; gap: 7px; padding: 6px; border: 0; background: var(--auralis-card); color: inherit; text-align: start; cursor: pointer; }
     .reading:hover { background: var(--auralis-layer); }
     .reading ha-icon { --mdc-icon-size: 17px; flex: 0 0 auto; color: var(--auralis-info); }
     .reading small, .reading strong { display: block; }
-    .reading small { color: var(--auralis-muted); font-size: 10px; }
+    .reading small { color: var(--auralis-muted); font-size: var(--auralis-text-xs); }
     .reading strong { font-size: 13px; }
     :host { container-type: inline-size; }
     @container (max-width: 280px) {
       .energy-shell { padding: 12px; }
-      .date-label { font-size: 9px; }
       .reading ha-icon { display: none; }
       .reading strong { font-size: 12px; }
     }
@@ -177,6 +223,10 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
   private historyError = false;
   private activeDay?: number;
   private timer?: number;
+  private retryTimer?: number;
+  private failures = 0;
+  /** Heure du dernier chargement réussi des statistiques. */
+  private updatedAt?: number;
   private request?: { key: string; time: number };
 
   static getStubConfig(): Partial<EnergyCardConfig> {
@@ -192,6 +242,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       power_entity: "Capteur de puissance ou de débit instantané",
       unit: "Unité affichée (vide = celle du capteur)",
       decimals: "Décimales",
+      accent_color: "Couleur de la semaine en cours",
+      card_background: "Fond de la carte",
     };
     return {
       schema: [
@@ -202,6 +254,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         { name: "decimals", selector: { number: { min: 0, max: 3, step: 1, mode: "box" } } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "icon", selector: { icon: {} } },
+        { name: "accent_color", selector: { text: {} } },
+        { name: "card_background", selector: { object: {} } },
       ],
       computeLabel: ({ name }: { name: string }) => labels[name],
     };
@@ -213,7 +267,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
 
   public setConfig(config: EnergyCardConfig): void {
     if (!config.energy_entity?.trim()) throw new Error("Le capteur d’énergie (energy_entity) est requis.");
-    this.config = { ...config, energy_entity: config.energy_entity.trim(), theme: config.theme ?? "carbon" };
+    this.config = { ...config, energy_entity: config.energy_entity.trim(), theme: config.theme ?? "auto" };
   }
 
   public connectedCallback(): void {
@@ -225,6 +279,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearInterval(this.timer);
+    window.clearTimeout(this.retryTimer);
     this.request = undefined;
   }
 
@@ -234,11 +289,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
   }
 
   private get dayFormatter(): Intl.DateTimeFormat {
-    // ISO calendar labels let us shift whole days even when local days are 23 or 25 hours long.
-    return new Intl.DateTimeFormat("sv-SE", {
-      timeZone: this.hass?.config?.time_zone,
-      year: "numeric", month: "2-digit", day: "2-digit",
-    });
+    return cachedFormatter("day", this.hass?.config?.time_zone);
   }
 
   private async refreshHistory(): Promise<void> {
@@ -249,12 +300,15 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     const profile = this.profile();
     const key = `${id}/${date.resolvedOptions().timeZone}/${profile.unit}`;
     const time = Date.now();
-    if (this.request?.key === key && time - this.request.time < REFRESH_INTERVAL) return;
+    if (this.request?.key === key && time - this.request.time < historyRetryDelay(this.failures)) return;
     if (this.request?.key !== key) {
       this.history = undefined;
       this.historyError = false;
       this.activeDay = undefined;
+      this.updatedAt = undefined;
+      this.failures = 0;
     }
+    window.clearTimeout(this.retryTimer);
     const request = { key, time };
     this.request = request;
     try {
@@ -273,8 +327,14 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
           ? [[Date.parse(date.format(start)), change] as const]
           : []));
       this.historyError = false;
+      this.failures = 0;
+      this.updatedAt = time;
     } catch {
-      if (this.request === request) this.historyError = true;
+      if (this.request !== request) return;
+      this.historyError = true;
+      // Nouvel essai rapide, puis de plus en plus espacé tant que le Recorder ne répond pas.
+      this.failures += 1;
+      this.retryTimer = window.setTimeout(() => void this.refreshHistory(), historyRetryDelay(this.failures));
     }
   }
 
@@ -332,11 +392,13 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     </div>`;
   }
 
-  private renderReading(id: string, label: string, icon: string) {
+  private renderReading(id: string, label: string, icon: string, profile?: EnergyProfile) {
     const state = entity(this.hass, id);
     const amount = numericState(state, NaN);
     const unit = state?.attributes.unit_of_measurement;
-    const formatted = Number.isFinite(amount) ? [formatNumber(amount, 2), unit].filter(Boolean).join(" ") : "—";
+    // L'index suit l'unité et les décimales de la carte ; la puissance garde celles du capteur.
+    const formatted = profile ? meterReading(state, profile)
+      : Number.isFinite(amount) ? [formatNumber(amount, 2), unit].filter(Boolean).join(" ") : "—";
     return html`<button type="button" class="reading" @click=${() => fireMoreInfo(this, id)}>
       <ha-icon .icon=${icon} aria-hidden="true"></ha-icon><span><small>${label}</small><strong>${formatted}</strong></span>
     </button>`;
@@ -350,6 +412,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       const date = today - (6 - index) * DAY;
       return { date, current: this.history?.get(date), previous: this.history?.get(date - 7 * DAY) };
     });
+    const asOf = this.updatedAt === undefined ? undefined : cachedFormatter("time", this.hass?.config?.time_zone).format(this.updatedAt);
     return html`
       <ha-card>
         <div class="energy-shell">
@@ -363,14 +426,14 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
           </div>
           <div class="chart-heading">
             <span class="eyebrow">7 jours comparés</span>
-            <span class="muted">${this.historyError && this.history ? "Actualisation indisponible" : profile.unit}</span>
+            <span class="muted" title="Les consommations viennent des statistiques horaires de Home Assistant : l’heure en cours n’est pas encore comptée.">${this.historyError && this.history ? "Actualisation indisponible" : asOf ? `${profile.unit} · relevé ${asOf}` : profile.unit}</span>
           </div>
           ${this.renderChart(days)}
+          <div class="readings">
+            ${this.config.power_entity ? this.renderReading(this.config.power_entity, profile.rateLabel, profile.rateIcon) : nothing}
+            ${this.renderReading(this.config.energy_entity, "Index compteur", "mdi:counter", profile)}
+          </div>
         </div>
-      </ha-card>
-      <ha-card class="readings">
-        ${this.config.power_entity ? this.renderReading(this.config.power_entity, profile.rateLabel, profile.rateIcon) : nothing}
-        ${this.renderReading(this.config.energy_entity, "Index compteur", "mdi:counter")}
       </ha-card>`;
   }
 }

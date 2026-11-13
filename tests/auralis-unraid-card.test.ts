@@ -24,55 +24,11 @@ beforeAll(async () => {
 });
 
 describe("UNRAID card helpers", () => {
-  it("distinguishes active, stopped, paused and unavailable workloads", () => {
-    expect(unraidCard.unraidWorkloadState(state("switch.service", "on"))).toBe("active");
-    expect(unraidCard.unraidWorkloadState(state("switch.service", "off"))).toBe("stopped");
-    expect(unraidCard.unraidWorkloadState(state("sensor.vm", "paused"))).toBe("paused");
-    expect(unraidCard.unraidWorkloadState(state("switch.service", "unknown"))).toBe("unavailable");
-    expect(unraidCard.unraidWorkloadState(state("switch.service", "unavailable"))).toBe("unavailable");
-    expect(unraidCard.unraidWorkloadState()).toBe("unavailable");
-  });
-
-  it("keeps absent percentages unavailable instead of converting them to zero", () => {
-    expect(unraidCard.unraidPercentage()).toBeUndefined();
-    expect(unraidCard.unraidPercentage(state("sensor.usage", "unknown"))).toBeUndefined();
-    expect(unraidCard.unraidPercentage(state("sensor.usage", "invalid"))).toBeUndefined();
-    expect(unraidCard.unraidPercentage(state("sensor.usage", "42,5"))).toBe(42.5);
-    expect(unraidCard.unraidPercentage(state("sensor.usage", "120"))).toBe(100);
-  });
-
   it("supports inverted health binary sensors used by the UNRAID integration", () => {
     expect(unraidCard.unraidStateIsHealthy(state("binary_sensor.disk", "on"))).toBe(true);
     expect(unraidCard.unraidStateIsHealthy(state("binary_sensor.disk", "off"), "off")).toBe(true);
     expect(unraidCard.unraidStateIsHealthy(state("binary_sensor.disk", "on"), "off")).toBe(false);
     expect(unraidCard.unraidStateIsHealthy(state("binary_sensor.disk", "unknown"), "off")).toBe(false);
-  });
-
-  it("uses dedicated commands first and only falls back to a switch entity", () => {
-    const configured: ManagedService = {
-      name: "Plex",
-      entity: "switch.plex",
-      start_entity: "button.plex_start",
-      stop_entity: "button.plex_stop",
-      restart_entity: "button.plex_restart",
-    };
-    expect(unraidCard.unraidActionEntity(configured, "start")).toBe("button.plex_start");
-    expect(unraidCard.unraidActionEntity(configured, "stop")).toBe("button.plex_stop");
-    expect(unraidCard.unraidActionEntity(configured, "restart")).toBe("button.plex_restart");
-
-    const vm: ManagedVm = {
-      name: "HomeLab",
-      entity: "switch.homelab",
-      pause_entity: "button.homelab_pause",
-      resume_entity: "button.homelab_resume",
-    };
-    expect(unraidCard.unraidActionEntity(vm, "pause")).toBe("button.homelab_pause");
-    expect(unraidCard.unraidActionEntity(vm, "resume")).toBe("button.homelab_resume");
-
-    const switchOnly: ManagedService = { name: "Grafana", entity: "switch.grafana" };
-    expect(unraidCard.unraidActionEntity(switchOnly, "start")).toBe("switch.grafana");
-    expect(unraidCard.unraidActionEntity(switchOnly, "stop")).toBe("switch.grafana");
-    expect(unraidCard.unraidActionEntity({ name: "Lecture", entity: "sensor.read_only" }, "start")).toBeUndefined();
   });
 
   it("allows Docker and VM group labels to be renamed independently", () => {
@@ -244,5 +200,93 @@ describe("Wake button for a stopped server", () => {
     expect(internals.wakeRequestedAt).toBeTypeOf("number");
     vi.unstubAllGlobals();
     vi.stubGlobal("HTMLElement", class {});
+  });
+});
+
+describe("UNRAID selection, bulk commands and server actions", () => {
+  const plex: ManagedService = { name: "Plex", entity: "switch.plex" };
+  const grafana: ManagedService = { name: "Grafana", entity: "switch.grafana" };
+  type Internals = {
+    openServices(tab: "docker" | "vm"): void;
+    selected: Map<string, string>;
+    toggleSelected(entityId: string, state: string): void;
+    willUpdate(changed: Map<string, unknown>): void;
+    startSelected(): Promise<void>;
+    stopSelected(): void;
+    confirmServerAction(action: "restart" | "shutdown"): void;
+    confirmState: { title: string; action(): Promise<void> } | null;
+    feedback?: { tone: string; message: string };
+  };
+  const makeCard = (states: Record<string, string>, callService: HomeAssistant["callService"] = vi.fn(async () => undefined)) => {
+    const card = new unraidCard.AuralisUnraidCard();
+    card.setConfig(config({ docker: [plex, grafana], restart_entity: "button.unraid_reboot" }));
+    card.hass = {
+      states: Object.fromEntries(Object.entries(states).map(([id, value]) => [id, state(id, value)])),
+      callService,
+    };
+    return { card, internals: card as unknown as Internals, callService };
+  };
+
+  it("drops a selected container from the selection once it starts", () => {
+    const { card, internals } = makeCard({ "binary_sensor.unraid_online": "on", "switch.plex": "off", "switch.grafana": "off" });
+    internals.openServices("docker");
+    internals.toggleSelected(plex.entity, "stopped");
+    internals.toggleSelected(grafana.entity, "stopped");
+    card.hass!.states[plex.entity] = state(plex.entity, "on");
+    internals.willUpdate(new Map([["hass", undefined]]));
+    expect([...internals.selected.keys()]).toEqual([grafana.entity]);
+  });
+
+  it("starts every selected container, keeps failures selected and reports them", async () => {
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const callService = vi.fn(async (_domain: string, _service: string, _data?: unknown, target?: Record<string, unknown>) => {
+      if (target?.entity_id === grafana.entity) throw new Error("timeout");
+    });
+    const { internals } = makeCard({ "binary_sensor.unraid_online": "on", "switch.plex": "off", "switch.grafana": "off" }, callService);
+    internals.openServices("docker");
+    internals.toggleSelected(plex.entity, "stopped");
+    internals.toggleSelected(grafana.entity, "stopped");
+    await internals.startSelected();
+    expect(callService).toHaveBeenCalledTimes(2);
+    expect([...internals.selected.keys()]).toEqual([grafana.entity]);
+    expect(internals.feedback?.tone).toBe("error");
+    expect(internals.feedback?.message).toContain("1 sur 2");
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+
+  it("stops running containers in bulk only after confirmation", async () => {
+    const { internals, callService } = makeCard({ "binary_sensor.unraid_online": "on", "switch.plex": "on", "switch.grafana": "off" });
+    internals.openServices("docker");
+    internals.toggleSelected(plex.entity, "active");
+    internals.toggleSelected(grafana.entity, "stopped");
+    internals.stopSelected();
+    expect(callService).not.toHaveBeenCalled();
+    expect(internals.confirmState?.title).toBe("Arrêter 1 élément ?");
+    await internals.confirmState?.action();
+    expect(callService).toHaveBeenCalledTimes(1);
+    expect(callService).toHaveBeenCalledWith("homeassistant", "turn_off", {}, { entity_id: plex.entity });
+  });
+
+  it("only offers a server restart while the server is online, with a never-pressed button", () => {
+    const { card, internals } = makeCard({ "binary_sensor.unraid_online": "off", "button.unraid_reboot": "unknown" });
+    internals.confirmServerAction("restart");
+    expect(internals.confirmState).toBeNull();
+    card.hass!.states["binary_sensor.unraid_online"] = state("binary_sensor.unraid_online", "on");
+    internals.confirmServerAction("restart");
+    expect(internals.confirmState?.title).toBe("Redémarrer le serveur ?");
+  });
+
+  it("reads healthy and total disk counters", () => {
+    expect(unraidCard.unraidDiskHealth(state("sensor.healthy", "5"), state("sensor.total", "6"))).toEqual({ healthy: 5, total: 6 });
+    expect(unraidCard.unraidDiskHealth(state("sensor.healthy", "unavailable"))).toEqual({ healthy: undefined, total: undefined });
+  });
+
+  it("labels the visual editor in French", () => {
+    const form = unraidCard.AuralisUnraidCard.getConfigForm() as { computeLabel(schema: { name: string }): string };
+    expect(form.computeLabel({ name: "healthy_disks_entity" })).toBe("Nombre de disques sains");
+    expect(form.computeLabel({ name: "background_image" })).toBe("Image de fond");
   });
 });

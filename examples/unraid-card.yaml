@@ -20,9 +20,20 @@ array_usage_entity: sensor.unraid_array_usage
 array_label_entity: sensor.unraid_array_capacity
 cpu_entity: sensor.unraid_cpu
 cpu_temperature_entity: sensor.unraid_cpu_temperature
+# Facultatif : « 5/6 disques sains · 41 °C » sous l'état de l'array.
+healthy_disks_entity: sensor.unraid_healthy_disks
+total_disks_entity: sensor.unraid_total_disks
+disk_temperature_entity: sensor.unraid_disk_max_temperature
+# Pourcentage attendu (0–100) : un capteur en Gio est ignoré par les cadrans.
 memory_entity: sensor.unraid_memory
 network_down_entity: sensor.unraid_network_down
 network_up_entity: sensor.unraid_network_up
+
+# Facultatif : seuils des couleurs ambre (warning) puis rouge (critical).
+# Valeurs par défaut : CPU 80/95 %, RAM 85/95 %, disques 85/95 %, températures 70/85 °C.
+# alert_levels:
+#   disk: { warning: 80, critical: 90 }
+#   temperature: { warning: 50, critical: 60 }
 
 disks:
   - name: Disque 1
