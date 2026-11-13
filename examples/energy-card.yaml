@@ -16,6 +16,20 @@ power_entity: sensor.compteur_puissance_apparente
 # L'index du compteur suit aussi cette unité (Wh → kWh, m³ → L…) et ces décimales.
 # unit: kWh
 # decimals: 1
+# Facultatif : coût de la consommation (voir docs/ENERGY_CARD.md).
+# Prix par kWh (ou par m³ pour un compteur de gaz), affiché sous chaque total,
+# dans le détail d'un jour et dans « Coût sur 7 jours ».
+# price: 0.2016
+# Ou le prix actuel lu sur un capteur (EUR/kWh, €/kWh, c€/kWh, EUR/MWh…) :
+# il s'applique aussi aux jours passés.
+# price_entity: sensor.prix_electricite
+# currency: "€"
+# subscription_per_day: 0.47
+# Heures creuses : chaque heure est tarifée selon sa plage (fuseau de Home Assistant).
+# offpeak_price: 0.1828
+# offpeak_hours:
+#   - "22:00-06:00"
+# show_cost: true
 # Facultatif : couleur de la semaine en cours et fond de la carte.
 # accent_color: "#FFB458"
 # card_background:
