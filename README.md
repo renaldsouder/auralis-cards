@@ -204,6 +204,34 @@ grid_options:
   rows: auto
 ```
 
+### Pièce remplie depuis une zone Home Assistant
+
+Avec `area`, la carte reprend les appareils d'une zone (pièce) de Home Assistant : plus besoin de lister chaque entité.
+
+```yaml
+type: custom:auralis-room-card
+area: salon            # identifiant ou nom de la zone, sans tenir compte de la casse
+# Facultatif :
+# area_exclude:        # entités de la zone à ignorer (identifiants ou motifs avec * et ?)
+#   - light.veilleuse_*
+#   - media_player.salon_groupe
+# area_include_switches: true   # reprend aussi les interrupteurs switch.* (hors prises) comme lumières
+```
+
+Une entité appartient à la zone quand elle y est rattachée directement, ou, à défaut, quand son appareil l'est. Les entités masquées, désactivées, de configuration ou de diagnostic sont ignorées. Chaque option **non renseignée** (ou laissée vide) est remplie :
+
+| Option | Reprise depuis la zone |
+| --- | --- |
+| `name` | nom de la zone |
+| `lights` | lumières `light.*`, triées par nom ; un groupe de lumières de la zone remplace ses membres. Avec `area_include_switches: true`, les `switch.*` qui ne sont pas des prises (`device_class: outlet`) |
+| `covers` | volets `cover.*`, sauf portes de garage et portails (`device_class: garage` ou `gate`) |
+| `temperature_entity` / `humidity_entity` | premier capteur de classe `temperature` / `humidity`, en évitant ceux dont le nom contient « batterie » ou « battery » |
+| `climate_entity` | premier thermostat `climate.*` |
+| `media_player_entity` | premier lecteur `media_player.*` qui n'est pas une télévision |
+| `right_controls` | si la zone contient une télévision (`device_class: tv`) et que `right_controls` n'est pas défini : le lecteur puis une commande `tv` |
+
+Une option renseignée l'emporte toujours sur la zone ; pour ne retirer que certains appareils, utilisez `area_exclude` (par exemple `light.*` pour n'afficher aucune lumière). Si la zone n'existe pas, ou si elle ne contient ni lumière, ni volet, ni capteur, la carte affiche un message explicite à la place de la pièce. Les zones nécessitent Home Assistant 2023.x ou plus récent. Toutes les autres options (photo, ambiances, thermostat, libellés…) restent disponibles.
+
 Une version autonome, limitée à la carte Salon, est disponible dans [`examples/salon-card.yaml`](examples/salon-card.yaml).
 
 ```yaml

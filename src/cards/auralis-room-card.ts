@@ -1,4 +1,4 @@
-import { css, html, nothing, type TemplateResult } from "lit";
+import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import {
   coverPopupHost,
@@ -33,6 +33,7 @@ import {
   summarizeRange,
 } from "../utils/entities";
 import { activateEntity } from "../utils/actions";
+import { resolveAreaEntities, suggestArea, type AreaResolution, type HomeAssistantWithRegistries, type ResolvedArea } from "../utils/areas";
 
 /** Au-delà de 10 jours (rétention par défaut de l'enregistreur), les courbes passent aux statistiques long terme. */
 export const HISTORY_GRAPH_MAX_HOURS = 240;
@@ -67,6 +68,38 @@ export function mediaStatusLabel(state?: HassEntity): string {
     standby: "en veille", buffering: "chargement…", on: "allumé",
   };
   return labels[state.state] ?? "état inconnu";
+}
+
+/** `area_exclude` accepte une liste ou un seul motif. */
+function areaExclusions(value: unknown): string[] {
+  if (typeof value === "string") return value.trim() ? [value] : [];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : [];
+}
+
+const configured = (value: string | undefined): string | undefined => value?.trim() ? value : undefined;
+const configuredList = (value: string[] | undefined): string[] | undefined => value?.length ? value : undefined;
+
+/**
+ * Complète une configuration avec les entités d'une zone : seules les options absentes (ou
+ * vides) sont remplies, la configuration explicite l'emporte toujours. Une télévision de la
+ * zone devient une commande de droite, à côté du lecteur, si `right_controls` n'est pas défini.
+ */
+export function withAreaEntities(config: RoomCardConfig, area: ResolvedArea): RoomCardConfig {
+  const media = configured(config.media_player_entity) ?? area.media;
+  const tvControls: RoomSideControlConfig[] | undefined = area.tv
+    ? [...(media ? [{ type: "media" as const, entity: media }] : []), { type: "tv", entity: area.tv }]
+    : undefined;
+  return {
+    ...config,
+    name: configured(config.name) ?? area.name,
+    lights: configuredList(config.lights) ?? area.lights,
+    covers: configuredList(config.covers) ?? area.covers,
+    temperature_entity: configured(config.temperature_entity) ?? area.temperature,
+    humidity_entity: configured(config.humidity_entity) ?? area.humidity,
+    climate_entity: configured(config.climate_entity) ?? area.climate,
+    media_player_entity: media,
+    right_controls: config.right_controls ?? tvControls,
+  };
 }
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
@@ -962,6 +995,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         margin-top: 10px;
         font-weight: 680;
       }
+
+      /* Zone introuvable ou sans appareil utilisable. */
+      .area-message {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px;
+        color: var(--auralis-muted);
+      }
+
+      .area-message ha-icon { flex: 0 0 auto; color: var(--auralis-active); }
+      .area-message p { margin: 0; line-height: 1.4; }
     `,
   ];
 
@@ -986,19 +1031,99 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   });
 
   public setConfig(config: RoomCardConfig): void {
+    const area = typeof config.area === "string" ? config.area.trim() : "";
+    if (area) {
+      // Les entités de la zone ne sont connues qu'avec `hass` : la vérification se fait au rendu.
+      this.config = { ...config, area, theme: config.theme || "carbon" };
+      return;
+    }
     const lights = config.lights || [];
     const covers = config.covers || [];
     if (!lights.length && !covers.length && !config.temperature_entity && !config.humidity_entity) {
-      throw new Error("Configurez au moins une lumière, un volet ou un capteur.");
+      throw new Error("Configurez au moins une lumière, un volet ou un capteur, ou une zone (area).");
     }
     this.config = { ...config, theme: config.theme || "carbon", lights, covers };
   }
 
+  private merged?: { config: RoomCardConfig; resolution: ResolvedArea; room: RoomCardConfig };
+  private watchedArea?: { base: Set<string>; resolution: ResolvedArea; ids: Set<string> };
+  private resolvedFor?: { hass?: HomeAssistant; config: RoomCardConfig; resolution: AreaResolution };
+
+  /** Entités de la zone `area`, mémorisées tant que les registres de Home Assistant ne changent pas. */
+  private areaResolution(): AreaResolution | undefined {
+    const config = this.config;
+    if (!config?.area) return undefined;
+    // Lue à chaque accès à la configuration : un seul calcul par objet `hass`.
+    const cached = this.resolvedFor;
+    if (cached && cached.hass === this.hass && cached.config === config) return cached.resolution;
+    const resolution = resolveAreaEntities(this.hass, config.area, areaExclusions(config.area_exclude), {
+      includeSwitches: config.area_include_switches === true,
+    });
+    this.resolvedFor = { hass: this.hass, config, resolution };
+    return resolution;
+  }
+
+  /** Configuration effective : celle de la carte, complétée par les entités de la zone `area`. */
+  private get room(): RoomCardConfig | undefined {
+    const config = this.config;
+    const resolution = this.areaResolution();
+    if (!config || resolution?.status !== "ok") return config;
+    if (this.merged?.config !== config || this.merged.resolution !== resolution) {
+      this.merged = { config, resolution, room: withAreaEntities(config, resolution) };
+    }
+    return this.merged.room;
+  }
+
+  /** Les entités reprises de la zone ne figurent pas dans la configuration : elles sont suivies ici. */
+  protected extraWatchedEntities(): string[] {
+    const resolution = this.areaResolution();
+    return resolution?.status === "ok" ? resolution.entities : [];
+  }
+
+  /** Entités de la configuration plus celles de la zone, recalculées quand la zone change. */
+  protected watchedEntityIds(): Set<string> {
+    const base = super.watchedEntityIds();
+    const resolution = this.areaResolution();
+    if (resolution?.status !== "ok") return base;
+    if (this.watchedArea?.base !== base || this.watchedArea.resolution !== resolution) {
+      this.watchedArea = { base, resolution, ids: new Set([...base, ...resolution.entities]) };
+    }
+    return this.watchedArea.ids;
+  }
+
+  /** Une zone dépend aussi des registres : une entité déplacée de pièce redessine la carte. */
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    if (this.config?.area && changed.has("hass")) {
+      const previous = changed.get("hass") as HomeAssistantWithRegistries | undefined;
+      const next = this.hass as HomeAssistantWithRegistries | undefined;
+      if (previous && next && (previous.entities !== next.entities || previous.devices !== next.devices || previous.areas !== next.areas)) {
+        return true;
+      }
+    }
+    return super.shouldUpdate(changed);
+  }
+
+  /** Message affiché à la place de la carte quand la zone est introuvable ou vide. */
+  private areaProblem(): string | undefined {
+    const resolution = this.areaResolution();
+    if (!resolution) return undefined;
+    if (resolution.status === "unavailable") return "Les zones de Home Assistant ne sont pas disponibles (Home Assistant 2023.x ou plus récent requis).";
+    if (resolution.status === "not-found") return `Zone « ${resolution.area} » introuvable.`;
+    const room = this.room;
+    if (!room?.lights?.length && !room?.covers?.length && !room?.temperature_entity && !room?.humidity_entity) {
+      return `La zone « ${resolution.name} » ne contient ni lumière, ni volet, ni capteur.`;
+    }
+    return undefined;
+  }
+
   /**
-   * Configuration proposée par le sélecteur de cartes : de vraies entités de la maison (lumières,
-   * volets, capteurs de température et d'humidité), pour une carte valide dès l'ajout.
+   * Configuration proposée par le sélecteur de cartes : une zone de la maison qui contient des
+   * lumières ou des volets, sinon de vraies entités (lumières, volets, capteurs de température
+   * et d'humidité), pour une carte valide dès l'ajout.
    */
   static getStubConfig(hass?: HomeAssistant): Partial<RoomCardConfig> {
+    const area = suggestArea(hass);
+    if (area) return { area };
     const states = Object.values(hass?.states ?? {});
     const ids = (domain: string, count: number) => states.map((state) => state.entity_id).filter((id) => id.startsWith(`${domain}.`)).slice(0, count);
     const sensor = (deviceClass: string) => states.find((state) => state.entity_id.startsWith("sensor.") && state.attributes.device_class === deviceClass)?.entity_id;
@@ -1026,7 +1151,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
       popup_titles: "Titres des fenêtres", climate_popup: "Fenêtre climat", temperature_entity: "Capteur de température",
       humidity_entity: "Capteur d’humidité", climate_entity: "Thermostat", media_player_entity: "Lecteur multimédia",
       scene_entity: "Ambiance (ancienne option)", background_image: "Photo de la pièce", background_position: "Cadrage de la photo",
-      accent_color: "Couleur d’accent",
+      accent_color: "Couleur d’accent", area: "Zone (remplit les options laissées vides)",
+      area_exclude: "Entités de la zone à ignorer (identifiants ou motifs light.veilleuse_*)",
+      area_include_switches: "Reprendre aussi les interrupteurs de la zone comme lumières",
     };
     return {
       schema: [
@@ -1034,6 +1161,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         { name: "subtitle", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { name: "show_header", selector: { boolean: {} } },
+        { name: "area", selector: { area: {} } },
+        { name: "area_exclude", selector: { text: { multiple: true } } },
+        { name: "area_include_switches", selector: { boolean: {} } },
         {
           name: "theme",
           selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } },
@@ -1078,19 +1208,19 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private roomName(): string {
-    return this.config?.name?.trim() || "Pièce";
+    return this.room?.name?.trim() || "Pièce";
   }
 
   private entityLabel(id: string | undefined, fallback: string): string {
     if (!id) return fallback;
-    const configuredLabel = this.config?.entity_labels?.[id] ?? this.config?.cover_labels?.[id];
+    const configuredLabel = this.room?.entity_labels?.[id] ?? this.room?.cover_labels?.[id];
     return typeof configuredLabel === "string" && configuredLabel.trim()
       ? configuredLabel.trim()
       : friendlyName(entity(this.hass, id), fallback);
   }
 
   private popupTitle(key: "details" | "lights" | "covers" | "climate" | "media" | "tv" | "ambiance", fallback: string): string {
-    const configuredTitle = this.config?.popup_titles?.[key];
+    const configuredTitle = this.room?.popup_titles?.[key];
     return typeof configuredTitle === "string" && configuredTitle.trim() ? configuredTitle.trim() : fallback;
   }
 
@@ -1118,13 +1248,13 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private sideControls(side: "left" | "right"): RoomSideControlConfig[] {
-    const configured = side === "left" ? this.config?.left_controls : this.config?.right_controls;
+    const configured = side === "left" ? this.room?.left_controls : this.room?.right_controls;
     if (configured !== undefined) {
       return configured.filter((control) => control && typeof control.type === "string").slice(0, 2);
     }
-    if (side === "left" && this.config?.lights?.length) return [{ type: "lights" }];
-    if (side === "right" && this.config?.media_player_entity) {
-      return [{ type: "media", entity: this.config.media_player_entity }];
+    if (side === "left" && this.room?.lights?.length) return [{ type: "lights" }];
+    if (side === "right" && this.room?.media_player_entity) {
+      return [{ type: "media", entity: this.room.media_player_entity }];
     }
     return [];
   }
@@ -1135,18 +1265,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private roomCardBackground(): { mode: RoomBackgroundMode; showGrid: boolean; style: string } {
-    const configuredMode = this.config?.card_background?.mode;
+    const configuredMode = this.room?.card_background?.mode;
     const mode: RoomBackgroundMode = configuredMode === "solid" || configuredMode === "gradient"
       ? configuredMode
       : "grid";
     const configuredBackground = mode === "gradient"
-      ? this.config?.card_background?.gradient
-      : this.config?.card_background?.color;
+      ? this.room?.card_background?.gradient
+      : this.room?.card_background?.color;
     const background = configuredBackground?.trim();
     const safeBackground = background && !/[;{}]/.test(background) ? background : undefined;
     return {
       mode,
-      showGrid: this.config?.show_grid ?? mode === "grid",
+      showGrid: this.room?.show_grid ?? mode === "grid",
       style: safeBackground ? `--room-card-background:${safeBackground}` : "",
     };
   }
@@ -1158,21 +1288,21 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private sceneModes(): RoomSceneConfig[] {
-    if (this.config?.scenes !== undefined) {
-      return this.config.scenes.filter((scene) => scene && typeof scene.entity === "string" && scene.entity.trim());
+    if (this.room?.scenes !== undefined) {
+      return this.room.scenes.filter((scene) => scene && typeof scene.entity === "string" && scene.entity.trim());
     }
-    return this.config?.scene_entity
-      ? [{ entity: this.config.scene_entity, label: "Mode soirée", icon: "mdi:creation-outline", position: "bottom-right" }]
+    return this.room?.scene_entity
+      ? [{ entity: this.room.scene_entity, label: "Mode soirée", icon: "mdi:creation-outline", position: "bottom-right" }]
       : [];
   }
 
   private ambiancePosition(modes: RoomSceneConfig[]): RoomOverlayPosition {
-    return this.overlayPosition(this.config?.ambiance?.position || modes[0]?.position, "bottom-right");
+    return this.overlayPosition(this.room?.ambiance?.position || modes[0]?.position, "bottom-right");
   }
 
   private openMediaControl(control?: RoomSideControlConfig): void {
     const kind = control?.type === "tv" ? "tv" : "media";
-    const fallbackEntity = kind === "media" ? this.config?.media_player_entity : undefined;
+    const fallbackEntity = kind === "media" ? this.room?.media_player_entity : undefined;
     const entityId = control?.entity || fallbackEntity;
     if (!entityId) return;
     this.selectedMediaEntity = entityId;
@@ -1204,12 +1334,12 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderSideControl(control: RoomSideControlConfig): TemplateResult {
-    const lights = this.config?.lights || [];
-    const covers = this.config?.covers || [];
+    const lights = this.room?.lights || [];
+    const covers = this.room?.covers || [];
     const entityId = control.entity
-      || (control.type === "media" ? this.config?.media_player_entity : undefined)
-      || (control.type === "climate" ? this.config?.climate_entity : undefined)
-      || (control.type === "scene" ? this.config?.scene_entity || this.sceneModes()[0]?.entity : undefined);
+      || (control.type === "media" ? this.room?.media_player_entity : undefined)
+      || (control.type === "climate" ? this.room?.climate_entity : undefined)
+      || (control.type === "scene" ? this.room?.scene_entity || this.sceneModes()[0]?.entity : undefined);
     const state = entity(this.hass, entityId);
     let icon = control.icon || state?.attributes.icon || "mdi:circle-outline";
     let label = control.label || (entityId ? this.entityLabel(entityId, entityId) : "Commande");
@@ -1234,8 +1364,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     } else if (control.type === "climate") {
       icon = control.icon || "mdi:thermostat";
       label = control.label || "Climat";
-      value = displayState(this.hass, this.config?.temperature_entity);
-      disabled = !this.config?.temperature_entity && !this.config?.humidity_entity && !this.config?.climate_entity;
+      value = displayState(this.hass, this.room?.temperature_entity);
+      disabled = !this.room?.temperature_entity && !this.room?.humidity_entity && !this.room?.climate_entity;
     } else if (control.type === "media") {
       icon = control.icon || "mdi:music-note";
       label = control.label || "Musique";
@@ -1274,7 +1404,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private thermostatEntityId(): string | undefined {
-    return this.config?.thermostat?.entity || this.config?.climate_entity;
+    return this.room?.thermostat?.entity || this.room?.climate_entity;
   }
 
   /** Consigne affichée : la saisie locale en attente, sinon celle du thermostat, jamais la température mesurée. */
@@ -1288,11 +1418,11 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const entityId = this.thermostatEntityId();
     const state = entity(this.hass, entityId);
     if (!this.hass || !entityId || !isCommandable(state)) return false;
-    return this.setpoints.adjust(entityId, "temperature", direction, setpointLimits(state, this.config?.thermostat?.step));
+    return this.setpoints.adjust(entityId, "temperature", direction, setpointLimits(state, this.room?.thermostat?.step));
   }
 
   private renderThermostatControl(): TemplateResult | typeof nothing {
-    const thermostat = this.config?.thermostat;
+    const thermostat = this.room?.thermostat;
     const entityId = this.thermostatEntityId();
     if (thermostat?.show === false || !entityId) return nothing;
     const state = entity(this.hass, entityId);
@@ -1336,8 +1466,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
   private renderAmbianceButton(modes: RoomSceneConfig[]): TemplateResult | typeof nothing {
     if (!modes.length) return nothing;
-    const label = this.config?.ambiance?.label?.trim() || "Ambiance";
-    const icon = this.config?.ambiance?.icon?.trim() || "mdi:creation-outline";
+    const label = this.room?.ambiance?.label?.trim() || "Ambiance";
+    const icon = this.room?.ambiance?.icon?.trim() || "mdi:creation-outline";
     return html`
       <button class="scene-chip" type="button" title=${label} aria-haspopup="dialog" @click=${() => this.openDialog("ambiance")}>
         <ha-icon .icon=${icon}></ha-icon>${label}
@@ -1346,8 +1476,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderOverlaySlot(position: RoomOverlayPosition, modes: RoomSceneConfig[]): TemplateResult | typeof nothing {
-    const thermostatPosition = this.overlayPosition(this.config?.thermostat?.position, "bottom-left");
-    const showThermostat = this.config?.thermostat?.show !== false
+    const thermostatPosition = this.overlayPosition(this.room?.thermostat?.position, "bottom-left");
+    const showThermostat = this.room?.thermostat?.show !== false
       && Boolean(this.thermostatEntityId())
       && thermostatPosition === position;
     const showAmbiance = modes.length > 0 && this.ambiancePosition(modes) === position;
@@ -1362,8 +1492,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
   /** Pastilles de climat : seulement les mesures configurées. */
   private renderClimatePills(): TemplateResult | typeof nothing {
-    const temperatureId = this.config?.temperature_entity;
-    const humidityId = this.config?.humidity_entity;
+    const temperatureId = this.room?.temperature_entity;
+    const humidityId = this.room?.humidity_entity;
     if (!temperatureId && !humidityId) return nothing;
     const temperatureState = entity(this.hass, temperatureId);
     const humidityState = entity(this.hass, humidityId);
@@ -1383,7 +1513,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
   /** Dock des volets : affiché seulement quand des volets sont configurés. */
   private renderCoverDock(): TemplateResult | typeof nothing {
-    const covers = this.config?.covers || [];
+    const covers = this.room?.covers || [];
     if (!covers.length) return nothing;
     const commandable = covers.filter((id) => isCommandable(entity(this.hass, id)));
     const positions = covers.map((id) => coverPosition(entity(this.hass, id)));
@@ -1402,29 +1532,33 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   protected render(): TemplateResult {
-    if (!this.config || !this.hass) return html``;
-    const lights = this.config.lights || [];
-    const covers = this.config.covers || [];
+    if (!this.room || !this.hass) return html``;
+    const problem = this.areaProblem();
+    if (problem) {
+      return html`<ha-card><div class="area-message" role="status"><ha-icon icon="mdi:home-alert-outline"></ha-icon><p>${problem}</p></div></ha-card>`;
+    }
+    const lights = this.room.lights || [];
+    const covers = this.room.covers || [];
     const unavailable = [...lights, ...covers].filter((id) => !isCommandable(entity(this.hass, id))).length;
     const leftControls = this.sideControls("left");
     const rightControls = this.sideControls("right");
     const sceneModes = this.sceneModes();
-    const splitBottomControls = this.config.thermostat?.show !== false
+    const splitBottomControls = this.room.thermostat?.show !== false
       && Boolean(this.thermostatEntityId())
-      && this.overlayPosition(this.config.thermostat?.position, "bottom-left") === "bottom-left"
+      && this.overlayPosition(this.room.thermostat?.position, "bottom-left") === "bottom-left"
       && sceneModes.length > 0
       && this.ambiancePosition(sceneModes) === "bottom-right";
     const cardBackground = this.roomCardBackground();
     const defaultSubtitle = unavailable
       ? `${unavailable} appareil${unavailable > 1 ? "s" : ""} indisponible${unavailable > 1 ? "s" : ""}`
       : "Aucun appareil en alerte";
-    const subtitle = this.config.subtitle === undefined ? defaultSubtitle : this.config.subtitle.trim();
-    const image = (this.config.background_image?.trim() || defaultSalonImage)
+    const subtitle = this.room.subtitle === undefined ? defaultSubtitle : this.room.subtitle.trim();
+    const image = (this.room.background_image?.trim() || defaultSalonImage)
       .replaceAll("\\", "\\\\")
       .replaceAll('"', '\\"');
-    const configuredPosition = this.config.background_position?.trim();
+    const configuredPosition = this.room.background_position?.trim();
     const position = configuredPosition && /^[\w\s.%+-]+$/.test(configuredPosition) ? configuredPosition : "center";
-    const configuredAccent = this.config.accent_color?.trim();
+    const configuredAccent = this.room.accent_color?.trim();
     const accent = configuredAccent && !/[;{}]/.test(configuredAccent) ? configuredAccent : "#79d6f2";
     const roomImageStyle = `--room-image:url("${image}");--room-image-position:${position};--room-accent:${accent}`;
     const name = this.roomName();
@@ -1433,8 +1567,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     return html`
       <ha-card>
         <div class="cinema-shell background-${cardBackground.mode} ${cardBackground.showGrid ? "show-grid" : ""}" style=${cardBackground.style}>
-          ${this.config.show_header !== false ? html`<header class="header cinema-header">
-            <span class="room-avatar"><ha-icon .icon=${this.config.icon || "mdi:sofa-outline"}></ha-icon></span>
+          ${this.room.show_header !== false ? html`<header class="header cinema-header">
+            <span class="room-avatar"><ha-icon .icon=${this.room.icon || "mdi:sofa-outline"}></ha-icon></span>
             <div class="title-wrap cinema-title">
               <h2><button class="room-title-button" type="button" aria-haspopup="dialog" aria-label=${`Ouvrir les détails de ${name}`}
                 @click=${() => this.openDialog("details")}>${name}</button></h2>
@@ -1467,7 +1601,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   /** Allume tout si tout est éteint, sinon éteint tout ; lampes et interrupteurs (switch.*) acceptés. */
   private toggleAllLights = async (): Promise<boolean> => {
     const hass = this.hass;
-    const ids = (this.config?.lights || []).filter((id) => isCommandable(entity(hass, id)));
+    const ids = (this.room?.lights || []).filter((id) => isCommandable(entity(hass, id)));
     if (!hass || !ids.length) return false;
     const anyOn = ids.some((id) => isActive(entity(hass, id)));
     return this.runCommand("lights:all", () => hass.callService(powerDomain(ids), anyOn ? "turn_off" : "turn_on", {}, { entity_id: ids }), {
@@ -1486,7 +1620,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   /** Intensité générale : un seul appel, vers les lampes allumées (ou toutes les lampes réglables si aucune ne l'est). */
   private setGlobalBrightness(value: number): Promise<boolean> {
     const hass = this.hass;
-    const targets = brightnessTargets(hass, this.config?.lights || []);
+    const targets = brightnessTargets(hass, this.room?.lights || []);
     if (!hass || !targets.length) return Promise.resolve(false);
     return this.runCommand("lights:brightness", () => hass.callService("light", "turn_on", { brightness_pct: Math.round(value) }, { entity_id: targets }), {
       errorMessage: "L’intensité n’a pas pu être modifiée.",
@@ -1524,7 +1658,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderLightsDialog(): TemplateResult {
-    const ids = this.config?.lights || [];
+    const ids = this.room?.lights || [];
     const states = ids.map((id) => entity(this.hass, id));
     const activeCount = states.filter(isActive).length;
     const activeBrightness = ids.filter((id) => isLight(id) && isActive(entity(this.hass, id))).map((id) => lightBrightness(entity(this.hass, id)));
@@ -1627,7 +1761,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   private renderAmbianceDialog(): TemplateResult {
     const modes = this.sceneModes();
     const title = this.popupTitle("ambiance", "Ambiance");
-    const icon = this.config?.ambiance?.icon?.trim() || "mdi:creation-outline";
+    const icon = this.room?.ambiance?.icon?.trim() || "mdi:creation-outline";
     return this.renderDialog(
       title,
       icon,
@@ -1660,7 +1794,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderCoversDialog(): TemplateResult {
-    const ids = this.config?.covers || [];
+    const ids = this.room?.covers || [];
     const states = ids.map((id) => entity(this.hass, id));
     const openCount = states.filter((state) => state?.state === "open" || state?.state === "opening").length;
     const movingCount = states.filter((state) => state?.state === "opening" || state?.state === "closing").length;
@@ -1682,18 +1816,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderDetailsDialog(): TemplateResult {
-    const lights = this.config?.lights || [];
-    const covers = this.config?.covers || [];
+    const lights = this.room?.lights || [];
+    const covers = this.room?.covers || [];
     const all = [...lights, ...covers];
     const activeLights = lights.filter((id) => isActive(entity(this.hass, id))).length;
-    const temperature = displayState(this.hass, this.config?.temperature_entity);
-    const humidity = displayState(this.hass, this.config?.humidity_entity);
-    const hasClimate = Boolean(this.config?.temperature_entity || this.config?.humidity_entity || this.config?.climate_entity);
-    const media = this.config?.media_player_entity;
+    const temperature = displayState(this.hass, this.room?.temperature_entity);
+    const humidity = displayState(this.hass, this.room?.humidity_entity);
+    const hasClimate = Boolean(this.room?.temperature_entity || this.room?.humidity_entity || this.room?.climate_entity);
+    const media = this.room?.media_player_entity;
     const name = this.roomName();
     return this.renderDialog(
       this.popupTitle("details", name),
-      this.config?.icon || "mdi:sofa-outline",
+      this.room?.icon || "mdi:sofa-outline",
       html`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -1727,18 +1861,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderClimateDialog(): TemplateResult {
-    const temperature = displayState(this.hass, this.config?.temperature_entity);
-    const humidity = displayState(this.hass, this.config?.humidity_entity);
+    const temperature = displayState(this.hass, this.room?.temperature_entity);
+    const humidity = displayState(this.hass, this.room?.humidity_entity);
     const thermostatId = this.thermostatEntityId();
     const climate = displayState(this.hass, thermostatId, "Confort");
-    const defaultEntities = [this.config?.temperature_entity, this.config?.humidity_entity].filter(
+    const defaultEntities = [this.room?.temperature_entity, this.room?.humidity_entity].filter(
       (id): id is string => Boolean(id),
     );
-    const configuredEntities = this.config?.climate_popup?.graph_entities;
+    const configuredEntities = this.room?.climate_popup?.graph_entities;
     const graphEntities = [...new Set(configuredEntities === undefined ? defaultEntities : configuredEntities.filter(Boolean))];
-    const periodUnit = this.config?.climate_popup?.graph_period_unit || "hours";
-    const legacyHours = this.config?.climate_popup?.graph_hours;
-    const configuredPeriod = Number(this.config?.climate_popup?.graph_period ?? legacyHours ?? 24);
+    const periodUnit = this.room?.climate_popup?.graph_period_unit || "hours";
+    const legacyHours = this.room?.climate_popup?.graph_hours;
+    const configuredPeriod = Number(this.room?.climate_popup?.graph_period ?? legacyHours ?? 24);
     const maximumPeriod = periodUnit === "months" ? 60 : periodUnit === "days" ? 1_825 : 43_800;
     const graphPeriod = Number.isFinite(configuredPeriod)
       ? Math.min(maximumPeriod, Math.max(1, Math.round(configuredPeriod)))
@@ -1746,9 +1880,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const periodMultiplier = periodUnit === "months" ? 30 * 24 : periodUnit === "days" ? 24 : 1;
     const graphHours = graphPeriod * periodMultiplier;
     const periodLabel = `${graphPeriod.toLocaleString("fr-FR")} ${periodUnit === "months" ? `mois` : periodUnit === "days" ? `jour${graphPeriod > 1 ? "s" : ""}` : `heure${graphPeriod > 1 ? "s" : ""}`}`;
-    const showOverview = this.config?.climate_popup?.show_overview !== false;
-    const showCurrentValues = this.config?.climate_popup?.show_current_values === true;
-    const showThermostat = Boolean(thermostatId) && this.config?.climate_popup?.show_thermostat !== false;
+    const showOverview = this.room?.climate_popup?.show_overview !== false;
+    const showCurrentValues = this.room?.climate_popup?.show_current_values === true;
+    const showThermostat = Boolean(thermostatId) && this.room?.climate_popup?.show_thermostat !== false;
     return this.renderDialog(
       this.popupTitle("climate", "Température et humidité"),
       "mdi:thermometer",
@@ -1762,8 +1896,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
                 <div class="dialog-section-title">Valeurs actuelles</div>
                 <div class="grid two">
                   ${graphEntities.map((id) => {
-                    const isTemperature = id === this.config?.temperature_entity;
-                    const isHumidity = id === this.config?.humidity_entity;
+                    const isTemperature = id === this.room?.temperature_entity;
+                    const isHumidity = id === this.room?.humidity_entity;
                     const label = this.entityLabel(id, isTemperature ? "Température" : isHumidity ? "Humidité" : id);
                     const icon = entity(this.hass, id)?.attributes.icon || (isTemperature ? "mdi:thermometer" : isHumidity ? "mdi:water-percent" : "mdi:chart-line");
                     return html`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span><strong>${displayState(this.hass, id)}</strong></div><div style="margin-top:10px;">${label}</div></div>`;
@@ -1775,7 +1909,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
             ? html`
                 <div class="history-graphs">
                   ${graphEntities.map((id) => {
-                    const fallback = id === this.config?.temperature_entity ? "Température" : id === this.config?.humidity_entity ? "Humidité" : id;
+                    const fallback = id === this.room?.temperature_entity ? "Température" : id === this.room?.humidity_entity ? "Humidité" : id;
                     const label = this.entityLabel(id, fallback);
                     return html`<hui-card class="history-graph" .hass=${this.hass} .config=${this.historyGraphConfig(id, label, graphHours)}></hui-card>`;
                   })}
@@ -1797,7 +1931,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderMediaDialog(): TemplateResult {
-    const id = this.selectedMediaEntity || this.config?.media_player_entity;
+    const id = this.selectedMediaEntity || this.room?.media_player_entity;
     const kind = this.selectedMediaKind;
     const media = entity(this.hass, id);
     const playerLabel = this.entityLabel(id, kind === "tv" ? "Télévision" : "Lecteur multimédia");

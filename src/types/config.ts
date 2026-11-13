@@ -123,6 +123,15 @@ export interface RoomCardConfig extends BaseCardConfig {
   subtitle?: string;
   /** Masque l'en-tête (icône, nom, sous-titre, pastilles de climat) avec `false`. */
   show_header?: boolean;
+  /**
+   * Zone Home Assistant (identifiant ou nom, sans tenir compte de la casse) : remplit chaque
+   * option non renseignée (lumières, volets, capteurs, thermostat, lecteur, télévision, nom).
+   */
+  area?: string;
+  /** Entités de la zone à ignorer : identifiants ou motifs (`light.veilleuse_*`). */
+  area_exclude?: string[];
+  /** Reprend aussi les interrupteurs `switch.*` de la zone (hors prises) comme lumières. */
+  area_include_switches?: boolean;
   lights?: string[];
   covers?: string[];
   left_controls?: RoomSideControlConfig[];

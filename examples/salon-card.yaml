@@ -1,3 +1,13 @@
+# Version courte : la carte reprend les appareils de la zone « Salon » de Home Assistant
+# (lumières, volets, température, humidité, thermostat, lecteur, télévision et nom).
+# Une option renseignée ci-dessous l'emporte toujours sur la zone.
+#
+#   type: custom:auralis-room-card
+#   area: salon
+#   area_exclude:
+#     - light.veilleuse_*
+#
+# Version complète, entité par entité :
 type: custom:auralis-room-card
 name: Salon
 icon: mdi:sofa-outline
