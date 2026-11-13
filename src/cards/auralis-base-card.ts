@@ -9,6 +9,23 @@ import { entity } from "../utils/entities";
 /** Durée pendant laquelle un réveil demandé reste affiché « en cours ». */
 export const WAKE_WINDOW = 180_000;
 
+const UNSAFE_CSS = /[;{}]/;
+
+/** `accent_color` configuré, si on peut l'injecter dans une déclaration CSS. */
+export function configuredAccent(config?: BaseCardConfig): string | undefined {
+  const accent = config?.accent_color?.trim();
+  return accent && !UNSAFE_CSS.test(accent) ? accent : undefined;
+}
+
+/** Fond `card_background` configuré : le dégradé en mode `gradient`, sinon la couleur. */
+export function configuredBackground(config?: BaseCardConfig): string | undefined {
+  const background = config?.card_background?.mode === "gradient"
+    ? config.card_background.gradient
+    : config?.card_background?.color;
+  const value = background?.trim();
+  return value && !UNSAFE_CSS.test(value) ? value : undefined;
+}
+
 interface ConfirmState {
   title: string;
   message: string;
@@ -42,12 +59,12 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   protected syncTheme(): void {
     this.dataset.theme = this.theme;
+    this.applyHostPalette();
   }
 
   protected machineStyle(defaultAccent: string): string {
     const image = this.config?.background_image?.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-    const configuredAccent = this.config?.accent_color?.trim();
-    const accent = configuredAccent && !/[;{}]/.test(configuredAccent) ? configuredAccent : defaultAccent;
+    const accent = configuredAccent(this.config) ?? defaultAccent;
     const configuredPosition = this.config?.background_position?.trim();
     const position = configuredPosition && /^[\w\s.%+-]+$/.test(configuredPosition) ? configuredPosition : "center";
     const brightness = Math.min(100, Math.max(30, Number(this.config?.image_brightness ?? 72))) / 100;
@@ -57,12 +74,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
       : 1;
     const glass = Math.min(0.96, Math.max(0.45, Number(this.config?.glass_opacity ?? 0.84)));
     const backgroundMode = this.config?.card_background?.mode;
-    const configuredBackground = backgroundMode === "gradient"
-      ? this.config?.card_background?.gradient
-      : this.config?.card_background?.color;
-    const background = configuredBackground?.trim();
-    const safeBackground = background && !/[;{}]/.test(background) ? background : undefined;
-    const baseBackground = safeBackground || (backgroundMode === "solid" || backgroundMode === "grid"
+    const baseBackground = configuredBackground(this.config) || (backgroundMode === "solid" || backgroundMode === "grid"
       ? "#090d12"
       : "radial-gradient(circle at 70% 38%, #27354a, #111924 44%, #080c11 75%)");
 
@@ -77,6 +89,25 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     ]
       .filter(Boolean)
       .join(";");
+  }
+
+  /**
+   * Cartes à thème (Lumières, Volets, Énergie) : pose sur l'hôte `--auralis-card-accent`
+   * et `--auralis-card-background`, avec les attributs `data-accent` / `data-background`,
+   * seulement quand ils sont configurés, pour garder l'apparence par défaut sinon.
+   */
+  protected applyHostPalette(): void {
+    if (!this.style) return;
+    const accent = configuredAccent(this.config);
+    const background = configuredBackground(this.config);
+    for (const [name, attribute, value] of [
+      ["--auralis-card-accent", "data-accent", accent],
+      ["--auralis-card-background", "data-background", background],
+    ] as const) {
+      if (value) this.style.setProperty(name, value);
+      else this.style.removeProperty(name);
+      this.toggleAttribute(attribute, Boolean(value));
+    }
   }
 
   protected machineGridClass(): string {

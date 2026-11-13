@@ -21,8 +21,36 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   static styles = [
     AuralisBaseCard.styles,
     css`
+      :host {
+        --covers-accent: #79d6f2;
+        --covers-icon: #83cafa;
+        --covers-icon-background: rgba(20, 52, 74, 0.91);
+        --covers-state-border: rgba(121, 214, 242, 0.38);
+        --covers-state-text: #b6edfb;
+        --covers-control-icon: #9cdef6;
+      }
+
+      /* accent_color, posé sur l'hôte par applyHostPalette(). */
+      :host([data-accent]) {
+        --covers-accent: var(--auralis-card-accent);
+        --covers-icon: var(--auralis-card-accent);
+        --covers-icon-background: color-mix(in srgb, var(--auralis-card-accent) 24%, rgba(9, 20, 30, 0.92));
+        --covers-state-border: color-mix(in srgb, var(--auralis-card-accent) 38%, transparent);
+        --covers-state-text: color-mix(in srgb, var(--auralis-card-accent) 45%, #fff);
+        --covers-control-icon: color-mix(in srgb, var(--auralis-card-accent) 72%, #fff);
+      }
+
+      :host([data-accent]) .dialog-backdrop {
+        --auralis-active: var(--auralis-card-accent);
+      }
+
       ha-card {
         background: #09111a;
+      }
+
+      :host([data-background]) ha-card,
+      :host([data-background]) .covers-shell {
+        background: var(--auralis-card-background);
       }
 
       .covers-shell {
@@ -59,12 +87,12 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
       .group-tile:hover,
       .group-tile:focus-within {
-        border-color: #79d6f2;
+        border-color: var(--covers-accent);
       }
 
       .group-open:focus-visible,
       .group-control:focus-visible {
-        outline: 2px solid #79d6f2;
+        outline: 2px solid var(--covers-accent);
         outline-offset: -2px;
       }
 
@@ -135,8 +163,8 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         width: 38px;
         height: 38px;
         flex: 0 0 auto;
-        background: rgba(20, 52, 74, 0.91);
-        color: #83cafa;
+        background: var(--covers-icon-background);
+        color: var(--covers-icon);
       }
 
       .group-arrow {
@@ -157,10 +185,10 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         display: inline-flex;
         align-items: center;
         padding: 5px 8px;
-        border: 1px solid rgba(121, 214, 242, 0.38);
+        border: 1px solid var(--covers-state-border);
         border-radius: 9px;
         background: rgba(8, 30, 43, 0.82);
-        color: #b6edfb;
+        color: var(--covers-state-text);
         font-size: 11px;
         font-weight: 750;
       }
@@ -202,7 +230,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
       .group-control ha-icon {
         --mdc-icon-size: 21px;
-        color: #9cdef6;
+        color: var(--covers-control-icon);
       }
 
       .group-control:hover:not(:disabled) {

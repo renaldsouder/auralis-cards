@@ -1324,6 +1324,11 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
           border-radius: 15px;
         }
       }
+
+      /* accent_color s'applique à toute la carte et à ses fenêtres, pas seulement à la photo. */
+      :host([data-accent]) {
+        --room-accent: var(--auralis-card-accent);
+      }
     `,
   ];
 

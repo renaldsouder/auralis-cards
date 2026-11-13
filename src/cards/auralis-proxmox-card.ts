@@ -6,7 +6,7 @@ import type {
   ProxmoxStorage,
 } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
-import { activateEntity } from "../utils/actions";
+import { activateEntity, deactivateEntity } from "../utils/actions";
 import { informationValue } from "../utils/information";
 import {
   clamp,
@@ -42,6 +42,21 @@ export function proxmoxActionAvailable(
   return Boolean(entityId && isAvailable(entity(hass, entityId)));
 }
 
+export type ProxmoxWorkloadAction = "start" | "stop" | "restart" | "pause" | "resume";
+
+/** Entité qui exécute une commande de VM ou de LXC ; un `switch` sert de repli pour démarrer et arrêter. */
+export function proxmoxWorkloadActionEntity(
+  item: ManagedProxmoxWorkload,
+  action: ProxmoxWorkloadAction,
+): string | undefined {
+  const isSwitch = item.entity.startsWith("switch.");
+  if (action === "start") return item.start_entity || (isSwitch ? item.entity : undefined);
+  if (action === "stop") return item.stop_entity || (isSwitch ? item.entity : undefined);
+  if (action === "restart") return item.restart_entity;
+  if (action === "pause") return item.pause_entity;
+  return item.resume_entity;
+}
+
 function percentageLabel(value: number | undefined): string {
   return value === undefined ? "—" : `${Math.round(value)}%`;
 }
@@ -50,6 +65,32 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
   static styles = [
     AuralisBaseCard.styles,
     css`
+      .workload-actions {
+        display: flex;
+        max-width: 250px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .workload-actions .action {
+        min-height: 36px;
+        padding: 6px 9px;
+        font-size: 11px;
+      }
+
+      .workload-actions .action ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      @media (max-width: 560px) {
+        .workload-actions {
+          grid-column: 2;
+          max-width: none;
+          justify-content: flex-start;
+        }
+      }
+
       .search {
         width: 100%;
         box-sizing: border-box;
@@ -493,10 +534,56 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
 
   private renderWorkloadAction(item: ManagedProxmoxWorkload, active: boolean, paused: boolean): TemplateResult {
     if (!isAvailable(entity(this.hass, item.entity))) return html`<span class="muted">Indisponible</span>`;
-    if (paused) return html`<button class="action primary" ?disabled=${!proxmoxActionAvailable(this.hass, item.resume_entity)} @click=${() => activateEntity(this.hass!, item.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>`;
-    if (!active) return html`<button class="action primary" ?disabled=${!proxmoxActionAvailable(this.hass, item.start_entity || (item.entity.startsWith("switch.") ? item.entity : undefined))} @click=${() => this.startItem(item)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>`;
-    if (item.console_url) return html`<button class="action" @click=${() => window.open(item.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>`;
-    return html`<button class="action" ?disabled=${!proxmoxActionAvailable(this.hass, item.restart_entity)} @click=${() => activateEntity(this.hass!, item.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>`;
+    // Redémarrer et arrêter passent par une confirmation.
+    const button = (action: ProxmoxWorkloadAction, label: string, icon: string, style = "") => {
+      const entityId = proxmoxWorkloadActionEntity(item, action);
+      if (!entityId) return nothing;
+      const handler = action === "start"
+        ? () => this.startItem(item)
+        : action === "stop" || action === "restart"
+          ? () => this.confirmWorkloadAction(item, action)
+          : () => this.runWorkloadAction(item, action);
+      return html`<button class=${`action ${style}`.trim()} ?disabled=${!proxmoxActionAvailable(this.hass, entityId)} @click=${handler}><ha-icon .icon=${icon}></ha-icon>${label}</button>`;
+    };
+    const isVm = this.workloadTab === "vm";
+    return html`<div class="workload-actions">
+      ${!active && !paused ? button("start", "Démarrer", "mdi:play", "primary") : nothing}
+      ${paused ? button("resume", "Reprendre", "mdi:play", "primary") : nothing}
+      ${active ? button("pause", "Pause", "mdi:pause") : nothing}
+      ${active ? button("restart", "Redémarrer", "mdi:restart") : nothing}
+      ${active || paused ? button("stop", isVm ? "Éteindre" : "Arrêter", "mdi:stop-circle-outline", "danger") : nothing}
+      ${active && item.console_url ? html`<button class="action" @click=${() => window.open(item.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : nothing}
+    </div>`;
+  }
+
+  /** Arrêter, redémarrer, suspendre ou reprendre ; un `switch` sans `stop_entity` est éteint. */
+  private async runWorkloadAction(item: ManagedProxmoxWorkload, action: Exclude<ProxmoxWorkloadAction, "start">): Promise<void> {
+    if (!isAvailable(entity(this.hass, item.entity))) return;
+    const entityId = proxmoxWorkloadActionEntity(item, action);
+    if (!proxmoxActionAvailable(this.hass, entityId)) return;
+    if (action === "stop" && !item.stop_entity) {
+      await deactivateEntity(this.hass!, entityId);
+      return;
+    }
+    await activateEntity(this.hass!, entityId);
+  }
+
+  private confirmWorkloadAction(item: ManagedProxmoxWorkload, action: "stop" | "restart"): void {
+    if (!proxmoxActionAvailable(this.hass, proxmoxWorkloadActionEntity(item, action))) return;
+    const isVm = this.workloadTab === "vm";
+    const restart = action === "restart";
+    const label = restart ? "Redémarrer" : isVm ? "Éteindre" : "Arrêter";
+    this.askConfirmation({
+      title: `${label} ${item.name} ?`,
+      message: restart
+        ? "Le service sera brièvement indisponible pendant son redémarrage."
+        : isVm
+          ? "La machine virtuelle et ses services deviendront indisponibles."
+          : "Le conteneur et le service qu’il fournit deviendront indisponibles.",
+      confirmLabel: label,
+      action: () => this.runWorkloadAction(item, action),
+    });
+    this.dialog = "workloads";
   }
 
   private toggleSelected(entityId: string): void {
