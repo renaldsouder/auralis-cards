@@ -1,0 +1,35 @@
+# Carte Veille d'écran Auralis — à coller dans l'éditeur YAML d'une carte.
+# Placez-la dans chaque vue utilisée par la tablette. Remplacez les identifiants d'entités par les vôtres.
+type: custom:auralis-screensaver-card
+timeout: 300 # secondes sans contact avant la veille
+
+weather_entity: weather.forecast_maison
+# Facultatif : un capteur extérieur local remplace la température du service météo.
+temperature_entity: sensor.exterieur_temperature
+
+entities:
+  - sensor.salon_temperature
+  - entity: sensor.consommation_maison
+    name: Consommation
+
+# Mis en avant quand il est actif (mouvement, sonnette…).
+alert_entity: binary_sensor.sonnette
+
+show_clock: true
+show_date: true
+show_seconds: false
+
+dim_brightness: 0.85
+night_dim: true
+night_start: "22:00"
+night_end: "07:00"
+night_brightness: 0.35
+
+# Facultatif : vue ouverte au réveil.
+# navigate_on_wake: /tableau-de-bord/tablette
+
+# Uniquement sur les écrans tactiles (pas sur l'ordinateur).
+media_query: "(pointer: coarse)"
+
+# Facultatif : un interrupteur pour suspendre la veille.
+# disabled_entity: input_boolean.veille_desactivee
