@@ -1,0 +1,32 @@
+# Carte Onglets : plusieurs cartes, Auralis ou non, sous des onglets.
+# Remplacer les entités d'exemple par les vôtres.
+type: custom:auralis-tabs-card
+remember_tab: true
+tab_style: pills
+tabs:
+  - label: Lumières
+    icon: mdi:lightbulb-group-outline
+    cards:
+      - type: custom:auralis-lights-card
+        groups:
+          - name: Salon
+            lights:
+              - light.salon_plafond
+              - light.salon_lampe
+  - label: Volets
+    icon: mdi:window-shutter
+    card:
+      type: custom:auralis-covers-card
+      groups:
+        - name: Rez-de-chaussée
+          covers:
+            - cover.gr_volet_rdc
+  - label: Caméras
+    icon: mdi:cctv
+    badge_entity: binary_sensor.cam_rouderes_mouvement
+    columns: 2
+    cards:
+      - type: tile
+        entity: camera.cam_rouderes_fluide
+      - type: tile
+        entity: camera.cam_int_garderie_fluide

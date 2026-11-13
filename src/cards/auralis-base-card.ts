@@ -405,7 +405,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     return 6;
   }
 
-  public getGridOptions(): Record<string, number> {
+  public getGridOptions(): Record<string, number | string> {
     return { rows: 6, min_rows: 4, columns: 6, min_columns: 3 };
   }
 }

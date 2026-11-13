@@ -17,7 +17,7 @@ describe("Auralis entrypoint", () => {
     const expected = [
       "auralis-navbar-card", "auralis-room-card", "auralis-covers-card",
       "auralis-thermostat-card", "auralis-lights-card", "auralis-switches-card", "auralis-fridge-card",
-      "auralis-energy-card", "auralis-climate-card", "auralis-weather-card", "auralis-actions-card", "auralis-cameras-card", "auralis-media-card", "auralis-pc-card", "auralis-unraid-card", "auralis-proxmox-card",
+      "auralis-energy-card", "auralis-climate-card", "auralis-weather-card", "auralis-actions-card", "auralis-cameras-card", "auralis-media-card", "auralis-tabs-card", "auralis-pc-card", "auralis-unraid-card", "auralis-proxmox-card",
     ];
     expect([...definitions.keys()].filter((type) => type.startsWith("auralis-")).sort()).toEqual([...expected].sort());
     expect(cards.map((card) => card.type).sort()).toEqual([...expected].sort());
