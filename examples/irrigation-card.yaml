@@ -1,0 +1,26 @@
+# Carte Arrosage Auralis : une vanne Zigbee avec minuterie intégrée.
+# La minuterie de l'appareil referme la vanne elle-même : l'arrosage manuel est sûr
+# même si la tablette se met en veille.
+type: custom:auralis-irrigation-card
+name: Arrosage
+weather_entity: weather.forecast_maison
+rain_threshold: 2
+valve_entity: switch.mod_arrosage_jardiniere
+zone_name: Jardinière
+countdown_entity: number.mod_arrosage_jardiniere_countdown
+battery_entity: sensor.mod_arrosage_jardiniere_battery_state
+error_entity: sensor.mod_arrosage_jardiniere_error_status
+schedule_entity: automation.arrosage_jardiniere_20h00_tous_les_soirs
+# L'automatisation se déclenche à 23:00 ; la carte ne lit pas ses déclencheurs.
+schedule:
+  - "23:00"
+durations: [2, 4, 10]
+max_duration: 30
+
+# Plusieurs zones : ajoutez-les sous `zones` (elles suivent la zone ci-dessus).
+# zones:
+#   - valve_entity: valve.arrosage_pelouse
+#     name: Pelouse
+#     script_entity: script.arrosage_minute_pelouse
+#     schedule: ["06:30", "21:00"]
+#     durations: [10, 20, 30]
