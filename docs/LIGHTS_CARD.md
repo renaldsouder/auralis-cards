@@ -11,16 +11,25 @@ La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette
 - `groups` : groupes de lumières. Chaque groupe comporte `name` et une liste `lights` d'entités `light.*` ou `switch.*`.
 - `lights` : liste simple, utilisée comme groupe unique si `groups` est absent.
 - `show_lights: true` : affiche aussi les noms et boutons marche/arrêt individuels sur la façade du groupe.
-- `image` : image facultative de la tuile du groupe, URL `/local/...`, `/hacsfiles/...` ou `https://...`.
-- `scenes` : scènes Home Assistant de la carte, ou par groupe pour les remplacer. Les scènes pilotent les entités définies dans Home Assistant, selon leur propre configuration.
-- `preset_colors` : liste facultative de `{ name, color }`, avec couleur au format `#RRGGBB`. Sans option, sept couleurs sont proposées.
+- `background_image` : image de la tuile d'un groupe (`image` reste accepté). Placée au niveau de la carte, elle sert à tous les groupes qui n'ont pas leur propre image. Adresses acceptées : `https://…`, `/local/…`, `/hacsfiles/…` et les images servies par Home Assistant (`/api/…`, par exemple `/api/image/serve/…`). Les adresses `media-source://` ne sont pas lisibles directement par le navigateur : utilisez l'adresse `/local/` correspondante. Une adresse refusée laisse le dégradé par défaut.
+- `scenes` : scènes Home Assistant de la carte, ou par groupe pour les remplacer. Les scènes pilotent les entités définies dans Home Assistant, selon leur propre configuration. La fenêtre des ambiances ne se ferme que si l'activation a réussi ; sinon, un message d'erreur apparaît.
+- `preset_colors` : liste facultative de `{ name, color, kelvin }`, avec couleur au format `#RRGGBB`. `kelvin` (1000 à 12000) est facultatif. Sans option, huit couleurs sont proposées, dont trois blancs (chaud 2700 K, neutre 4000 K, froid 6000 K).
 - `entity_labels` : noms affichés pour les lumières.
+- `name`, `icon` : titre et icône de l'en-tête ; `show_header: false` masque l'en-tête.
 - `accent_color` : couleur des icônes, des curseurs et des lumières allumées, sur la carte et dans ses fenêtres. Sans option, la couleur du thème est conservée.
 - `card_background` : fond de la carte, `mode: gradient` avec `gradient`, ou `mode: solid` avec `color`.
 
-Les éclairages commandés par un relais (`switch.*`) n'ont que la marche et l'arrêt : un groupe qui ne contient que des interrupteurs n'affiche ni intensité ni couleur. Dans un groupe mixte, l'intensité et la couleur ne s'appliquent qu'aux lampes `light.*`.
+## Comportement des commandes
 
-Les commandes de couleur sont proposées uniquement aux lampes qui annoncent un mode couleur compatible. Les lampes indisponibles ne reçoivent aucune commande. Les boutons ne contiennent que des icônes ; leurs libellés restent accessibles aux lecteurs d'écran.
+- **Intensité et couleur de groupe** : elles ne s'appliquent qu'aux lampes déjà allumées, pour ne pas rallumer toute la pièce. Si aucune lampe n'est allumée, elles s'appliquent à toutes les lampes compatibles, qui s'allument au réglage choisi. Une seule commande part pour tout le groupe.
+- **Curseurs** : le remplissage et le pourcentage suivent le doigt pendant le glissement ; la commande part au relâchement.
+- **Blancs prédéfinis** : envoyés en température de blanc (`color_temp_kelvin`) aux lampes qui la gèrent, en couleur aux autres.
+- **Relais** : les éclairages commandés par un relais (`switch.*`) n'ont que la marche et l'arrêt. Un groupe qui ne contient que des interrupteurs n'affiche ni intensité ni couleur. Dans un groupe mixte, l'intensité et la couleur ne s'appliquent qu'aux lampes `light.*`.
+- **Indisponible** : une lampe indisponible affiche « Indisponible » et ne reçoit aucune commande.
+- **Fiche Home Assistant** : un appui long (une demi-seconde) ou un clic droit sur une lampe ouvre sa fiche.
+- Les commandes de couleur sont proposées uniquement aux lampes qui annoncent un mode couleur compatible. Les boutons ne contiennent que des icônes ; leurs libellés restent accessibles aux lecteurs d'écran. Un échec de commande affiche un message.
+
+La carte n'impose pas de hauteur : dans une vue Sections, elle suit la hauteur réelle de ses groupes.
 
 ## Photos fournies
 

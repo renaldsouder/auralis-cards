@@ -6,8 +6,10 @@ import type {
   PcCardConfig,
   ProxmoxCardConfig,
   RoomCardConfig,
+  SwitchesCardConfig,
   UnraidCardConfig,
 } from "./types/config";
+import type { ThermostatCardConfig } from "./cards/auralis-thermostat-card";
 
 class MockHaCard extends HTMLElement {}
 class MockHaIcon extends HTMLElement {
@@ -47,12 +49,21 @@ const states = [
     sound_mode_list: ["Stéréo", "Direct", "Dolby Surround", "DTS Neural:X", "Jeu", "Musique"],
     supported_features: 4 | 8 | 1024 | 2048 | 128 | 256 | 16384 | 65536,
   }),
-  e("light.plafonnier", "on", { friendly_name: "Plafonnier", brightness: 178 }),
-  e("light.lampadaire", "on", { friendly_name: "Lampadaire", brightness: 102 }),
-  e("light.bibliotheque", "on", { friendly_name: "Bibliothèque", brightness: 216 }),
-  e("light.ambiance_tv", "off", { friendly_name: "Ambiance TV", brightness: 0 }),
-  e("cover.baie", "open", { friendly_name: "Baie vitrée", current_position: 75 }),
-  e("cover.fenetre", "open", { friendly_name: "Fenêtre", current_position: 35 }),
+  e("climate.chambre", "heat_cool", {
+    friendly_name: "Climat Chambre", target_temp_low: 19, target_temp_high: 24, current_temperature: 20.4, current_humidity: 52,
+    target_temp_step: 0.5, min_temp: 7, max_temp: 30, hvac_modes: ["off", "heat", "cool", "heat_cool"], hvac_action: "idle",
+  }),
+  e("climate.bureau", "unavailable", { friendly_name: "Climat Bureau" }),
+  e("light.plafonnier", "on", { friendly_name: "Plafonnier", brightness: 178, supported_color_modes: ["color_temp"], color_temp_kelvin: 3000 }),
+  e("light.lampadaire", "on", { friendly_name: "Lampadaire", brightness: 102, supported_color_modes: ["brightness"] }),
+  e("light.bibliotheque", "on", { friendly_name: "Bibliothèque", brightness: 216, supported_color_modes: ["brightness"] }),
+  e("light.ambiance_tv", "off", { friendly_name: "Ambiance TV", supported_color_modes: ["rgb"] }),
+  e("cover.baie", "open", { friendly_name: "Baie vitrée", current_position: 75, supported_features: 15 }),
+  e("cover.fenetre", "open", { friendly_name: "Fenêtre", current_position: 35, supported_features: 15 }),
+  e("switch.prise_cafe", "on", { friendly_name: "Machine à café" }),
+  e("switch.prise_bouilloire", "off", { friendly_name: "Bouilloire" }),
+  e("switch.prise_ecran", "on", { friendly_name: "Écran du bureau" }),
+  e("switch.prise_imprimante", "unavailable", { friendly_name: "Imprimante" }),
   e("cover.bureau_fenetre", "closed", { friendly_name: "Fenêtre du bureau" }),
   e("cover.bureau_velux", "open", { friendly_name: "Velux du bureau" }),
   e("cover.chambre_principale", "open", { friendly_name: "Chambre principale" }),
@@ -228,6 +239,7 @@ const hass: HomeAssistant = {
   callService: async (domain, service, data, target) => {
     console.info("Service Home Assistant simulé", { domain, service, data, target });
     if (domain === "media_player") simulateMedia(String((target as { entity_id?: string } | undefined)?.entity_id ?? ""), service, data ?? {});
+    else simulateDevices(domain, service, data ?? {}, (target as { entity_id?: string | string[] } | undefined)?.entity_id);
   },
   // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
   callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
@@ -305,10 +317,50 @@ function simulateMedia(id: string, service: string, data: Record<string, unknown
     Object.assign(attributes, { media_position: attributes.media_position + elapsed, media_position_updated_at: new Date().toISOString() });
   }
   states[id] = { ...current, state, attributes };
+  publishStates();
+}
+
+/** Diffuse le nouvel état aux cartes, avec un léger délai comme une vraie installation. */
+function publishStates(): void {
   window.setTimeout(() => {
     const next = { ...hass, states: { ...states } };
     for (const card of mounted) card.hass = next;
   }, 250);
+}
+
+// Interrupteurs, lumières, volets et thermostats simulés : les cartes Maison voient leurs commandes aboutir.
+function simulateDevices(domain: string, service: string, data: Record<string, unknown>, target?: string | string[]): void {
+  const ids = (Array.isArray(target) ? target : target ? [target] : []).filter((id) => states[id] && states[id].state !== "unavailable");
+  if (!ids.length) return;
+  for (const id of ids) {
+    const current = states[id];
+    const attributes = { ...current.attributes };
+    let state = current.state;
+    if (service === "turn_on") state = "on";
+    if (service === "turn_off") state = "off";
+    if (service === "toggle") state = state === "on" ? "off" : "on";
+    if (domain === "light" && service === "turn_on") {
+      if (typeof data.brightness_pct === "number") attributes.brightness = Math.round((data.brightness_pct / 100) * 255);
+      if (Array.isArray(data.rgb_color)) attributes.rgb_color = data.rgb_color;
+      if (typeof data.color_temp_kelvin === "number") attributes.color_temp_kelvin = data.color_temp_kelvin;
+      if (typeof attributes.brightness !== "number") attributes.brightness = 255;
+    }
+    if (domain === "cover") {
+      if (service === "open_cover") Object.assign(attributes, { current_position: 100 });
+      if (service === "close_cover") Object.assign(attributes, { current_position: 0 });
+      if (service === "set_cover_position") attributes.current_position = Number(data.position);
+      if (service !== "stop_cover") {
+        const position = typeof attributes.current_position === "number" ? attributes.current_position : service === "close_cover" ? 0 : 100;
+        state = position > 0 ? "open" : "closed";
+      }
+    }
+    if (domain === "climate") {
+      if (service === "set_temperature") Object.assign(attributes, data);
+      if (service === "set_hvac_mode") state = String(data.hvac_mode);
+    }
+    states[id] = { ...current, state, attributes };
+  }
+  publishStates();
 }
 
 const lightsCard = {
@@ -451,8 +503,28 @@ const room: RoomCardConfig = {
   covers: ["cover.baie", "cover.fenetre"],
 };
 
+const switches: SwitchesCardConfig = {
+  type: "custom:auralis-switches-card",
+  name: "Prises",
+  theme: "carbon",
+  columns: 2,
+  groups: [
+    { name: "Cuisine", icon: "mdi:coffee-maker-outline", switches: ["switch.prise_cafe", "switch.prise_bouilloire"] },
+    { name: "Bureau", icon: "mdi:desk", switches: ["switch.prise_ecran", "switch.prise_imprimante"] },
+  ],
+};
+
+const thermostat: ThermostatCardConfig = {
+  type: "custom:auralis-thermostat-card",
+  name: "Thermostats",
+  theme: "carbon",
+  entities: ["climate.salon", "climate.chambre", "climate.bureau"],
+  entity_labels: { "climate.salon": "Salon", "climate.chambre": "Chambre", "climate.bureau": "Bureau" },
+};
+
 const covers: CoversCardConfig = {
   type: "custom:auralis-covers-card",
+  name: "Volets",
   theme: "carbon",
   groups: [
     { name: "Salon", covers: ["cover.baie", "cover.fenetre"] },
@@ -653,6 +725,8 @@ mount("auralis-energy-card", gasCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);
+mount("auralis-switches-card", switches);
+mount("auralis-thermostat-card", thermostat);
 mount("auralis-pc-card", pc);
 mount("auralis-unraid-card", unraid);
 mount("auralis-proxmox-card", proxmox);

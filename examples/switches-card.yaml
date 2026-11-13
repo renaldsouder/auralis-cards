@@ -10,7 +10,7 @@
 type: custom:auralis-switches-card
 name: Prises & interrupteurs
 theme: carbon
-group_columns: 2
+group_columns: 2  # alias : columns
 # Facultatif : masquer les éléments au-dessus des tuiles.
 # show_header: false
 # show_group_label: false

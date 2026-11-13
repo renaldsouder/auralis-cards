@@ -2,6 +2,7 @@
 # Avec HACS, utiliser /hacsfiles/auralis-cards/auralis-cards.js.
 # Un seul thermostat : utilisez entity.
 # Pour plusieurs thermostats, renseignez entities (ou entity + entities).
+# Un thermostat en mode plage (heat_cool) affiche deux réglages : minimum et maximum.
 type: custom:auralis-thermostat-card
 name: Thermostats
 theme: carbon

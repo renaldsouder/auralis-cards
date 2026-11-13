@@ -13,7 +13,7 @@ groups:
       - light.lampadaire_salon
 
 # Facultatif : après copie de l'image dans config/www/auralis-cards/images/.
-#    image: /local/auralis-cards/images/lumieres-salon.jpg
+#    background_image: /local/auralis-cards/images/lumieres-salon.jpg
 
 # Facultatif : scènes Home Assistant affichées dans le menu Ambiances du groupe.
 #    scenes:

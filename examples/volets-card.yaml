@@ -1,6 +1,10 @@
 type: custom:auralis-covers-card
 theme: carbon
-# group_columns: 1  # Facultatif : 1 à 4 colonnes ; un seul groupe utilise 1 par défaut.
+# group_columns: 1  # Facultatif : 1 à 4 colonnes (alias : columns) ; un seul groupe utilise 1 par défaut.
+# En-tête facultatif (icône, nom, état), affiché dès que name est renseigné :
+# name: Volets
+# icon: mdi:blinds-horizontal
+# show_header: true
 # Les quatre photos de la proposition sont intégrées par défaut.
 # background_image: /local/auralis-cards/images/volets.jpg
 groups:
