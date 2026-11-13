@@ -230,6 +230,17 @@ const states = [
   e("sensor.compteur_gaz", "8423.61", { friendly_name: "Compteur de gaz", unit_of_measurement: "m³", device_class: "gas" }),
   e("sensor.debit_gaz", "0.42", { friendly_name: "Débit de gaz", unit_of_measurement: "m³/h" }),
   e("script.wake_skynet_demo", "off", { friendly_name: "Réveiller le serveur" }),
+  // Arrosage et piles : cartes Arrosage et Batteries.
+  e("switch.vanne_jardiniere", "off", { friendly_name: "Vanne jardinière" }),
+  e("number.vanne_jardiniere_countdown", "10", { friendly_name: "Minuterie jardinière", unit_of_measurement: "min", min: 0, max: 255, step: 1 }),
+  e("sensor.vanne_jardiniere_battery_state", "low", { friendly_name: "Vanne jardinière Batterie", device_class: "battery" }),
+  e("sensor.vanne_jardiniere_error", "", { friendly_name: "Vanne jardinière Erreur" }),
+  e("automation.arrosage_jardiniere", "on", { friendly_name: "Arrosage de la jardinière" }),
+  e("sensor.capteur_entree_battery", "8", { friendly_name: "Capteur entrée Batterie", unit_of_measurement: "%", device_class: "battery" }),
+  e("sensor.detecteur_cuisine_battery", "17", { friendly_name: "Détecteur cuisine Batterie", unit_of_measurement: "%", device_class: "battery" }),
+  e("binary_sensor.telecommande_battery", "on", { friendly_name: "Télécommande Batterie", device_class: "battery" }),
+  { ...e("sensor.sonde_cave_temperature", "unavailable", { friendly_name: "Sonde cave Température", unit_of_measurement: "°C" }), last_changed: new Date(Date.now() - 3 * 86_400_000).toISOString() },
+  { ...e("sensor.sonde_cave_humidity", "unavailable", { friendly_name: "Sonde cave Humidité", unit_of_measurement: "%" }), last_changed: new Date(Date.now() - 3 * 86_400_000).toISOString() },
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -713,7 +724,51 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
   document.querySelector("#demo")?.append(card);
 };
 
+const tabsCard = {
+  type: "custom:auralis-tabs-card",
+  name: "Maison",
+  remember_tab: true,
+  id: "demo",
+  tabs: [
+    { label: "Lumières", icon: "mdi:lightbulb-group-outline", cards: [{ ...lightsCard, type: "custom:auralis-lights-card" }] },
+    { label: "Volets", icon: "mdi:window-shutter", cards: [{ ...covers, type: "custom:auralis-covers-card" }] },
+    { label: "Caméras", icon: "mdi:cctv", badge_entity: "binary_sensor.allee_mouvement", cards: [{ ...camerasCard, type: "custom:auralis-cameras-card" }] },
+  ],
+};
+
+const batteriesCard = {
+  type: "custom:auralis-batteries-card",
+  include_unknown: false,
+  exclude: ["sensor.unraid_*", "sensor.pc_*"],
+};
+
+const irrigationCard = {
+  type: "custom:auralis-irrigation-card",
+  weather_entity: "weather.maison",
+  zones: [{
+    name: "Jardinière",
+    valve_entity: "switch.vanne_jardiniere",
+    countdown_entity: "number.vanne_jardiniere_countdown",
+    battery_entity: "sensor.vanne_jardiniere_battery_state",
+    error_entity: "sensor.vanne_jardiniere_error",
+    schedule_entity: "automation.arrosage_jardiniere",
+    schedule: ["23:00"],
+  }],
+};
+
+// La veille d'écran n'apparaît qu'après 5 minutes sans toucher la page de démonstration.
+const screensaver = {
+  type: "custom:auralis-screensaver-card",
+  timeout: 300,
+  weather_entity: "weather.maison",
+  entities: ["sensor.salon_temperature", "sensor.salon_humidity"],
+};
+
 mount("auralis-navbar-card", navbar);
+mount("auralis-tabs-card", tabsCard);
+mount("auralis-batteries-card", batteriesCard);
+mount("auralis-irrigation-card", irrigationCard);
+mount("auralis-screensaver-card", screensaver);
 mount("auralis-weather-card", weather);
 mount("auralis-actions-card", actionsCard);
 mount("auralis-actions-card", scenesCard);
