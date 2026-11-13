@@ -26,6 +26,7 @@ export interface HomeAssistant {
   config?: { time_zone?: string; unit_system?: { temperature?: string } };
   locale?: { language?: string };
   themes?: { darkMode?: boolean };
+  user?: { id?: string; name?: string; is_admin?: boolean };
   callWS?<T>(message: Record<string, unknown>): Promise<T>;
   connection?: {
     subscribeMessage<T>(callback: (message: T) => void, message: Record<string, unknown>): Promise<() => unknown>;

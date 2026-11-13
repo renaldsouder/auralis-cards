@@ -113,6 +113,14 @@ describe("Auralis navbar configuration", () => {
     expect(card.config?.height_mobile).toBe(56);
   });
 
+  it("keeps the native header for administrators so they can still enter edit mode", () => {
+    const hidden = config({ hide_native_header: true });
+    const user = (is_admin: boolean) => ({ states: {}, callService: async () => undefined, user: { is_admin } });
+    expect(navbar.hidesNativeHeader(hidden, user(false))).toBe(true);
+    expect(navbar.hidesNativeHeader(hidden, user(true))).toBe(false);
+    expect(navbar.hidesNativeHeader(config({}), user(false))).toBe(false);
+  });
+
   it("accepts separate tablet and phone positions", () => {
     const card = new navbar.AuralisNavbarCard();
     card.setConfig(config({ position: "bottom", phone_position: "bottom", tablet_position: "right" }));

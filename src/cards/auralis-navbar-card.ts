@@ -1,6 +1,7 @@
 import { css, html, nothing, type CSSResultGroup, type TemplateResult } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import type { NavbarCardConfig, NavbarItemConfig } from "../types/config";
+import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
 import { hasOpenAuralisDialog } from "../utils/dialog-visibility";
 
@@ -32,6 +33,14 @@ const LAYOUT_STYLE = `
 `;
 const layoutOwners = new Map<ShadowRoot, { owners: Map<AuralisNavbarCard, NavbarPosition>; style: HTMLStyleElement }>();
 
+/**
+ * `hide_native_header` masque l'en-tête Home Assistant, sauf pour les administrateurs :
+ * son menu ⋮ est le seul accès au mode modification du tableau de bord.
+ */
+export function hidesNativeHeader(config: NavbarCardConfig | undefined, hass: HomeAssistant | undefined): boolean {
+  return config?.hide_native_header === true && hass?.user?.is_admin !== true;
+}
+
 function refreshLayout(root: ShadowRoot): void {
   const entry = layoutOwners.get(root);
   if (!entry) return;
@@ -43,7 +52,7 @@ function refreshLayout(root: ShadowRoot): void {
       ? card.config?.height_tablet ?? 72 : card.config?.height_desktop ?? 76;
   const bottom = cards.filter(([, position]) => position === "bottom").map(([card]) => card);
   const top = cards.filter(([, position]) => position === "top").map(([card]) => card);
-  host.toggleAttribute("data-auralis-navbar-hide-header", cards.some(([card]) => card.config?.hide_native_header === true));
+  host.toggleAttribute("data-auralis-navbar-hide-header", cards.some(([card]) => hidesNativeHeader(card.config, card.hass)));
   host.toggleAttribute("data-auralis-navbar-reserve-bottom", bottom.length > 0);
   host.toggleAttribute("data-auralis-navbar-reserve-top", top.length > 0);
   if (bottom.length) host.style.setProperty("--auralis-navbar-bottom-height", `${Math.max(...bottom.map(height))}px`);
@@ -459,7 +468,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (root) reserveRight(this, root);
     this.reservedRoot = root;
     const layoutRoot = this.isConnected && this.config && !this.editing
-      && (position === "bottom" || position === "top" || this.config.hide_native_header)
+      && (position === "bottom" || position === "top" || hidesNativeHeader(this.config, this.hass))
       ? lovelaceRoot(this) : undefined;
     if (this.layoutRoot !== layoutRoot) releaseLayout(this, this.layoutRoot);
     if (layoutRoot) reserveLayout(this, layoutRoot, position);
