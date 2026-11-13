@@ -29,13 +29,12 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
   };
 
   static styles = [AuralisBaseCard.styles, css`
-    .switches-root { --switch-accent:var(--machine-accent,var(--auralis-active)); }
+    .switches-root { --switch-accent:var(--machine-accent,var(--auralis-active)); --switch-ink:color-mix(in oklab,var(--switch-accent),#000 var(--auralis-shade)); }
     :host([data-background]) ha-card { background:var(--auralis-card-background); }
     .switches-shell { position:relative; padding:16px; background:var(--auralis-card-background,var(--auralis-card)); color:var(--auralis-text); container-type:inline-size; }
     .switches-shell.show-grid::before { position:absolute; inset:0; background-image:linear-gradient(color-mix(in srgb,var(--auralis-text) 4%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--auralis-text) 4%,transparent) 1px,transparent 1px); background-size:28px 28px; content:""; pointer-events:none; }
     .switches-header { position:relative; }
-    .switches-header .tile-icon { width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; background:color-mix(in srgb,var(--switch-accent) 18%,var(--auralis-layer)); color:var(--switch-accent); }
-    .switches-header .tile-icon ha-icon { --mdc-icon-size:24px; color:inherit; }
+    .switches-header .tile-icon { background:color-mix(in srgb,var(--switch-accent) 18%,var(--auralis-layer)); color:var(--switch-ink); }
     .switches-count { padding:10px 13px; border-radius:14px; background:var(--auralis-layer); color:var(--auralis-text); font-size:var(--auralis-text-sm); font-weight:750; white-space:nowrap; }
     .switches-count::before { display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:50%; background:var(--switch-accent); content:""; }
     .section-label { position:relative; margin:0 0 10px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
@@ -48,8 +47,8 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     .group-photo { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--machine-image-opacity,1); filter:brightness(var(--machine-image-brightness,.72)); pointer-events:none; }
     .group-open { display:flex; min-height:131px; flex:1; flex-direction:column; justify-content:space-between; padding:13px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
     .group-top { display:flex; align-items:center; }
-    .group-top .tile-icon { width:37px; height:37px; flex:0 0 auto; background:color-mix(in srgb,var(--switch-accent) 16%,var(--auralis-card)); color:var(--switch-accent); }
-    .has-photo .group-top .tile-icon { background:rgba(33,43,48,.86); }
+    .group-top .tile-icon { width:37px; height:37px; flex:0 0 auto; background:color-mix(in srgb,var(--switch-accent) 16%,var(--auralis-card)); color:var(--switch-ink); }
+    .has-photo .group-top .tile-icon { background:rgba(33,43,48,.86); color:var(--switch-accent); }
     .group-copy { display:block; min-width:0; }
     .group-name { min-width:0; overflow:hidden; font-size:var(--auralis-title-size); font-weight:780; text-overflow:ellipsis; white-space:nowrap; }
     .group-state { color:var(--auralis-muted); font-size:var(--auralis-text-sm); }
@@ -61,19 +60,20 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     .has-photo .group-power.on { background:color-mix(in srgb,var(--switch-accent) 20%,rgba(14,29,41,.9)); }
     .group-power.mixed { border-color:color-mix(in srgb,var(--switch-accent) 52%,transparent); }
     .group-power ha-icon { position:relative; z-index:1; --mdc-icon-size:21px; }
-    .group-power ha-icon:last-child { color:var(--switch-accent); }
+    .group-power ha-icon:last-child { color:var(--switch-ink); }
+    .has-photo .group-power ha-icon:last-child { color:var(--switch-accent); }
     .group-power.on ha-icon:last-child { color:#172430; }
     .group-power-thumb { position:absolute; top:5px; left:5px; width:35px; height:35px; border-radius:10px; background:color-mix(in srgb,var(--auralis-muted) 55%,var(--auralis-layer)); box-shadow:0 2px 9px rgba(0,0,0,.25); transition:left .18s ease,background .18s ease; }
     .group-power.on .group-power-thumb { left:calc(100% - 40px); background:var(--switch-accent); }
     .group-power.mixed .group-power-thumb { left:calc(50% - 17px); background:color-mix(in srgb,var(--switch-accent) 58%,var(--auralis-muted)); }
     .group-power:disabled,.switch-toggle:disabled { opacity:.45; cursor:not-allowed; }
     .group-open:focus-visible,.group-power:focus-visible,.switch-toggle:focus-visible,.switch-info:focus-visible { outline:2px solid var(--switch-accent); outline-offset:-2px; }
-    .dialog-header .tile-icon { color:var(--switch-accent); }
+    .dialog-header .tile-icon { color:var(--switch-ink); }
     .group-bar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
     .switch-row { display:flex; min-width:0; align-items:center; gap:11px; padding:12px; border:1px solid var(--auralis-border); border-radius:15px; background:var(--auralis-layer); -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
     .switch-row + .switch-row { margin-top:8px; }
     .switch-row .tile-icon { flex:0 0 auto; color:var(--auralis-muted); }
-    .switch-row .tile-icon.on { background:color-mix(in srgb,var(--switch-accent) 18%,var(--auralis-layer)); color:var(--switch-accent); }
+    .switch-row .tile-icon.on { background:color-mix(in srgb,var(--switch-accent) 18%,var(--auralis-layer)); color:var(--switch-ink); }
     .switch-meta { min-width:0; flex:1; }
     .switch-meta strong,.switch-meta small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .switch-meta strong { font-size:var(--auralis-text-md); }

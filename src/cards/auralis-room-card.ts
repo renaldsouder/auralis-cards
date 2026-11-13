@@ -126,7 +126,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         --room-layer: #eceff3;
         --room-layer-strong: #e7ebef;
         --room-text: #18212b;
-        --room-muted: #6b7582;
+        --room-muted: #5f6a76;
         --room-line: rgba(58, 69, 83, 0.12);
         --room-hover: rgba(21, 31, 42, 0.045);
         --room-accent: #79d6f2;
@@ -191,7 +191,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         place-items: center;
         border-radius: 14px;
         background: color-mix(in srgb, var(--room-accent) 18%, transparent);
-        color: color-mix(in srgb, var(--room-accent) 75%, var(--room-text));
+        color: color-mix(in oklab, color-mix(in srgb, var(--room-accent) 75%, var(--room-text)), #000 var(--auralis-shade));
       }
 
       .room-avatar ha-icon {
@@ -328,7 +328,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
       }
 
       .side-control.active ha-icon {
-        color: var(--room-accent);
+        color: color-mix(in oklab, var(--room-accent), #000 var(--auralis-shade));
         filter: drop-shadow(0 0 7px color-mix(in srgb, var(--room-accent) 55%, transparent));
       }
 
@@ -553,7 +553,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
       .cover-command ha-icon {
         --mdc-icon-size: 16px;
         justify-self: center;
-        color: color-mix(in srgb, var(--room-accent) 62%, var(--room-text));
+        color: color-mix(in oklab, color-mix(in srgb, var(--room-accent) 62%, var(--room-text)), #000 var(--auralis-shade));
       }
 
       .cover-command.center {
@@ -789,7 +789,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
       .light-master-button.all-off {
         border-color: color-mix(in srgb, var(--auralis-danger) 42%, var(--auralis-border));
-        color: color-mix(in srgb, var(--auralis-danger) 78%, var(--auralis-text));
+        color: color-mix(in oklab, color-mix(in srgb, var(--auralis-danger) 78%, var(--auralis-text)), #000 var(--auralis-shade));
       }
 
       .light-master-button[disabled] {
@@ -826,7 +826,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
       }
 
       .brightness-tile .row-between ha-icon {
-        color: var(--auralis-active);
+        color: var(--auralis-active-ink);
       }
 
       .color-picker {
@@ -885,7 +885,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
       .light-status-icon.on {
         background: color-mix(in srgb, var(--light-status-color, #ffd166) 24%, var(--auralis-layer));
-        color: var(--light-status-color, #ffd166);
+        color: color-mix(in oklab, var(--light-status-color, #ffd166), #000 var(--auralis-shade));
         box-shadow: 0 0 18px color-mix(in srgb, var(--light-status-color, #ffd166) 34%, transparent);
       }
 

@@ -562,7 +562,7 @@ export const machineStyles = css`
   .filters button.active {
     border-color: color-mix(in srgb, var(--auralis-healthy) 42%, transparent);
     background: color-mix(in srgb, var(--auralis-healthy) 12%, var(--auralis-layer));
-    color: var(--auralis-healthy);
+    color: var(--auralis-healthy-ink);
   }
 
   .section-label {
@@ -604,12 +604,12 @@ export const machineStyles = css`
   }
   .service-icon.active {
     background: color-mix(in srgb, var(--auralis-healthy) 18%, var(--auralis-layer));
-    color: var(--auralis-healthy);
+    color: var(--auralis-healthy-ink);
     box-shadow: 0 0 18px color-mix(in srgb, var(--auralis-healthy) 22%, transparent);
   }
   .service-icon.paused {
     background: color-mix(in srgb, var(--auralis-active) 16%, var(--auralis-layer));
-    color: var(--auralis-active);
+    color: var(--auralis-active-ink);
   }
   .service-icon.stopped,
   .service-icon.unavailable { background: var(--auralis-layer); color: var(--auralis-muted); }

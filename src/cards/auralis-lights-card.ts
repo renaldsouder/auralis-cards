@@ -119,7 +119,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
 
   static styles = [AuralisBaseCard.styles, css`
     .lights-shell { padding: 18px; container-type: inline-size; }
-    .lights-header .tile-icon { width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
+    .lights-header .tile-icon { color:var(--auralis-active-ink); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
     .lights-header .tile-icon ha-icon { --mdc-icon-size:25px; color:inherit; }
     .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:12px; }
     .group { overflow:hidden; border:1px solid var(--auralis-border); border-radius:20px; background:var(--auralis-layer); }
@@ -127,7 +127,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .group-photo::after { position:absolute; inset:0; background:linear-gradient(0deg,rgba(7,13,20,.28),transparent 70%); content:""; pointer-events:none; }
     .group-body { padding:14px; }
     .group-top { display:flex; align-items:center; gap:9px; }
-    .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
+    .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active-ink); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
     .group-title { min-width:0; flex:1; }
     .group-title strong, .group-title small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .group-title small { margin-top:3px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
@@ -135,11 +135,11 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .group-actions { display:flex; gap:7px; margin-top:13px; }
     .control { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
     .control ha-icon { --mdc-icon-size:21px; }
-    .control.on { color:var(--auralis-active); }
+    .control.on { color:var(--auralis-active-ink); }
     .control[disabled], .swatch[disabled], input[disabled] { opacity:.38; cursor:not-allowed; }
     .group-actions .spacer { flex:1; }
     .dimmer { display:flex; min-height:var(--auralis-target); align-items:center; gap:10px; margin-top:10px; }
-    .dimmer ha-icon { --mdc-icon-size:18px; color:var(--auralis-active); }
+    .dimmer ha-icon { --mdc-icon-size:18px; color:var(--auralis-active-ink); }
     .dimmer input[type="range"] { min-width:0; min-height:var(--auralis-target); flex:1; accent-color:var(--auralis-active); cursor:pointer; }
     .dimmer output { min-width:38px; color:var(--auralis-muted); font-size:var(--auralis-text-sm); text-align:right; }
     .color-input { width:var(--auralis-target); height:var(--auralis-target); padding:3px; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); cursor:pointer; }
@@ -159,7 +159,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .light-row { padding:14px; border:1px solid var(--auralis-border); border-radius:16px; background:var(--auralis-layer); -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
     .light-row + .light-row { margin-top:9px; }
     .light-head { display:flex; align-items:center; gap:10px; }
-    .light-head .tile-icon { color:var(--auralis-active); }
+    .light-head .tile-icon { color:color-mix(in oklab,var(--light-color,var(--auralis-active)),#000 var(--auralis-shade)); }
     .light-head .meta { min-width:0; flex:1; }
     .light-head .name { display:block; overflow:hidden; font-size:var(--auralis-text-md); font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
     .light-head .unavailable { display:block; margin-top:3px; }
@@ -167,7 +167,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .light-tools .dimmer { min-width:0; flex:1; margin-top:0; }
     .scene-grid { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
     .scene-item { display:grid; width:70px; gap:4px; justify-items:center; }
-    .scene-item .control { width:48px; height:48px; color:var(--auralis-active); }
+    .scene-item .control { width:48px; height:48px; color:var(--auralis-active-ink); }
     .scene-item small { width:70px; overflow:hidden; color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-align:center; text-overflow:ellipsis; white-space:nowrap; }
     .section-caption { margin:17px 0 9px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
     @container (max-width:330px) { .lights-shell { padding:13px; } .group-body { padding:12px; } }
@@ -363,7 +363,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     const label = this.label(id);
     return html`<div class="light-row" ${holdMoreInfo(id)}>
       <div class="light-head">
-        <span class="tile-icon" style=${`color:${on ? rgbToHex(lightRgbColor(state)) : "var(--auralis-muted)"}`}><ha-icon .icon=${on ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
+        <span class="tile-icon" style=${`--light-color:${on ? rgbToHex(lightRgbColor(state)) : "var(--auralis-muted)"}`}><ha-icon .icon=${on ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
         <span class="meta"><span class="name">${label}</span>${commandable ? nothing : html`<span class="unavailable">Indisponible</span>`}</span>
         <button class="control" type="button" title=${`Plus d’informations sur ${label}`} aria-label=${`Plus d’informations sur ${label}`}
           @click=${() => this.moreInfo(id)}><ha-icon icon="mdi:information-outline"></ha-icon></button>

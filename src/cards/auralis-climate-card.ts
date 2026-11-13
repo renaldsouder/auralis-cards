@@ -257,10 +257,11 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     /* Fond et texte suivent le thème ; une image de fond garde un voile sombre et un texte clair. */
     .climate-shell { --machine-accent:#79d6f2; background:var(--auralis-card-background,var(--auralis-card)); color:var(--auralis-text); }
     .climate-shell:not(.has-image)::before { display:none; }
-    .climate-shell.has-image { --auralis-text:#f4f8fc; --auralis-muted:#a7b4c2; --auralis-border:rgba(195,211,229,.16); --auralis-layer:rgba(9,14,20,var(--machine-glass-alpha,.84)); background:var(--auralis-card-background,#090d12); }
+    /* Jetons sombres de la façade photo : voir .machine-shell dans les styles partagés. */
+    .climate-shell.has-image { background:var(--auralis-card-background,#090d12); }
     .climate-shell, .climate-content { min-height:0; }
     .climate-header { align-items:center; padding-right:0; }
-    .climate-header .badge { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--machine-accent) 14%,var(--auralis-layer)); color:var(--machine-accent); }
+    .climate-header .badge { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:14px; background:color-mix(in srgb,var(--machine-accent) 14%,var(--auralis-layer)); color:color-mix(in oklab,var(--machine-accent),#000 var(--auralis-shade)); }
     .climate-header .badge ha-icon { --mdc-icon-size:23px; }
     .climate-header h2 { overflow:hidden; color:inherit; font-size:var(--auralis-title-size); text-overflow:ellipsis; white-space:nowrap; }
     .climate-header .machine-status { margin-top:5px; color:var(--auralis-muted); }
@@ -269,7 +270,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     .chip strong { color:var(--auralis-text); font-weight:700; white-space:nowrap; }
     .chip .swatch { width:8px; height:8px; flex:0 0 auto; border-radius:50%; background:var(--band); box-shadow:0 0 0 4px color-mix(in srgb,var(--band) 18%,transparent); }
     .chip ha-icon { --mdc-icon-size:15px; }
-    .chip.alert { border-color:color-mix(in srgb,var(--auralis-active) 45%,transparent); color:var(--auralis-active); }
+    .chip.alert { border-color:color-mix(in srgb,var(--auralis-active) 45%,transparent); color:var(--auralis-active-ink); }
     .rooms { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:10px; margin-top:14px; }
     .rooms.fixed { grid-template-columns:repeat(var(--climate-columns),minmax(0,1fr)); }
     .room { --band:var(--auralis-muted); display:flex; min-width:0; flex-direction:column; padding:12px 12px 10px; overflow:hidden; border:1px solid color-mix(in srgb,var(--band) 38%,var(--auralis-border)); border-radius:18px; background:linear-gradient(160deg,color-mix(in srgb,var(--band) 14%,transparent),transparent 62%),var(--auralis-layer); color:inherit; cursor:pointer; text-align:start; backdrop-filter:blur(12px); transition:border-color .15s ease; }
@@ -277,28 +278,28 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     .room:focus-visible, .tabs button:focus-visible { outline:2px solid var(--band,var(--auralis-info)); outline-offset:2px; }
     .room.unavailable { opacity:.55; }
     .room-head { display:flex; min-width:0; align-items:center; gap:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:650; }
-    .room-head ha-icon { --mdc-icon-size:16px; flex:0 0 auto; color:var(--band); }
+    .room-head ha-icon { --mdc-icon-size:16px; flex:0 0 auto; color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); }
     .room-head .name { overflow:hidden; flex:1; text-overflow:ellipsis; white-space:nowrap; }
-    .room-head .battery { color:var(--auralis-active); }
+    .room-head .battery { color:var(--auralis-active-ink); }
     .room-value { display:flex; align-items:baseline; gap:3px; margin-top:8px; }
-    .room-value strong { color:var(--band); font-size:28px; font-weight:740; letter-spacing:-.05em; line-height:1; }
+    .room-value strong { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-size:28px; font-weight:740; letter-spacing:-.05em; line-height:1; }
     .room-value small { color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
-    .band-label { min-width:0; align-self:center; padding:3px 8px; margin-inline-start:auto; overflow:hidden; border-radius:999px; background:color-mix(in srgb,var(--band) 16%,transparent); color:var(--band); font-size:var(--auralis-text-xs); font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
-    .spark { display:block; width:100%; height:34px; margin-top:9px; overflow:visible; }
+    .band-label { min-width:0; align-self:center; padding:3px 8px; margin-inline-start:auto; overflow:hidden; border-radius:999px; background:color-mix(in srgb,var(--band) 16%,transparent); color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-size:var(--auralis-text-xs); font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+    .spark { display:block; width:100%; height:34px; margin-top:9px; overflow:visible; filter:brightness(calc(100% - var(--auralis-shade))); }
     .spark-empty { display:grid; height:34px; margin-top:9px; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--auralis-muted) 8%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .room-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); white-space:nowrap; }
     .room-foot span { display:inline-flex; align-items:center; gap:3px; }
-    .room-foot ha-icon { --mdc-icon-size:13px; color:#63bbff; }
+    .room-foot ha-icon { --mdc-icon-size:13px; color:color-mix(in oklab,#63bbff,#000 var(--auralis-shade)); }
     .detail-now { --band:var(--auralis-muted); }
-    .detail-now strong { color:var(--band); font-size:30px; letter-spacing:-.05em; }
+    .detail-now strong { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); font-size:30px; letter-spacing:-.05em; }
     .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:10px; }
     .stats .dialog-stat { --band:var(--auralis-text); min-width:0; }
-    .stats .dialog-stat strong { color:var(--band); }
+    .stats .dialog-stat strong { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); }
     .chart { margin:0; padding:12px 12px 8px; border:1px solid var(--auralis-border); border-radius:18px; background:color-mix(in srgb,var(--auralis-text) 3%,transparent); }
     .plot { position:relative; height:132px; }
-    .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+    .plot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; filter:brightness(calc(100% - var(--auralis-shade))); }
     .plot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); }
-    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:color-mix(in srgb,var(--auralis-bg) 70%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .plot .axis { position:absolute; inset-inline-start:0; z-index:1; padding:1px 5px; border-radius:6px; background:color-mix(in srgb,var(--auralis-surface) 70%,transparent); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .plot .axis.top { top:2px; }
     .plot .axis.bottom { bottom:2px; }
     .time-axis { display:flex; justify-content:space-between; padding-top:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }

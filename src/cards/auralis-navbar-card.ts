@@ -1,5 +1,5 @@
 import { css, html, nothing, type CSSResultGroup, type TemplateResult } from "lit";
-import { AuralisBaseCard } from "./auralis-base-card";
+import { AuralisBaseCard, configuredBackground } from "./auralis-base-card";
 import type { NavbarCardConfig, NavbarItemConfig } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { sharedStyles } from "../styles/shared";
@@ -338,7 +338,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         height: var(--navbar-height-desktop, 76px);
         box-sizing: border-box;
         overflow: visible;
-        background: var(--machine-base-background, var(--auralis-bg));
+        /* Surface plane : suit le thème, sauf fond configuré (card_background). */
+        background: var(--navbar-background, var(--auralis-bg));
       }
       :host([data-position="left"]) ha-card,
       :host([data-position="right"]) ha-card { height: auto; }
@@ -444,7 +445,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       .icon-wrap { position: relative; display: grid; place-items: center; flex: 0 0 auto; }
       ha-icon { --mdc-icon-size: 23px; }
-      .active ha-icon { color: var(--machine-accent, var(--auralis-info)); }
+      .active ha-icon { color: color-mix(in oklab, var(--machine-accent, var(--auralis-info)), #000 var(--auralis-shade)); }
       .label {
         min-width: 0;
         overflow: hidden;
@@ -827,6 +828,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     const currentPath = typeof window === "undefined" ? "/" : window.location.pathname;
     const showLabels = this.config.show_labels !== false;
     const classes = [this.config.compact ? "compact" : "", showLabels ? "" : "labels-hidden"].filter(Boolean).join(" ");
+    const background = configuredBackground(this.config);
     const heightStyle = (["desktop", "tablet", "mobile"] as const)
       .map((device) => {
         const height = this.config?.[`height_${device}`];
@@ -835,7 +837,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       .filter(Boolean)
       .join(";");
     return html`
-      <ha-card style=${`${this.machineStyle("#79d6f2")};${heightStyle}`}>
+      <ha-card style=${`${this.machineStyle("#79d6f2")};${heightStyle}${background ? `;--navbar-background:${background}` : ""}`}>
         <div class="navbar-shell ${classes}">
           <nav aria-label=${this.config.aria_label || this.config.name || "Navigation Auralis"}>
             ${this.config.items.map((item) => {

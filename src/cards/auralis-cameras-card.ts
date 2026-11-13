@@ -244,7 +244,7 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
     .cam.thumb .cam-bottom { display:none; }
     .tag { display:inline-flex; flex:0 0 auto; align-items:center; gap:5px; padding:3px 8px; border-radius:999px; background:rgba(5,9,14,.72); font-size:var(--auralis-text-xs); font-weight:750; backdrop-filter:blur(8px); }
     .tag::before { width:6px; height:6px; border-radius:50%; background:currentColor; content:""; }
-    .tag.motion { background:color-mix(in srgb,var(--motion) 85%,#000); color:#fff; }
+    .tag.motion { background:color-mix(in srgb,var(--motion) 75%,#000); color:#fff; }
     .tag.stale { color:var(--auralis-active,#ffc45f); }
     .tag.ok { color:var(--auralis-healthy,#5bd69b); }
     .tag.ok::before { animation:blink 2s ease-in-out infinite; }
@@ -259,14 +259,14 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
     .media-tags { position:absolute; z-index:2; top:10px; left:10px; display:flex; gap:6px; }
     .info { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin:12px 2px 0; color:var(--auralis-muted); font-size:var(--auralis-text-sm); }
     .info strong { color:var(--auralis-text); font-weight:650; }
-    .info .motion { color:var(--motion); }
+    .info .motion { color:color-mix(in oklab,var(--motion),#000 var(--auralis-shade)); }
     .retry-live { display:inline-flex; min-height:var(--auralis-target); align-items:center; gap:6px; padding:0 12px; border:1px solid var(--auralis-border); border-radius:999px; background:var(--auralis-layer); color:var(--auralis-text); cursor:pointer; font-size:var(--auralis-text-sm); font-weight:650; }
     .retry-live ha-icon { --mdc-icon-size:16px; }
     .action.cam-act { --tone:var(--auralis-info); border-color:color-mix(in srgb,var(--tone) 32%,var(--auralis-border)); touch-action:manipulation; user-select:none; -webkit-user-select:none; }
-    .action.cam-act ha-icon { color:var(--tone); }
+    .action.cam-act ha-icon { color:color-mix(in oklab,var(--tone),#000 var(--auralis-shade)); }
     .action.cam-act.on { border-color:color-mix(in srgb,var(--tone) 65%,transparent); background:color-mix(in srgb,var(--tone) 18%,var(--auralis-layer)); }
-    .action.cam-act.done { --tone:var(--auralis-healthy); color:var(--auralis-healthy); }
-    .action.cam-act.failed { --tone:var(--auralis-danger); color:var(--auralis-danger); }
+    .action.cam-act.done { --tone:var(--auralis-healthy); color:var(--auralis-healthy-ink); }
+    .action.cam-act.failed { --tone:var(--auralis-danger); color:var(--auralis-danger-ink); }
     .action.cam-act[aria-disabled="true"] { cursor:not-allowed; opacity:.45; }
     @keyframes pulse { 0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb,var(--motion) 0%,transparent); } 50% { box-shadow:0 0 0 4px color-mix(in srgb,var(--motion) 45%,transparent); } }
     @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:.35; } }
