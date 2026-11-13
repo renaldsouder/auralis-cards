@@ -814,7 +814,7 @@ export const sharedStyles = css`
 
   .machine-wake {
     display: inline-flex;
-    min-height: 34px;
+    min-height: var(--auralis-target);
     align-items: center;
     gap: 7px;
     margin-top: 11px;
