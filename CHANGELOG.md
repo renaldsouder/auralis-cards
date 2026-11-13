@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1
+
+- Barre de navigation : `hide_native_header` ne masque plus l’en-tête aux administrateurs. Son menu ⋮ étant le seul accès au mode modification, un administrateur ne pouvait plus modifier le tableau de bord. Les autres comptes restent sans en-tête.
+
 ## 0.22.0
 
 - Carte Proxmox : les VM et les LXC lisent `stop_entity`, `pause_entity` et `resume_entity`. Une charge active propose Pause, Redémarrer, Éteindre ou Arrêter et Console ; une charge suspendue Reprendre. Redémarrer et arrêter demandent confirmation, comme sur la carte UNRAID.
