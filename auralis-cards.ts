@@ -14,8 +14,9 @@ import { AuralisClimateCard } from "./src/cards/auralis-climate-card";
 import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
 import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
 import { AuralisCamerasCard } from "./src/cards/auralis-cameras-card";
+import { AuralisMediaCard } from "./src/cards/auralis-media-card";
 
-const VERSION = "0.19.0";
+const VERSION = "0.20.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -32,6 +33,7 @@ if (!customElements.get("auralis-climate-card")) customElements.define("auralis-
 if (!customElements.get("auralis-weather-card")) customElements.define("auralis-weather-card", AuralisWeatherCard);
 if (!customElements.get("auralis-actions-card")) customElements.define("auralis-actions-card", AuralisActionsCard);
 if (!customElements.get("auralis-cameras-card")) customElements.define("auralis-cameras-card", AuralisCamerasCard);
+if (!customElements.get("auralis-media-card")) customElements.define("auralis-media-card", AuralisMediaCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -159,6 +161,15 @@ const cards = [
     preview: true,
     getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("camera.")
       ? { config: { type: "custom:auralis-cameras-card", cameras: [{ entity: entityId }] } }
+      : null,
+  },
+  {
+    type: "auralis-media-card",
+    name: "Auralis · Média",
+    description: "Ampli, enceintes et télévision : pochette, lecture, volume plafonné, sources et modes sonores.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("media_player.")
+      ? { config: { type: "custom:auralis-media-card", entity: entityId } }
       : null,
   },
 ];

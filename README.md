@@ -1,6 +1,6 @@
 # Auralis Cards
 
-Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, météo, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
+Auralis Cards est une collection de cartes modernes pour Home Assistant : navigation entre les sous-vues, pièce tout-en-un, groupes de volets, prises et interrupteurs, éclairage, thermostats, températures des pièces, météo, caméras, ampli et multimédia, frigo connecté, suivi d’un PC, supervision d’un serveur UNRAID et pilotage d’un nœud Proxmox. Son langage graphique, **Auralis Frame**, associe photographie immersive, informations flottantes et surfaces vitrées.
 
 ![Aperçu des cartes Auralis Pièce, PC et UNRAID](docs/auralis-preview.svg)
 
@@ -21,6 +21,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-weather-card`
 - `custom:auralis-actions-card`
 - `custom:auralis-cameras-card`
+- `custom:auralis-media-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -134,6 +135,19 @@ cameras:
   - entity: camera.allee
     motion_entity: binary_sensor.allee_mouvement
   - entity: camera.jardin
+```
+
+La [carte Média](examples/media-card.yaml) pilote un ampli, des enceintes ou une télévision : pochette, lecture, volume plafonné, sources favorites et modes sonores. Plusieurs lecteurs peuvent partager la même carte. Voir le [guide Média](docs/MEDIA_CARD.md).
+
+```yaml
+type: custom:auralis-media-card
+entity: media_player.tx_nr686
+name: Ampli
+max_volume: 60
+sources:
+  - source: tv
+    name: Télé
+  - source: bluetooth
 ```
 
 ## Exemple minimal — Navigation

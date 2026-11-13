@@ -65,6 +65,7 @@ declare global {
     "auralis-weather-card": HTMLElement;
     "auralis-actions-card": HTMLElement;
     "auralis-cameras-card": HTMLElement;
+    "auralis-media-card": HTMLElement;
     "orbit-room-card": HTMLElement;
     "orbit-pc-card": HTMLElement;
     "orbit-unraid-card": HTMLElement;
