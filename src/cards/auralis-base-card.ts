@@ -87,6 +87,8 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   private watched?: { config: TConfig | undefined; ids: Set<string> };
   private shownDialog: string | null = null;
   private dialogOpener?: HTMLElement;
+  private confirmShown = false;
+  private confirmOpener?: HTMLElement;
 
   /**
    * Ne redessine la carte que si une entité qu'elle cite a changé. Home Assistant envoie un
@@ -178,25 +180,40 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     this.feedbackNode.toggleAttribute("hidden", false);
   }
 
-  /** Focus sur la fenêtre à l'ouverture, retour au bouton d'origine à la fermeture. */
+  /**
+   * Focus sur la fenêtre (ou la confirmation) à l'ouverture, retour à l'élément d'origine à la
+   * fermeture. Une confirmation ouverte depuis une fenêtre rend ensuite le focus à cette fenêtre.
+   */
   private syncDialogFocus(): void {
-    if (this.dialog === this.shownDialog) return;
-    const opened = this.shownDialog === null && this.dialog !== null;
-    const closed = this.shownDialog !== null && this.dialog === null;
-    this.shownDialog = this.dialog;
-    if (opened) {
-      this.dialogOpener = deepActiveElement();
-      const target = this.renderRoot.querySelector<HTMLElement>(".dialog [data-dialog-close], .dialog [aria-label='Fermer']");
-      target?.focus({ preventScroll: true });
-    } else if (closed) {
-      const opener = this.dialogOpener;
-      this.dialogOpener = undefined;
+    if (this.dialog !== this.shownDialog) {
+      const opened = this.shownDialog === null && this.dialog !== null;
+      const closed = this.shownDialog !== null && this.dialog === null;
+      this.shownDialog = this.dialog;
+      if (opened) {
+        this.dialogOpener = deepActiveElement();
+        this.renderRoot.querySelector<HTMLElement>(".dialog:not(.confirm-dialog) [data-dialog-close], .dialog:not(.confirm-dialog) [aria-label='Fermer']")
+          ?.focus({ preventScroll: true });
+      } else if (closed) {
+        const opener = this.dialogOpener;
+        this.dialogOpener = undefined;
+        if (opener?.isConnected) opener.focus({ preventScroll: true });
+      }
+    }
+    const confirmShown = this.confirmState !== null;
+    if (confirmShown === this.confirmShown) return;
+    this.confirmShown = confirmShown;
+    if (confirmShown) {
+      this.confirmOpener = deepActiveElement();
+      this.renderRoot.querySelector<HTMLElement>(".confirm-dialog [data-dialog-close]")?.focus({ preventScroll: true });
+    } else {
+      const opener = this.confirmOpener;
+      this.confirmOpener = undefined;
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     }
   }
 
   private readonly handleKeydown = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape" || this.dialog === null) return;
+    if (event.key !== "Escape" || (this.dialog === null && this.confirmState === null)) return;
     event.stopPropagation();
     if (this.confirmState) this.confirmState = null;
     else this.closeDialog();

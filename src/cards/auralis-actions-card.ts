@@ -339,13 +339,6 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
   private clock?: number;
   private readonly flash = new StatusFlash((status) => { this.status = status; });
   private readonly hold = new LongPress();
-  private readonly onEscape = (event: KeyboardEvent): void => {
-    // La confirmation est affichée hors fenêtre : la classe de base ne gère Échap que pour les fenêtres.
-    if (event.key === "Escape" && this.confirmState && this.dialog === null) {
-      event.stopPropagation();
-      this.confirmState = null;
-    }
-  };
 
   static getStubConfig(hass?: HomeAssistant): Partial<ActionsCardConfig> {
     const ids = Object.keys(hass?.states ?? {}).filter((id) => /^(script|scene|button)\./.test(id)).slice(0, 4);
@@ -398,13 +391,11 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     this.now = Date.now();
     window.clearInterval(this.clock);
     this.clock = window.setInterval(() => { this.now = Date.now(); }, 30_000);
-    window.addEventListener("keydown", this.onEscape);
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearInterval(this.clock);
-    window.removeEventListener("keydown", this.onEscape);
     this.hold.cancel();
     this.flash.clear();
   }
