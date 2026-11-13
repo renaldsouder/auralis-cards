@@ -34,8 +34,19 @@ const states = [
   e("sensor.salon_temperature", "21.5", { unit_of_measurement: "°C" }),
   e("sensor.salon_humidity", "46", { unit_of_measurement: "%" }),
   e("climate.salon", "heat", { friendly_name: "Climat Salon", temperature: 20.5, current_temperature: 21.5, target_temp_step: 0.5, min_temp: 7, max_temp: 28 }),
-  e("media_player.salon", "playing", { friendly_name: "Musique Salon", media_title: "Jazz du soir", media_artist: "Maison", volume_level: 0.34 }),
-  e("media_player.tv_salon", "on", { friendly_name: "Télévision Salon", media_title: "France 2", volume_level: 0.22 }),
+  e("media_player.salon", "playing", {
+    friendly_name: "Enceinte du salon", device_class: "speaker", media_title: "So What", media_artist: "Miles Davis", media_album_name: "Kind of Blue",
+    entity_picture: "/images/lumieres-ambiance.jpg", media_duration: 562, media_position: 148, media_position_updated_at: new Date().toISOString(),
+    volume_level: 0.34, is_volume_muted: false, shuffle: false, repeat: "off", source: "Spotify", source_list: ["Spotify", "AirPlay", "Radio"],
+    supported_features: 1 | 2 | 4 | 8 | 16 | 32 | 128 | 256 | 2048 | 16384 | 32768 | 262144,
+  }),
+  e("media_player.tv_salon", "on", { friendly_name: "Télévision Salon", device_class: "tv", media_title: "France 2", app_name: "TNT", volume_level: 0.22, supported_features: 4 | 8 | 128 | 256 | 2048, source: "TV", source_list: ["TV", "HDMI 1", "Netflix", "YouTube"] }),
+  e("media_player.tx_nr686", "on", {
+    friendly_name: "Onkyo TX-NR686", volume_level: 0.32, is_volume_muted: false, source: "tv", sound_mode: "Dolby Surround",
+    source_list: ["tv", "bd-dvd", "game", "cbl-sat", "strm-box", "pc", "bluetooth", "network", "fm", "phono"],
+    sound_mode_list: ["Stéréo", "Direct", "Dolby Surround", "DTS Neural:X", "Jeu", "Musique"],
+    supported_features: 4 | 8 | 1024 | 2048 | 128 | 256 | 16384 | 65536,
+  }),
   e("light.plafonnier", "on", { friendly_name: "Plafonnier", brightness: 178 }),
   e("light.lampadaire", "on", { friendly_name: "Lampadaire", brightness: 102 }),
   e("light.bibliotheque", "on", { friendly_name: "Bibliothèque", brightness: 216 }),
@@ -207,6 +218,7 @@ const hass: HomeAssistant = {
   formatEntityState: (state) => `${state.state}${state.attributes.unit_of_measurement ? ` ${state.attributes.unit_of_measurement}` : ""}`,
   callService: async (domain, service, data, target) => {
     console.info("Service Home Assistant simulé", { domain, service, data, target });
+    if (domain === "media_player") simulateMedia(String((target as { entity_id?: string } | undefined)?.entity_id ?? ""), service, data ?? {});
   },
   // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
   callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
@@ -245,6 +257,54 @@ const hass: HomeAssistant = {
       return () => undefined;
     },
   },
+};
+
+// Lecteurs simulés : les commandes de la carte Média modifient vraiment l'état affiché.
+const mounted: Array<{ hass?: HomeAssistant }> = [];
+function simulateMedia(id: string, service: string, data: Record<string, unknown>): void {
+  const current = states[id];
+  if (!current) return;
+  const attributes = { ...current.attributes };
+  let state = current.state;
+  const volume = typeof attributes.volume_level === "number" ? attributes.volume_level : 0;
+  if (service === "turn_on") state = "on";
+  if (service === "turn_off") state = "off";
+  if (service === "media_play") state = "playing";
+  if (service === "media_pause") state = "paused";
+  if (service === "media_play_pause") state = state === "playing" ? "paused" : "playing";
+  if (service === "volume_set") attributes.volume_level = data.volume_level;
+  if (service === "volume_up" || service === "volume_down") attributes.volume_level = Math.min(1, Math.max(0, Math.round((volume + (service === "volume_up" ? 0.01 : -0.01)) * 100) / 100));
+  if (service === "volume_mute") attributes.is_volume_muted = data.is_volume_muted;
+  if (service === "select_source") { attributes.source = data.source; if (state === "off") state = "on"; }
+  if (service === "select_sound_mode") attributes.sound_mode = data.sound_mode;
+  if (service === "shuffle_set") attributes.shuffle = data.shuffle;
+  if (service === "repeat_set") attributes.repeat = data.repeat;
+  if (service === "media_seek") Object.assign(attributes, { media_position: data.seek_position, media_position_updated_at: new Date().toISOString() });
+  if (service === "media_next_track" || service === "media_previous_track") Object.assign(attributes, { media_position: 0, media_position_updated_at: new Date().toISOString() });
+  if (["media_pause", "media_play", "media_play_pause"].includes(service) && typeof attributes.media_position === "number") {
+    const updated = Date.parse(String(attributes.media_position_updated_at));
+    const elapsed = current.state === "playing" && Number.isFinite(updated) ? (Date.now() - updated) / 1000 : 0;
+    Object.assign(attributes, { media_position: attributes.media_position + elapsed, media_position_updated_at: new Date().toISOString() });
+  }
+  states[id] = { ...current, state, attributes };
+  window.setTimeout(() => {
+    const next = { ...hass, states: { ...states } };
+    for (const card of mounted) card.hass = next;
+  }, 250);
+}
+
+const mediaCard = {
+  type: "custom:auralis-media-card",
+  name: "Multimédia",
+  players: [
+    { entity: "media_player.tx_nr686", name: "Ampli Onkyo", max_volume: 70, volume_step: 2, volume_scale: 80,
+      sources: [
+        { source: "tv", name: "Télé" }, { source: "bd-dvd", name: "Blu-ray" }, { source: "game", name: "Console" },
+        { source: "strm-box", name: "Box TV" }, { source: "bluetooth", name: "Bluetooth" }, { source: "network", name: "Réseau" },
+      ] },
+    { entity: "media_player.salon", name: "Enceinte" },
+    { entity: "media_player.tv_salon", name: "TV" },
+  ],
 };
 
 const actionsCard = {
@@ -535,6 +595,7 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
   const card = document.createElement(tag) as T;
   card.setConfig(config);
   card.hass = hass;
+  mounted.push(card);
   document.querySelector("#demo")?.append(card);
 };
 
@@ -543,6 +604,7 @@ mount("auralis-weather-card", weather);
 mount("auralis-actions-card", actionsCard);
 mount("auralis-actions-card", scenesCard);
 mount("auralis-cameras-card", camerasCard);
+mount("auralis-media-card", mediaCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);

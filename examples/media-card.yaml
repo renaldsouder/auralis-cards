@@ -1,0 +1,27 @@
+# Carte Média Auralis — à coller dans l'éditeur YAML d'une carte.
+# Remplacez les identifiants d'entités par les vôtres.
+type: custom:auralis-media-card
+name: Multimédia
+players:
+  - entity: media_player.tx_nr686
+    name: Ampli
+    device_class: receiver # receiver (ampli), speaker (enceinte) ou tv
+    max_volume: 60 # la carte ne monte jamais au-delà de 60 %
+    volume_step: 2 # pas des boutons − et +, en %
+    volume_scale: 80 # affiche le volume comme l'ampli (0 à 80)
+    # Sources favorites, dans l'ordre : le nom est celui de la liste
+    # « source_list » de l'appareil (visible dans Outils de développement → États).
+    sources:
+      - source: tv
+        name: Télé
+      - source: bd-dvd
+        name: Blu-ray
+      - source: game
+        name: Console
+        icon: mdi:sony-playstation
+      - source: bluetooth
+        name: Bluetooth
+  - entity: media_player.salon
+    name: Enceinte
+  - entity: media_player.tv_salon
+    name: Télévision

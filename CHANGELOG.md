@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0
+
+- Ajoute la carte Auralis Média : un ou plusieurs lecteurs (ampli, enceintes, télévision) avec pochette en fond flou, titre, artiste et progression de la lecture.
+- Affiche, pour un ampli sans morceau en cours, la source et le mode sonore actifs.
+- Règle le volume au curseur ou par pas, plafonné par `max_volume`, avec sourdine et affichage sur l’échelle de l’ampli (`volume_scale`).
+- Propose des sources favorites renommables avec icônes, et dans la fenêtre toutes les sources, les modes sonores, la lecture aléatoire et la répétition.
+
 ## 0.19.0
 
 - Ajoute la carte Auralis Caméras : mosaïque ou grande image avec vignettes, rafraîchie uniquement quand la carte est visible.
