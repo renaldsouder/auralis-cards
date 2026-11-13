@@ -1,0 +1,30 @@
+# Carte Caméras Auralis — à coller dans l'éditeur YAML d'une carte.
+# Remplacez les identifiants d'entités par les vôtres.
+type: custom:auralis-cameras-card
+name: Caméras
+layout: grid # grid (mosaïque) ou featured (une grande et des vignettes)
+aspect_ratio: "16:9"
+refresh_interval: 10
+cameras:
+  - entity: camera.allee
+    name: Allée
+    icon: mdi:gate
+    motion_entity: binary_sensor.allee_mouvement
+    # Boutons de la fenêtre, au format de la carte Actions.
+    actions:
+      - entity: light.projecteur_allee
+        name: Projecteur
+        icon: mdi:spotlight-beam
+      - entity: button.sirene_exterieure
+        name: Sirène
+        icon: mdi:alarm-light-outline
+        confirm: Déclencher la sirène extérieure ?
+  - entity: camera.jardin
+    name: Jardin
+    icon: mdi:flower-outline
+  - entity: camera.garage
+    name: Garage
+    icon: mdi:garage
+
+grid_options:
+  columns: full

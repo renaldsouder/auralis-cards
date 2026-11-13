@@ -190,6 +190,15 @@ const states = [
   e("scene.salon_soiree", "unknown", { friendly_name: "Soirée" }),
   e("automation.volets_soir", "on", { friendly_name: "Volets du soir", last_triggered: new Date(Date.now() - 86_400_000).toISOString() }),
   e("switch.mode_invites", "on", { friendly_name: "Mode invités" }),
+  e("camera.allee", "streaming", { friendly_name: "Allée", entity_picture: "/images/pieces/garage-exterieur.jpg" }),
+  e("camera.jardin", "idle", { friendly_name: "Jardin", entity_picture: "/images/pieces/jardin.jpg" }),
+  e("camera.piscine", "recording", { friendly_name: "Piscine", entity_picture: "/images/pieces/piscine.jpg" }),
+  e("camera.garderie", "idle", { friendly_name: "Garderie", entity_picture: "/images/pieces/garderie.jpg" }),
+  e("camera.voisin", "unavailable", { friendly_name: "Côté voisin" }),
+  e("binary_sensor.allee_mouvement", "on", { friendly_name: "Mouvement allée" }),
+  { ...e("binary_sensor.jardin_mouvement", "off", { friendly_name: "Mouvement jardin" }), last_changed: new Date(Date.now() - 25 * 60_000).toISOString() },
+  e("light.projecteur_allee", "off", { friendly_name: "Projecteur allée" }),
+  e("button.sirene_exterieure", "unknown", { friendly_name: "Sirène extérieure" }),
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -260,6 +269,22 @@ const scenesCard = {
     { entity: "scene.salon_cinema", icon: "mdi:movie-open-outline" },
     { entity: "scene.salon_soiree", icon: "mdi:weather-night" },
     { entity: "switch.mode_invites", name: "Invités", icon: "mdi:account-group-outline", color: "#B79CFF" },
+  ],
+};
+
+const camerasCard = {
+  type: "custom:auralis-cameras-card",
+  name: "Caméras",
+  refresh_interval: 5,
+  cameras: [
+    { entity: "camera.allee", icon: "mdi:gate", motion_entity: "binary_sensor.allee_mouvement", actions: [
+      { entity: "light.projecteur_allee", name: "Projecteur", icon: "mdi:spotlight-beam" },
+      { entity: "button.sirene_exterieure", name: "Sirène", icon: "mdi:alarm-light-outline", confirm: "Déclencher la sirène extérieure ?" },
+    ] },
+    { entity: "camera.jardin", icon: "mdi:flower-outline", motion_entity: "binary_sensor.jardin_mouvement" },
+    { entity: "camera.piscine", icon: "mdi:pool" },
+    { entity: "camera.garderie", icon: "mdi:teddy-bear" },
+    { entity: "camera.voisin" },
   ],
 };
 
@@ -517,6 +542,7 @@ mount("auralis-navbar-card", navbar);
 mount("auralis-weather-card", weather);
 mount("auralis-actions-card", actionsCard);
 mount("auralis-actions-card", scenesCard);
+mount("auralis-cameras-card", camerasCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);

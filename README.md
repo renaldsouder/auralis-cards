@@ -20,6 +20,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 - `custom:auralis-climate-card`
 - `custom:auralis-weather-card`
 - `custom:auralis-actions-card`
+- `custom:auralis-cameras-card`
 
 Thèmes : `auto`, `halo`, `carbon`, `mono`, `aurora`.
 
@@ -123,6 +124,16 @@ actions:
   - entity: button.reboot_freebox
     confirm: Redémarrer la Freebox ?
     danger: true
+```
+
+La [carte Caméras](examples/cameras-card.yaml) affiche les caméras en mosaïque rafraîchie, met en avant celles qui détectent un mouvement et ouvre chaque caméra en grand, en direct, avec ses commandes (projecteur, sirène…). Voir le [guide Caméras](docs/CAMERAS_CARD.md).
+
+```yaml
+type: custom:auralis-cameras-card
+cameras:
+  - entity: camera.allee
+    motion_entity: binary_sensor.allee_mouvement
+  - entity: camera.jardin
 ```
 
 ## Exemple minimal — Navigation
