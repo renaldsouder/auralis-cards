@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0
+
+- Ajoute la carte Auralis Caméras : mosaïque ou grande image avec vignettes, rafraîchie uniquement quand la carte est visible.
+- Met en avant les caméras dont le détecteur de mouvement est actif et signale les images figées ou en erreur.
+- Ouvre chaque caméra en grand, en direct avec le lecteur de Home Assistant (ou en images rafraîchies), avec navigation au clavier.
+- Ajoute des commandes par caméra (projecteur, sirène…) au format de la carte Actions, avec confirmation possible.
+
 ## 0.18.0
 
 - Ajoute la carte Auralis Actions : tuiles à un appui pour scripts, boutons, scènes, automatisations, interrupteurs, services libres et navigation.

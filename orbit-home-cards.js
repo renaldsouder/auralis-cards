@@ -1640,10 +1640,10 @@ function et(e) {
 		"xy"
 	].includes(e));
 }
-function tt(e, t = "#ffd166") {
+function z(e, t = "#ffd166") {
 	return e ? `#${e.map((e) => Math.round(F(e, 0, 255)).toString(16).padStart(2, "0")).join("")}` : t;
 }
-function nt(e) {
+function tt(e) {
 	let t = /^#([0-9a-f]{6})$/i.exec(e.trim());
 	if (!t) return;
 	let n = Number.parseInt(t[1], 16);
@@ -1653,20 +1653,20 @@ function nt(e) {
 		n & 255
 	];
 }
-function rt(e) {
+function nt(e) {
 	let t = e.filter((e) => typeof e == "number");
 	if (!t.length) return "—";
 	let n = Math.round(Math.min(...t)), r = Math.round(Math.max(...t));
 	return n === r ? `${n} %` : `${n}–${r} %`;
 }
-function z(e) {
+function B(e) {
 	return e?.split(".")[0] || "";
 }
 //#endregion
 //#region src/utils/actions.ts
-async function B(e, t) {
+async function V(e, t) {
 	if (!t) return;
-	let n = z(t);
+	let n = B(t);
 	if (n === "button" || n === "input_button") {
 		await e.callService(n, "press", {}, { entity_id: t });
 		return;
@@ -1681,21 +1681,21 @@ async function B(e, t) {
 	}
 	await e.callService("homeassistant", "turn_on", {}, { entity_id: t });
 }
-async function it(e, t) {
+async function rt(e, t) {
 	t && await e.callService("homeassistant", "turn_off", {}, { entity_id: t });
 }
-async function at(e, t, n) {
+async function it(e, t, n) {
 	await e.callService("light", "turn_on", { brightness_pct: Math.round(n) }, { entity_id: t });
 }
-async function ot(e, t, n) {
-	let r = nt(n);
+async function at(e, t, n) {
+	let r = tt(n);
 	t.length && r && await e.callService("light", "turn_on", { rgb_color: r }, { entity_id: t });
 }
-async function V(e, t, n) {
+async function H(e, t, n) {
 	let r = n === "stop" ? t.filter((t) => j(k(e, t))) : t;
 	r.length && await e.callService("cover", `${n}_cover`, {}, { entity_id: r });
 }
-function H(e, t) {
+function U(e, t) {
 	t && e.dispatchEvent(new CustomEvent("hass-more-info", {
 		bubbles: !0,
 		composed: !0,
@@ -1704,7 +1704,7 @@ function H(e, t) {
 }
 //#endregion
 //#region src/cards/auralis-room-card.ts
-var st = class extends O {
+var ot = class extends O {
 	constructor(...e) {
 		super(...e), this.historyGraphConfigs = /* @__PURE__ */ new Map(), this.selectedMediaKind = "media", this.toggleAllLights = async () => {
 			let e = this.config?.lights || [], t = e.some((e) => M(k(this.hass, e)));
@@ -3220,11 +3220,11 @@ var st = class extends O {
 		if (e.type === "media" || e.type === "tv") return this.openMediaControl(e);
 		if (e.entity) {
 			if (e.type === "scene" || e.action === "activate") {
-				B(this.hass, e.entity);
+				V(this.hass, e.entity);
 				return;
 			}
 			if (e.action === "more-info") {
-				H(this, e.entity);
+				U(this, e.entity);
 				return;
 			}
 			this.hass?.callService("homeassistant", "toggle", {}, { entity_id: e.entity });
@@ -3337,9 +3337,9 @@ var st = class extends O {
             </div>
             ${this.renderSideColumn("right", s)}
             <div class="cover-dock">
-              <button class="cover-command" @click=${() => V(this.hass, t, "open")}><ha-icon icon="mdi:chevron-double-up"></ha-icon>Ouvrir</button>
-              <button class="cover-command center" @click=${() => this.openDialog("covers")}><ha-icon icon="mdi:blinds-horizontal"></ha-icon>${rt(n)}</button>
-              <button class="cover-command" @click=${() => V(this.hass, t, "close")}><ha-icon icon="mdi:chevron-double-down"></ha-icon>Fermer</button>
+              <button class="cover-command" @click=${() => H(this.hass, t, "open")}><ha-icon icon="mdi:chevron-double-up"></ha-icon>Ouvrir</button>
+              <button class="cover-command center" @click=${() => this.openDialog("covers")}><ha-icon icon="mdi:blinds-horizontal"></ha-icon>${nt(n)}</button>
+              <button class="cover-command" @click=${() => H(this.hass, t, "close")}><ha-icon icon="mdi:chevron-double-down"></ha-icon>Fermer</button>
             </div>
           </div>
         </div>
@@ -3356,7 +3356,7 @@ var st = class extends O {
 		let e = this.config?.lights || [], t = e.map((e) => k(this.hass, e)), n = t.filter(M).length, r = t.filter(M).map($e), i = r.length ? Math.round(r.reduce((e, t) => e + t, 0) / r.length) : 0, a = e.filter((e) => {
 			let t = k(this.hass, e);
 			return A(t) && et(t);
-		}), o = tt(R(a.map((e) => k(this.hass, e)).find((e) => M(e) && R(e)) ?? k(this.hass, a[0])));
+		}), o = z(R(a.map((e) => k(this.hass, e)).find((e) => M(e) && R(e)) ?? k(this.hass, a[0])));
 		return this.renderDialog(this.popupTitle("lights", "Lumières"), "mdi:lightbulb-group-outline", S`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -3371,7 +3371,7 @@ var st = class extends O {
             </button>
             ${a.length ? S`
                   <label class="global-color-control">
-                    <input class="color-picker" type="color" .value=${o} aria-label="Couleur générale" @change=${(e) => ot(this.hass, a, e.target.value)} />
+                    <input class="color-picker" type="color" .value=${o} aria-label="Couleur générale" @change=${(e) => at(this.hass, a, e.target.value)} />
                     <span><strong>Couleur générale</strong><small>${a.length} éclairage${a.length > 1 ? "s" : ""} compatible${a.length > 1 ? "s" : ""}</small></span>
                   </label>
                 ` : w}
@@ -3379,12 +3379,12 @@ var st = class extends O {
           <label class="tile" style="display:block;margin-bottom:14px;">
             <div class="row-between"><span style="display:flex;align-items:center;gap:8px;"><ha-icon style="color:var(--auralis-active);" icon="mdi:white-balance-sunny"></ha-icon><strong>Luminosité générale</strong></span><strong>${i} %</strong></div>
             <input class="range light-slider" style=${`--range-value:${i}%`} type="range" min="1" max="100" .value=${String(i)}
-              @change=${(t) => e.forEach((e) => at(this.hass, e, Number(t.target.value)))} />
+              @change=${(t) => e.forEach((e) => it(this.hass, e, Number(t.target.value)))} />
           </label>
           <div class="dialog-section-title">Lumières</div>
           <div class="list">
             ${e.map((e) => {
-			let t = k(this.hass, e), n = $e(t), r = this.entityLabel(e, e), i = M(t), a = et(t), o = tt(R(t));
+			let t = k(this.hass, e), n = $e(t), r = this.entityLabel(e, e), i = M(t), a = et(t), o = z(R(t));
 			return S`
                 <div class="list-row">
                   <span class="tile-icon light-status-icon ${i ? "on" : ""}" style=${`--light-status-color:${o}`}><ha-icon .icon=${i ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
@@ -3392,8 +3392,8 @@ var st = class extends O {
                     <div class="row-between"><span class="name">${r}</span><span>${n} %</span></div>
                     <div class="light-setting-row">
                       <input class="range light-slider" style=${`--range-value:${n}%`} type="range" min="1" max="100" .value=${String(Math.max(n, 1))} ?disabled=${!A(t)}
-                        aria-label=${`Luminosité de ${r}`} @change=${(t) => at(this.hass, e, Number(t.target.value))} />
-                      ${a ? S`<input class="color-picker" type="color" .value=${o} title=${`Couleur de ${r}`} aria-label=${`Couleur de ${r}`} ?disabled=${!A(t)} @change=${(t) => ot(this.hass, [e], t.target.value)} />` : w}
+                        aria-label=${`Luminosité de ${r}`} @change=${(t) => it(this.hass, e, Number(t.target.value))} />
+                      ${a ? S`<input class="color-picker" type="color" .value=${o} title=${`Couleur de ${r}`} aria-label=${`Couleur de ${r}`} ?disabled=${!A(t)} @change=${(t) => at(this.hass, [e], t.target.value)} />` : w}
                     </div>
                   </div>
                   <button class="device-toggle ${i ? "on" : ""}" aria-label=${i ? `Éteindre ${r}` : `Allumer ${r}`} aria-pressed=${i ? "true" : "false"} ?disabled=${!A(t)} @click=${() => this.hass.callService("light", i ? "turn_off" : "turn_on", {}, { entity_id: e })}></button>
@@ -3405,7 +3405,7 @@ var st = class extends O {
       `);
 	}
 	activateSceneMode(e) {
-		B(this.hass, e.entity), this.closeDialog();
+		V(this.hass, e.entity), this.closeDialog();
 	}
 	renderAmbianceDialog() {
 		let e = this.sceneModes(), t = this.popupTitle("ambiance", "Ambiance"), n = this.config?.ambiance?.icon?.trim() || "mdi:creation-outline";
@@ -3440,9 +3440,9 @@ var st = class extends O {
           </div>
           <div class="dialog-section-title">Commande groupée</div>
           <div class="group-bar">
-            <button class="action" ?disabled=${!n.length} @click=${() => V(this.hass, n, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-            <button class="action" ?disabled=${!r.length} title=${r.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => V(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-            <button class="action" ?disabled=${!n.length} @click=${() => V(this.hass, n, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
+            <button class="action" ?disabled=${!n.length} @click=${() => H(this.hass, n, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
+            <button class="action" ?disabled=${!r.length} title=${r.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => H(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+            <button class="action" ?disabled=${!n.length} @click=${() => H(this.hass, n, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
           </div>
           ${n.length && !r.length ? S`<p class="muted">Ces volets ne prennent pas en charge la commande Stop.</p>` : w}
           <div class="dialog-section-title">Volets</div>
@@ -3457,9 +3457,9 @@ var st = class extends O {
                     <span class="muted">${n}</span>
                   </div>
                   <div class="cover-device-actions">
-                    <button class="action" ?disabled=${!A(t)} @click=${() => V(this.hass, [e], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-                    <button class="action" ?disabled=${!j(t)} title=${A(t) ? j(t) ? "Arrêter" : "Arrêt non pris en charge par ce volet" : "Volet indisponible"} @click=${() => V(this.hass, [e], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-                    <button class="action" ?disabled=${!A(t)} @click=${() => V(this.hass, [e], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
+                    <button class="action" ?disabled=${!A(t)} @click=${() => H(this.hass, [e], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
+                    <button class="action" ?disabled=${!j(t)} title=${A(t) ? j(t) ? "Arrêter" : "Arrêt non pris en charge par ce volet" : "Volet indisponible"} @click=${() => H(this.hass, [e], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+                    <button class="action" ?disabled=${!A(t)} @click=${() => H(this.hass, [e], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
                   </div>
                 </div>
               `;
@@ -3491,7 +3491,7 @@ var st = class extends O {
             ${e.map((e) => {
 			let t = k(this.hass, e), n = this.entityLabel(e, e);
 			return S`
-                <button class="tile clickable" style="color:inherit;text-align:left;" @click=${() => H(this, e)}>
+                <button class="tile clickable" style="color:inherit;text-align:left;" @click=${() => U(this, e)}>
                   <div class="tile-head"><span class="tile-icon"><ha-icon .icon=${t?.attributes.icon || "mdi:circle-outline"}></ha-icon></span><ha-icon icon="mdi:chevron-right"></ha-icon></div>
                   <div style="margin-top:12px;font-weight:680;">${n}</div>
                   <div class="muted">${L(this.hass, e)}</div>
@@ -3524,7 +3524,7 @@ var st = class extends O {
 		})}
                 </div>
               ` : w}
-          ${h ? S`<div class="dialog-section"><div class="dialog-section-title">Réglages</div><button class="action primary" style="width:100%;" @click=${() => H(this, this.config?.climate_entity)}><ha-icon icon="mdi:tune-variant"></ha-icon>Ouvrir ${this.entityLabel(this.config?.climate_entity, "le thermostat Home Assistant")}</button></div>` : w}
+          ${h ? S`<div class="dialog-section"><div class="dialog-section-title">Réglages</div><button class="action primary" style="width:100%;" @click=${() => U(this, this.config?.climate_entity)}><ha-icon icon="mdi:tune-variant"></ha-icon>Ouvrir ${this.entityLabel(this.config?.climate_entity, "le thermostat Home Assistant")}</button></div>` : w}
         </div>
       `);
 	}
@@ -3538,7 +3538,7 @@ var st = class extends O {
                 <div class="actions" style="grid-template-columns:repeat(3,1fr);margin-top:0;">
                   <button class="action ${l ? "danger" : "primary"}" @click=${() => this.hass?.callService("media_player", l ? "turn_off" : "turn_on", {}, { entity_id: e })}><ha-icon icon="mdi:power"></ha-icon>${l ? "Éteindre" : "Allumer"}</button>
                   <button class="action" ?disabled=${!l} @click=${() => this.hass?.callService("media_player", "media_play_pause", {}, { entity_id: e })}><ha-icon icon=${c ? "mdi:pause" : "mdi:play"}></ha-icon>${c ? "Pause" : "Lecture"}</button>
-                  <button class="action" @click=${() => H(this, e)}><ha-icon icon="mdi:tune-variant"></ha-icon>Détails</button>
+                  <button class="action" @click=${() => U(this, e)}><ha-icon icon="mdi:tune-variant"></ha-icon>Détails</button>
                 </div>
               ` : S`
                 <div class="actions" style="grid-template-columns:repeat(3,1fr);margin-top:0;">
@@ -3551,7 +3551,7 @@ var st = class extends O {
         </div>
       `);
 	}
-}, ct = class extends O {
+}, st = class extends O {
 	static {
 		this.styles = [O.styles, o`
       ha-card {
@@ -3924,9 +3924,9 @@ var st = class extends O {
           </span>
         </button>
         <div class="group-controls" aria-label=${`Commandes du groupe ${l}`}>
-          <button class="group-control" type="button" title="Monter" aria-label=${`Monter les volets du groupe ${l}`} ?disabled=${!n.available} @click=${() => V(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
-          <button class="group-control" type="button" title=${r.length ? "Stop" : "Aucun volet ne prend en charge l'arrêt"} aria-label=${`Arrêter les volets du groupe ${l}`} ?disabled=${!r.length} @click=${() => V(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon></button>
-          <button class="group-control" type="button" title="Descendre" aria-label=${`Descendre les volets du groupe ${l}`} ?disabled=${!n.available} @click=${() => V(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
+          <button class="group-control" type="button" title="Monter" aria-label=${`Monter les volets du groupe ${l}`} ?disabled=${!n.available} @click=${() => H(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+          <button class="group-control" type="button" title=${r.length ? "Stop" : "Aucun volet ne prend en charge l'arrêt"} aria-label=${`Arrêter les volets du groupe ${l}`} ?disabled=${!r.length} @click=${() => H(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon></button>
+          <button class="group-control" type="button" title="Descendre" aria-label=${`Descendre les volets du groupe ${l}`} ?disabled=${!n.available} @click=${() => H(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
         </div>
       </div>
     `;
@@ -3959,9 +3959,9 @@ var st = class extends O {
           </div>
           <div class="dialog-section-title">Commande groupée</div>
           <div class="group-bar">
-            <button class="action" ?disabled=${!n.available} @click=${() => V(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-            <button class="action" ?disabled=${!r.length} title=${r.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => V(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-            <button class="action" ?disabled=${!n.available} @click=${() => V(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
+            <button class="action" ?disabled=${!n.available} @click=${() => H(this.hass, n.availableIds, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
+            <button class="action" ?disabled=${!r.length} title=${r.length ? "Arrêter les volets compatibles" : "Aucun volet ne prend en charge l'arrêt"} @click=${() => H(this.hass, r, "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+            <button class="action" ?disabled=${!n.available} @click=${() => H(this.hass, n.availableIds, "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
           </div>
           ${n.available && !r.length ? S`<p class="muted">Ces volets ne prennent pas en charge la commande Stop.</p>` : w}
           <div class="dialog-section-title">Volets</div>
@@ -3976,9 +3976,9 @@ var st = class extends O {
                     <span class="muted">${this.stateLabel(e, t)}</span>
                   </div>
                   <div class="cover-device-actions">
-                    <button class="action" ?disabled=${!A(t)} @click=${() => V(this.hass, [e], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
-                    <button class="action" ?disabled=${!j(t)} title=${A(t) ? j(t) ? "Arrêter" : "Arrêt non pris en charge par ce volet" : "Volet indisponible"} @click=${() => V(this.hass, [e], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
-                    <button class="action" ?disabled=${!A(t)} @click=${() => V(this.hass, [e], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
+                    <button class="action" ?disabled=${!A(t)} @click=${() => H(this.hass, [e], "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
+                    <button class="action" ?disabled=${!j(t)} title=${A(t) ? j(t) ? "Arrêter" : "Arrêt non pris en charge par ce volet" : "Volet indisponible"} @click=${() => H(this.hass, [e], "stop")}><ha-icon icon="mdi:stop"></ha-icon>Stop</button>
+                    <button class="action" ?disabled=${!A(t)} @click=${() => H(this.hass, [e], "close")}><ha-icon icon="mdi:arrow-down"></ha-icon>Fermer</button>
                   </div>
                 </div>
               `;
@@ -3997,27 +3997,27 @@ var st = class extends O {
 			min_columns: 3
 		};
 	}
-}, lt = /* @__PURE__ */ new Set([
+}, ct = /* @__PURE__ */ new Set([
 	"off",
 	"offline",
 	"disconnected",
 	"not_home",
 	"stopped"
 ]);
-function ut(e) {
-	return !e || !A(e) ? "unavailable" : M(e) ? "online" : lt.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
+function lt(e) {
+	return !e || !A(e) ? "unavailable" : M(e) ? "online" : ct.has(e.state.toLowerCase()) ? "offline" : e.entity_id.startsWith("sensor.") ? "online" : "offline";
 }
-function U(e) {
+function W(e) {
 	if (!A(e)) return;
 	let t = P(e, NaN);
 	return Number.isFinite(t) ? F(t) : void 0;
 }
-function dt(e) {
+function ut(e) {
 	if (!e || !A(e)) return;
 	let t = P(e, NaN);
 	return Number.isFinite(t) && t > 0 ? t : void 0;
 }
-function ft(e, t) {
+function dt(e, t) {
 	if (!e) return;
 	let n = Object.entries(e.attributes);
 	for (let e of t) {
@@ -4027,31 +4027,31 @@ function ft(e, t) {
 		if (Number.isFinite(r)) return r;
 	}
 }
-function pt(e) {
+function ft(e) {
 	if (!e || !A(e)) return;
-	let t = ft(e, [
+	let t = dt(e, [
 		"UsedSpacePercentage",
 		"used_space_percentage",
 		"used_percentage"
 	]);
-	return t === void 0 ? U(e) : F(t);
+	return t === void 0 ? W(e) : F(t);
 }
-function mt(e) {
+function pt(e) {
 	return e >= 1024 ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(e / 1024)} Go` : `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(e)} Mo`;
 }
-function ht(e) {
+function mt(e) {
 	if (!e || !A(e)) return "—";
-	let t = ft(e, ["UsedSpaceMB", "used_space_mb"]), n = ft(e, ["TotalSizeMB", "total_size_mb"]);
-	return t === void 0 || n === void 0 || n <= 0 ? vt(pt(e)) : `${mt(t)} / ${mt(n)}`;
+	let t = dt(e, ["UsedSpaceMB", "used_space_mb"]), n = dt(e, ["TotalSizeMB", "total_size_mb"]);
+	return t === void 0 || n === void 0 || n <= 0 ? _t(ft(e)) : `${pt(t)} / ${pt(n)}`;
 }
-function gt(e, t = Date.now()) {
+function ht(e, t = Date.now()) {
 	if (!e || !A(e)) return "—";
 	let n = Date.parse(e.state);
 	if (!Number.isFinite(n)) return "—";
 	let r = Math.max(0, Math.floor((t - n) / 6e4)), i = Math.floor(r / 1440), a = Math.floor(r % 1440 / 60), o = r % 60;
 	return `${i > 0 ? `${i} j ` : ""}${a} h ${o} min`;
 }
-function _t(e) {
+function gt(e) {
 	return !e || !A(e) ? "—" : {
 		active: "Active",
 		connected: "Connectée",
@@ -4060,13 +4060,13 @@ function _t(e) {
 		unlocked: "Déverrouillée"
 	}[e.state.toLowerCase()] || e.state;
 }
-function W(e, t) {
+function G(e, t) {
 	return !!(t && A(k(e, t)));
 }
-function vt(e) {
+function _t(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
-function yt(e, t = "Muet", n = "Actif") {
+function vt(e, t = "Muet", n = "Actif") {
 	return !e || !A(e) ? "—" : [
 		"true",
 		"on",
@@ -4074,7 +4074,7 @@ function yt(e, t = "Muet", n = "Actif") {
 		"1"
 	].includes(e.state.toLowerCase()) ? t : n;
 }
-function bt(e) {
+function yt(e) {
 	return !e || !A(e) ? "Indisponible" : [
 		"up",
 		"on",
@@ -4083,27 +4083,27 @@ function bt(e) {
 		"active"
 	].includes(e.state.toLowerCase()) ? "Connecté" : "Déconnecté";
 }
-function xt(e, t) {
+function bt(e, t) {
 	let n = k(e, t);
 	if (!A(n)) return "—";
 	let r = P(n, NaN);
 	return Number.isFinite(r) && r < 0 ? "—" : L(e, t);
 }
-var St = class extends O {
+var xt = class extends O {
 	constructor(...e) {
 		super(...e), this.confirmRestart = () => {
-			W(this.hass, this.config?.restart_entity) && (this.askConfirmation({
+			G(this.hass, this.config?.restart_entity) && (this.askConfirmation({
 				title: "Redémarrer le PC ?",
 				message: "Les applications ouvertes pourront perdre leurs données non enregistrées.",
 				confirmLabel: "Redémarrer",
-				action: () => B(this.hass, this.config?.restart_entity)
+				action: () => V(this.hass, this.config?.restart_entity)
 			}), this.dialog = "details");
 		}, this.confirmShutdown = () => {
-			W(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
+			G(this.hass, this.config?.shutdown_entity) && (this.askConfirmation({
 				title: "Éteindre le PC ?",
 				message: "Cette action arrêtera la machine et les services qui y sont exécutés.",
 				confirmLabel: "Éteindre",
-				action: () => B(this.hass, this.config?.shutdown_entity)
+				action: () => V(this.hass, this.config?.shutdown_entity)
 			}), this.dialog = "details");
 		};
 	}
@@ -4254,7 +4254,7 @@ var St = class extends O {
 	}
 	render() {
 		if (!this.config || !this.hass) return S``;
-		let e = ut(k(this.hass, this.config.online_entity)), t = U(k(this.hass, this.config.cpu_entity)), n = U(k(this.hass, this.config.gpu_entity)), r = U(k(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = k(this.hass, this.config.session_entity), c = k(this.hass, this.config.user_entity), l = A(s) ? _t(s) : void 0, u = A(c) ? L(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = U(k(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", te = e === "online" ? "healthy" : e === "offline" ? "danger" : "", _ = !!(u || l || d), ne = [n === void 0 ? void 0 : {
+		let e = lt(k(this.hass, this.config.online_entity)), t = W(k(this.hass, this.config.cpu_entity)), n = W(k(this.hass, this.config.gpu_entity)), r = W(k(this.hass, this.config.memory_entity)), i = this.temperatureLabel(this.config.cpu_temperature_entity), a = this.temperatureLabel(this.config.gpu_temperature_entity), o = this.validDrives(), s = k(this.hass, this.config.session_entity), c = k(this.hass, this.config.user_entity), l = A(s) ? gt(s) : void 0, u = A(c) ? L(this.hass, this.config.user_entity) : void 0, d = this.uptimeLabel(), f = W(k(this.hass, this.config.battery_percentage_entity)), p = this.availableDisplay(this.config.system_state_entity), m = this.availableDisplay(this.config.network_down_entity), h = this.availableDisplay(this.config.network_up_entity), g = this.machineStyle("#7898ff"), ee = e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible", te = e === "online" ? "healthy" : e === "offline" ? "danger" : "", _ = !!(u || l || d), ne = [n === void 0 ? void 0 : {
 			label: "GPU",
 			value: n
 		}, ...o.map((e) => ({
@@ -4272,7 +4272,7 @@ var St = class extends O {
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${e === "online" ? `${this.config.name} fonctionne normalement` : e === "offline" ? `${this.config.name} est hors ligne` : `État de ${this.config.name} indisponible`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>
               ${ne.length ? S`<div class="machine-bars">${ne.map((e) => this.renderBar(e.label, e.value))}</div>` : w}
-              ${p || m || h || f !== void 0 ? S`<div class="machine-foot">${p ? S`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : w}${m || h ? S`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : w}${f === void 0 ? w : S`<span class="pc-foot-item">Batterie <strong>${vt(f)}</strong></span>`}</div>` : w}
+              ${p || m || h || f !== void 0 ? S`<div class="machine-foot">${p ? S`<span class="pc-foot-item">Événement <strong>${p}</strong></span>` : w}${m || h ? S`<span class="pc-foot-item">Réseau <strong>${m ? `↓ ${m}` : ""}${m && h ? " · " : ""}${h ? `↑ ${h}` : ""}</strong></span>` : w}${f === void 0 ? w : S`<span class="pc-foot-item">Batterie <strong>${_t(f)}</strong></span>`}</div>` : w}
             </section>
           </div>
         </div>
@@ -4282,30 +4282,30 @@ var St = class extends O {
 	}
 	uptimeLabel() {
 		if (this.config?.uptime_entity && A(k(this.hass, this.config.uptime_entity))) return L(this.hass, this.config.uptime_entity);
-		let e = gt(k(this.hass, this.config?.last_boot_entity));
+		let e = ht(k(this.hass, this.config?.last_boot_entity));
 		return e === "—" ? void 0 : e;
 	}
 	availableDisplay(e) {
 		return A(k(this.hass, e)) ? L(this.hass, e) : void 0;
 	}
 	temperatureLabel(e) {
-		return dt(k(this.hass, e)) === void 0 ? "" : L(this.hass, e);
+		return ut(k(this.hass, e)) === void 0 ? "" : L(this.hass, e);
 	}
 	renderBar(e, t) {
-		return S`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${vt(t)}</strong></div>`;
+		return S`<div class="machine-bar"><span title=${e}>${e}</span><div class="track"><span style=${`width:${t}%`}></span></div><strong>${_t(t)}</strong></div>`;
 	}
 	validDrives() {
 		return (this.config?.drives?.length ? this.config.drives : this.config?.storage_entity ? [{
 			entity: this.config.storage_entity,
 			label: "Disque"
 		}] : []).flatMap((e) => {
-			let t = k(this.hass, e.entity), n = pt(t);
+			let t = k(this.hass, e.entity), n = ft(t);
 			return !t || n === void 0 ? [] : [{
 				config: e,
 				state: t,
 				label: this.driveLabel(e, t),
 				usage: n,
-				summary: ht(t)
+				summary: mt(t)
 			}];
 		});
 	}
@@ -4315,7 +4315,7 @@ var St = class extends O {
 		return typeof n == "string" && n.trim() ? n : t?.state && t.state.length <= 3 ? `Disque ${t.state}` : N(t, "Stockage");
 	}
 	renderDetails() {
-		let e = ut(k(this.hass, this.config?.online_entity)), t = e === "online", n = [
+		let e = lt(k(this.hass, this.config?.online_entity)), t = e === "online", n = [
 			[
 				"CPU",
 				this.config?.cpu_entity,
@@ -4356,15 +4356,15 @@ var St = class extends O {
 				this.config?.network_up_entity,
 				"mdi:upload"
 			]
-		].filter(([e, t]) => e.includes("Température") ? dt(k(this.hass, t)) !== void 0 : A(k(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => A(k(this.hass, e.entity))), a = [
+		].filter(([e, t]) => e.includes("Température") ? ut(k(this.hass, t)) !== void 0 : A(k(this.hass, t))), r = this.validDrives(), i = (this.config?.network_interfaces || []).filter((e) => A(k(this.hass, e.entity))), a = [
 			this.availableDisplay(this.config?.user_entity) ? ["Utilisateur", this.availableDisplay(this.config?.user_entity)] : void 0,
-			A(k(this.hass, this.config?.session_entity)) ? ["Session", _t(k(this.hass, this.config?.session_entity))] : void 0,
+			A(k(this.hass, this.config?.session_entity)) ? ["Session", gt(k(this.hass, this.config?.session_entity))] : void 0,
 			this.uptimeLabel() ? ["Uptime", this.uptimeLabel()] : void 0,
 			this.availableDisplay(this.config?.last_boot_entity) ? ["Dernier démarrage", this.availableDisplay(this.config?.last_boot_entity)] : void 0,
 			this.availableDisplay(this.config?.last_activity_entity) ? ["Dernière activité", this.availableDisplay(this.config?.last_activity_entity)] : void 0,
 			this.availableDisplay(this.config?.system_state_entity) ? ["Dernier événement", this.availableDisplay(this.config?.system_state_entity)] : void 0
-		].filter((e) => !!e), o = U(k(this.hass, this.config?.battery_percentage_entity)), s = [
-			o === void 0 ? void 0 : ["Batterie", vt(o)],
+		].filter((e) => !!e), o = W(k(this.hass, this.config?.battery_percentage_entity)), s = [
+			o === void 0 ? void 0 : ["Batterie", _t(o)],
 			this.availableDisplay(this.config?.battery_status_entity) ? ["État de charge", this.availableDisplay(this.config?.battery_status_entity)] : void 0,
 			this.availableDisplay(this.config?.battery_powerline_entity) ? ["Alimentation", this.availableDisplay(this.config?.battery_powerline_entity)] : void 0,
 			this.nonNegativeDisplay(this.config?.battery_remaining_entity) ? ["Autonomie restante", this.nonNegativeDisplay(this.config?.battery_remaining_entity)] : void 0,
@@ -4380,10 +4380,10 @@ var St = class extends O {
 			this.config?.restart_entity,
 			this.config?.shutdown_entity,
 			this.config?.wake_entity
-		].some((e) => W(this.hass, e)), d = t && W(this.hass, this.config?.lock_entity), f = t && W(this.hass, this.config?.sleep_entity), p = t && W(this.hass, this.config?.restart_entity), m = t && W(this.hass, this.config?.shutdown_entity), h = e === "offline" && W(this.hass, this.config?.wake_entity);
+		].some((e) => G(this.hass, e)), d = t && G(this.hass, this.config?.lock_entity), f = t && G(this.hass, this.config?.sleep_entity), p = t && G(this.hass, this.config?.restart_entity), m = t && G(this.hass, this.config?.shutdown_entity), h = e === "offline" && G(this.hass, this.config?.wake_entity);
 		return this.renderDialog(this.config?.name || "PC", "mdi:laptop", S`
       <div class="dialog-body">
-        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? S`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : w}</div>${o !== void 0 || U(k(this.hass, this.config?.cpu_entity)) !== void 0 ? S`<div class="dialog-stat"><strong>${vt(o === void 0 ? U(k(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : w}</div>
+        <div class="dialog-overview"><div><span class="eyebrow">État de la machine</span><strong>${e === "online" ? "En ligne et disponible" : e === "offline" ? "Hors ligne" : "État indisponible"}</strong>${a.length ? S`<span class="muted">${a.slice(0, 2).map(([, e]) => e).join(" · ")}</span>` : w}</div>${o !== void 0 || W(k(this.hass, this.config?.cpu_entity)) !== void 0 ? S`<div class="dialog-stat"><strong>${_t(o === void 0 ? W(k(this.hass, this.config?.cpu_entity)) : o)}</strong><small>${o === void 0 ? "CPU" : "Batterie"}</small></div>` : w}</div>
         ${n.length ? S`<section class="pc-detail-section"><div class="dialog-section-title">Performances principales</div><div class="grid two">${n.map(([e, t, n]) => S`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${n}></ha-icon></span><strong>${e.includes("Température") ? this.temperatureLabel(t) : L(this.hass, t)}</strong></div><div style="margin-top:10px;">${e}</div></div>`)}</div></section>` : w}
         ${r.length ? S`<section class="pc-detail-section"><div class="dialog-section-title">Stockage</div>${r.map((e) => S`<div class="pc-drive-row"><div class="pc-drive-top"><span>${e.label}</span><strong>${e.summary}</strong></div><div class="progress"><span style=${`width:${e.usage}%`}></span></div></div>`)}</section>` : w}
         ${a.length ? S`<section class="pc-detail-section"><div class="dialog-section-title">Session et système</div>${a.map(([e, t]) => this.infoRow(e, t))}</section>` : w}
@@ -4391,7 +4391,7 @@ var St = class extends O {
         ${c || l.length ? S`<section class="pc-detail-section"><div class="dialog-section-title">Audio</div>${this.audioDevice("Sortie", this.config?.audio_output_entity, this.config?.audio_output_state_entity, this.config?.audio_output_volume_entity, this.config?.audio_output_muted_entity)}${this.audioDevice("Entrée", this.config?.audio_input_entity, this.config?.audio_input_state_entity, this.config?.audio_input_volume_entity, this.config?.audio_input_muted_entity)}${l.length ? S`<div class="grid two" style="margin-top:10px;">${l.map(([e, t]) => S`<div class="tile"><div class="tile-head"><span>${e}</span><strong>${t}</strong></div></div>`)}</div>` : w}</section>` : w}
         ${i.length ? S`<section class="pc-detail-section"><div class="dialog-section-title">Interfaces réseau${this.availableDisplay(this.config?.network_total_entity) ? ` · ${this.availableDisplay(this.config?.network_total_entity)}` : ""}</div>${i.map((e) => this.networkRow(e))}</section>` : w}
         ${(this.config?.extra_sections || []).filter((e) => e.entities?.length).map((e) => S`<section class="pc-detail-section"><div class="dialog-section-title">${e.title}</div>${e.entities.map((e) => this.extraEntityRow(e))}</section>`)}
-        ${u ? S`<section class="pc-detail-section"><div class="dialog-section-title">Commandes</div><div class="actions">${t && this.config?.lock_entity ? S`<button class="action" ?disabled=${!d} @click=${() => B(this.hass, this.config?.lock_entity)}><ha-icon icon="mdi:lock-outline"></ha-icon>Verrouiller</button>` : w}${t && this.config?.sleep_entity ? S`<button class="action" ?disabled=${!f} @click=${() => B(this.hass, this.config?.sleep_entity)}><ha-icon icon="mdi:power-sleep"></ha-icon>Veille</button>` : w}${t && this.config?.restart_entity ? S`<button class="action" ?disabled=${!p} @click=${this.confirmRestart}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : w}${e === "offline" && this.config?.wake_entity ? S`<button class="action primary" ?disabled=${!h} @click=${() => B(this.hass, this.config?.wake_entity)}><ha-icon icon="mdi:power"></ha-icon>Démarrer</button>` : w}</div>${t && this.config?.shutdown_entity ? S`<div class="dialog-danger-zone"><button class="action danger" style="width:100%;" ?disabled=${!m} @click=${this.confirmShutdown}><ha-icon icon="mdi:power"></ha-icon>Éteindre le PC</button></div>` : w}</section>` : w}
+        ${u ? S`<section class="pc-detail-section"><div class="dialog-section-title">Commandes</div><div class="actions">${t && this.config?.lock_entity ? S`<button class="action" ?disabled=${!d} @click=${() => V(this.hass, this.config?.lock_entity)}><ha-icon icon="mdi:lock-outline"></ha-icon>Verrouiller</button>` : w}${t && this.config?.sleep_entity ? S`<button class="action" ?disabled=${!f} @click=${() => V(this.hass, this.config?.sleep_entity)}><ha-icon icon="mdi:power-sleep"></ha-icon>Veille</button>` : w}${t && this.config?.restart_entity ? S`<button class="action" ?disabled=${!p} @click=${this.confirmRestart}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : w}${e === "offline" && this.config?.wake_entity ? S`<button class="action primary" ?disabled=${!h} @click=${() => V(this.hass, this.config?.wake_entity)}><ha-icon icon="mdi:power"></ha-icon>Démarrer</button>` : w}</div>${t && this.config?.shutdown_entity ? S`<div class="dialog-danger-zone"><button class="action danger" style="width:100%;" ?disabled=${!m} @click=${this.confirmShutdown}><ha-icon icon="mdi:power"></ha-icon>Éteindre le PC</button></div>` : w}</section>` : w}
       </div>
     `, "pc-dialog");
 	}
@@ -4401,46 +4401,46 @@ var St = class extends O {
 	extraEntityRow(e) {
 		let t = k(this.hass, e.entity), n = e.entity.split(".")[0] === "button" ? A(t) ? "Ouvrir" : "Indisponible" : L(this.hass, e.entity);
 		return S`<button type="button" class="pc-extra-row" @click=${() => {
-			this.closeDialog(), H(this, e.entity);
+			this.closeDialog(), U(this, e.entity);
 		}}><span>${e.label || N(t, e.entity)}</span><strong>${n}</strong></button>`;
 	}
 	nonNegativeDisplay(e) {
-		let t = xt(this.hass, e);
+		let t = bt(this.hass, e);
 		return t === "—" ? void 0 : t;
 	}
 	audioDevice(e, t, n, r, i) {
-		return A(k(this.hass, t)) ? S`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${L(this.hass, t)}</strong><div class="pc-audio-meta">${A(k(this.hass, n)) ? S`<span>État · ${L(this.hass, n)}</span>` : w}${A(k(this.hass, r)) ? S`<span>Volume · ${L(this.hass, r)}</span>` : w}${A(k(this.hass, i)) ? S`<span>${yt(k(this.hass, i))}</span>` : w}</div></div>` : w;
+		return A(k(this.hass, t)) ? S`<div class="pc-audio-device"><span class="eyebrow">${e}</span><strong>${L(this.hass, t)}</strong><div class="pc-audio-meta">${A(k(this.hass, n)) ? S`<span>État · ${L(this.hass, n)}</span>` : w}${A(k(this.hass, r)) ? S`<span>Volume · ${L(this.hass, r)}</span>` : w}${A(k(this.hass, i)) ? S`<span>${vt(k(this.hass, i))}</span>` : w}</div></div>` : w;
 	}
 	networkRow(e) {
-		let t = k(this.hass, e.entity), n = bt(t);
+		let t = k(this.hass, e.entity), n = yt(t);
 		return S`<div class="pc-network-row"><span>${e.label || N(t, "Interface réseau")}</span><strong class="pc-network-state"><span class="dot ${n === "Connecté" ? "healthy" : ""}"></span>${n}</strong></div>`;
 	}
 };
 //#endregion
 //#region src/cards/auralis-unraid-card.ts
-function Ct(e) {
+function St(e) {
 	if (!A(e)) return "unavailable";
 	let t = e.state.toLowerCase();
 	return t === "paused" || t === "suspended" ? "paused" : M(e) ? "active" : "stopped";
 }
-function G(e) {
+function K(e) {
 	if (!A(e)) return;
 	let t = P(e, NaN);
 	return Number.isFinite(t) ? F(t) : void 0;
 }
-function wt(e, t = "on") {
+function Ct(e, t = "on") {
 	return !!(A(e) && e.state.toLowerCase() === t.trim().toLowerCase());
 }
-function Tt(e, t, n) {
+function wt(e, t, n) {
 	return t?.[e || "default"]?.trim() || t?.default?.trim() || e || n;
 }
-function K(e, t) {
+function q(e, t) {
 	return !!(t && A(k(e, t)));
 }
-function Et(e, t) {
-	return t === "start" ? e.start_entity || (z(e.entity) === "switch" ? e.entity : void 0) : t === "stop" ? e.stop_entity || (z(e.entity) === "switch" ? e.entity : void 0) : t === "restart" ? e.restart_entity : t === "pause" ? e.pause_entity : e.resume_entity;
+function Tt(e, t) {
+	return t === "start" ? e.start_entity || (B(e.entity) === "switch" ? e.entity : void 0) : t === "stop" ? e.stop_entity || (B(e.entity) === "switch" ? e.entity : void 0) : t === "restart" ? e.restart_entity : t === "pause" ? e.pause_entity : e.resume_entity;
 }
-function q(e) {
+function Et(e) {
 	return e === void 0 ? "—" : `${Math.round(e)}%`;
 }
 var Dt = class extends O {
@@ -4449,11 +4449,11 @@ var Dt = class extends O {
 			let e = (this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || []).filter((e) => this.selected.has(e.entity));
 			await Promise.all(e.map((e) => this.startItem(e))), this.selected = /* @__PURE__ */ new Set(), this.requestUpdate();
 		}, this.confirmArrayStop = () => {
-			K(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
+			q(this.hass, this.config?.array_stop_entity) && (this.askConfirmation({
 				title: "Arrêter l’array ?",
 				message: "Les partages, conteneurs et machines virtuelles dépendants pourront devenir indisponibles.",
 				confirmLabel: "Arrêter l’array",
-				action: () => B(this.hass, this.config?.array_stop_entity)
+				action: () => V(this.hass, this.config?.array_stop_entity)
 			}), this.dialog = "server");
 		};
 	}
@@ -4948,7 +4948,7 @@ var Dt = class extends O {
 	}
 	render() {
 		if (!this.config || !this.hass) return S``;
-		let e = k(this.hass, this.config.status_entity), t = A(e) && M(e), n = A(e), r = G(k(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = G(k(this.hass, this.config.cpu_entity)), l = G(k(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? L(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
+		let e = k(this.hass, this.config.status_entity), t = A(e) && M(e), n = A(e), r = K(k(this.hass, this.config.array_usage_entity)), i = (this.config.docker || []).filter((e) => this.itemActive(e)).length, a = (this.config.vms || []).filter((e) => this.itemActive(e)).length, o = this.config.docker?.length || 0, s = this.config.vms?.length || 0, c = K(k(this.hass, this.config.cpu_entity)), l = K(k(this.hass, this.config.memory_entity)), u = this.featuredDisks(), d = this.config.array_state_entity ? L(this.hass, this.config.array_state_entity) : n ? t ? "Démarré" : "Arrêté" : "Indisponible", f = n ? t ? "serveur en ligne" : "serveur hors ligne" : "état indisponible", p = this.machineStyle("#ff7b55");
 		return S`
       <ha-card>
         <div class="machine-shell ${this.machineGridClass()}" style=${p}>
@@ -4960,7 +4960,7 @@ var Dt = class extends O {
               <button class="rail-button ${a ? "has-active" : ""}" @click=${() => this.openServices("vm")} aria-label="Machines virtuelles"><ha-icon icon="mdi:monitor-multiple"></ha-icon></button>
             </div>
             ${this.renderResourceGauges(c, l)}
-            <div class="machine-context"><small>Array${r === void 0 ? "" : ` · ${q(r)} utilisés`}</small><strong>${d}</strong></div>
+            <div class="machine-context"><small>Array${r === void 0 ? "" : ` · ${Et(r)} utilisés`}</small><strong>${d}</strong></div>
             <section class="machine-panel">
               <div class="machine-panel-head"><div class="machine-panel-title"><small>Stockage</small><strong>${u.length ? `${u.length} disque${u.length > 1 ? "s" : ""} affiché${u.length > 1 ? "s" : ""}` : "Aucun disque sélectionné"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("disks")}><ha-icon icon="mdi:harddisk"></ha-icon>Disques</button></div>
               <div class="machine-bars">
@@ -4998,7 +4998,7 @@ var Dt = class extends O {
 		return this.itemState(e) === "paused";
 	}
 	itemState(e) {
-		return Ct(k(this.hass, e.entity));
+		return St(k(this.hass, e.entity));
 	}
 	serviceItems() {
 		let e = this.serviceTab === "docker" ? this.config?.docker || [] : this.config?.vms || [], t = this.query.trim().toLocaleLowerCase("fr");
@@ -5010,7 +5010,7 @@ var Dt = class extends O {
 	groupedItems() {
 		let e = /* @__PURE__ */ new Map(), t = this.serviceTab === "docker" ? this.config?.docker_group_labels : this.config?.vm_group_labels, n = this.serviceTab === "docker" ? "Services" : "Machines virtuelles";
 		for (let r of this.serviceItems()) {
-			let i = Tt(r.group, t, n);
+			let i = wt(r.group, t, n);
 			e.set(i, [...e.get(i) || [], r]);
 		}
 		return e;
@@ -5048,7 +5048,7 @@ var Dt = class extends O {
 		}}>${t}</button>`;
 	}
 	renderServiceRow(e) {
-		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = K(this.hass, Et(e, "start"));
+		let t = this.itemState(e), n = t === "active" ? "healthy" : t === "paused" ? "warning" : "danger", r = t === "active" ? "Actif" : t === "paused" ? "Suspendue" : t === "stopped" ? "Arrêté" : "Indisponible", i = this.serviceTab === "vm", a = e, o = q(this.hass, Tt(e, "start"));
 		return S`
       <div class="list-row">
         <input class="selection" type="checkbox" .checked=${this.selected.has(e.entity)} ?disabled=${t !== "stopped" || !o} @change=${() => this.toggleSelected(e.entity)} />
@@ -5066,9 +5066,9 @@ var Dt = class extends O {
 	}
 	renderServiceActions(e, t) {
 		let n = e, r = this.serviceTab === "vm", i = (n, r, i, a = "", o = !1) => {
-			let s = Et(e, n);
+			let s = Tt(e, n);
 			if (!s) return S``;
-			let c = t !== "unavailable" && K(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
+			let c = t !== "unavailable" && q(this.hass, s), l = o ? () => this.confirmItemAction(e, n) : () => this.runItemAction(e, n);
 			return S`<button class=${`action ${a}`.trim()} ?disabled=${!c} @click=${l}><ha-icon .icon=${i}></ha-icon>${r}</button>`;
 		};
 		return S`
@@ -5087,21 +5087,21 @@ var Dt = class extends O {
 		t.has(e) ? t.delete(e) : t.add(e), this.selected = t, this.requestUpdate();
 	}
 	async runItemAction(e, t) {
-		let n = Et(e, t);
-		if (!K(this.hass, n)) return;
+		let n = Tt(e, t);
+		if (!q(this.hass, n)) return;
 		let r = t === "start" && !e.start_entity && n === e.entity || t === "stop" && !e.stop_entity && n === e.entity;
 		if (t === "stop" && r) {
-			await it(this.hass, n);
+			await rt(this.hass, n);
 			return;
 		}
-		await B(this.hass, n);
+		await V(this.hass, n);
 	}
 	async startItem(e) {
 		await this.runItemAction(e, "start");
 	}
 	confirmItemAction(e, t) {
-		let n = Et(e, t);
-		if (!K(this.hass, n)) return;
+		let n = Tt(e, t);
+		if (!q(this.hass, n)) return;
 		let r = t === "restart", i = this.serviceTab === "vm", a = r ? "Redémarrer" : i ? "Éteindre" : "Arrêter";
 		this.askConfirmation({
 			title: `${a} ${e.name} ?`,
@@ -5112,15 +5112,15 @@ var Dt = class extends O {
 	}
 	confirmServerAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
-		K(this.hass, n) && (this.askConfirmation({
+		q(this.hass, n) && (this.askConfirmation({
 			title: `${t ? "Redémarrer" : "Éteindre"} le serveur ?`,
 			message: "L’array, les conteneurs Docker et les machines virtuelles pourront devenir indisponibles.",
 			confirmLabel: t ? "Redémarrer" : "Éteindre",
-			action: () => B(this.hass, n)
+			action: () => V(this.hass, n)
 		}), this.dialog = "server");
 	}
 	renderDiskRow(e) {
-		let t = G(k(this.hass, e.usage_entity)), n = k(this.hass, e.status_entity), r = wt(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? A(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
+		let t = K(k(this.hass, e.usage_entity)), n = k(this.hass, e.status_entity), r = Ct(n, e.healthy_state || "on"), i = !e.status_entity || r ? "healthy" : "danger", a = e.status_entity ? A(n) ? r ? "Sain" : "À contrôler" : "Indisponible" : "Suivi";
 		return S`
       <div class="disk-row">
         <div class="disk-row-head">
@@ -5129,7 +5129,7 @@ var Dt = class extends O {
         </div>
         <div class="progress"><span style=${`width:${t ?? 0}%`}></span></div>
         <div class="disk-meta">
-          <span>${e.capacity_entity ? L(this.hass, e.capacity_entity) : `${q(t)} utilisés`}</span>
+          <span>${e.capacity_entity ? L(this.hass, e.capacity_entity) : `${Et(t)} utilisés`}</span>
           ${e.temperature_entity ? S`<span>${L(this.hass, e.temperature_entity)}</span>` : w}
         </div>
       </div>
@@ -5140,12 +5140,12 @@ var Dt = class extends O {
 		return t.length ? t : e.filter((e) => e.show_on_card !== !1);
 	}
 	renderDiskSummary(e) {
-		let t = G(k(this.hass, e.usage_entity));
+		let t = K(k(this.hass, e.usage_entity));
 		return S`
       <div class="machine-bar disk-summary">
         <span title=${e.name}>${e.name}</span>
         <div class="track"><span style=${`width:${t ?? 0}%`}></span></div>
-        <strong>${q(t)}</strong>
+        <strong>${Et(t)}</strong>
       </div>
     `;
 	}
@@ -5158,7 +5158,7 @@ var Dt = class extends O {
 		return t;
 	}
 	renderDisksDialog() {
-		let e = this.config?.disks || [], t = e.filter((e) => A(k(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && wt(k(this.hass, e.status_entity), e.healthy_state || "on")).length;
+		let e = this.config?.disks || [], t = e.filter((e) => A(k(this.hass, e.status_entity))).length, n = e.filter((e) => e.status_entity && Ct(k(this.hass, e.status_entity), e.healthy_state || "on")).length;
 		return this.renderDialog("Disques", "mdi:harddisk", S`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -5181,10 +5181,10 @@ var Dt = class extends O {
 		}
 	}
 	renderServerDialog() {
-		let e = G(k(this.hass, this.config?.array_usage_entity)), t = k(this.hass, this.config?.status_entity), n = A(t) && M(t), r = k(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? wt(r, this.config.parity_healthy_state) : A(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? A(r) ? i ? "Valide" : L(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? L(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? L(this.hass, this.config.array_label_entity) : q(e), h = this.config?.ups_connected_entity ? wt(k(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : L(this.hass, this.config?.ups_status_entity);
+		let e = K(k(this.hass, this.config?.array_usage_entity)), t = k(this.hass, this.config?.status_entity), n = A(t) && M(t), r = k(this.hass, this.config?.parity_entity), i = this.config?.parity_healthy_state ? Ct(r, this.config.parity_healthy_state) : A(r) && /^(ok|valid|valide|healthy|protected|protégée)$/i.test(r.state.trim()), a = this.config?.parity_entity ? A(r) ? i ? "Valide" : L(this.hass, this.config.parity_entity) : "Indisponible" : "—", o = !!(this.config?.parity_entity || this.config?.parity_age_entity || this.config?.parity_errors_entity), s = !!(this.config?.version_entity || this.config?.updates_entity || this.config?.notifications_entity), c = !!(this.config?.network_down_entity || this.config?.network_up_entity), l = !!(this.config?.ups_connected_entity || this.config?.ups_status_entity || this.config?.ups_battery_entity || this.config?.ups_load_entity || this.config?.ups_runtime_entity), u = !!(this.config?.docker_cpu_entity || this.config?.docker_memory_entity), d = !!(this.config?.array_stop_entity || this.config?.restart_entity || this.config?.shutdown_entity), f = this.configuredServerUrl(), p = this.config?.array_state_entity ? L(this.hass, this.config.array_state_entity) : n ? "Démarré" : "Indisponible", m = this.config?.array_label_entity ? L(this.hass, this.config.array_label_entity) : Et(e), h = this.config?.ups_connected_entity ? Ct(k(this.hass, this.config.ups_connected_entity), "on") ? "Connecté" : "Déconnecté" : L(this.hass, this.config?.ups_status_entity);
 		return this.renderDialog(this.config?.name || "Serveur UNRAID", "mdi:server", S`
         <div class="dialog-body">
-          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${L(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${q(e)}</strong><small>utilisé</small></div></div>
+          <div class="dialog-overview"><div><span class="eyebrow">État du serveur</span><strong>Serveur ${n ? "en ligne" : "indisponible"}</strong><span class="muted">${this.config?.uptime_entity ? `En service depuis ${L(this.hass, this.config.uptime_entity)}` : "Stockage et services disponibles"}</span></div><div class="dialog-stat"><strong>${Et(e)}</strong><small>utilisé</small></div></div>
           <div class="dialog-section-title">Stockage et santé</div>
           <div class="grid two">
             ${this.statusTile("Array", `${p} · ${m}`, "mdi:database-outline")}
@@ -5216,14 +5216,14 @@ var Dt = class extends O {
           <div class="dialog-section">
             <div class="dialog-section-title">Services</div>
             <div class="actions">
-              ${this.config?.array_start_entity ? S`<button class="action primary" ?disabled=${!K(this.hass, this.config.array_start_entity)} @click=${() => B(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : w}
+              ${this.config?.array_start_entity ? S`<button class="action primary" ?disabled=${!q(this.hass, this.config.array_start_entity)} @click=${() => V(this.hass, this.config?.array_start_entity)}><ha-icon icon="mdi:play"></ha-icon>Démarrer l’array</button>` : w}
               ${f ? S`<button class="action primary" @click=${() => window.open(f, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:open-in-new"></ha-icon>Ouvrir UNRAID</button>` : w}
             </div>
           </div>
           ${d ? S`<div class="dialog-danger-zone"><div class="dialog-section-title">Zone sensible</div><div class="actions">
-                ${this.config?.array_stop_entity ? S`<button class="action danger" ?disabled=${!K(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : w}
-                ${this.config?.restart_entity ? S`<button class="action danger" ?disabled=${!K(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : w}
-                ${this.config?.shutdown_entity ? S`<button class="action danger" ?disabled=${!K(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : w}
+                ${this.config?.array_stop_entity ? S`<button class="action danger" ?disabled=${!q(this.hass, this.config.array_stop_entity)} @click=${this.confirmArrayStop}><ha-icon icon="mdi:stop-circle-outline"></ha-icon>Arrêter l’array</button>` : w}
+                ${this.config?.restart_entity ? S`<button class="action danger" ?disabled=${!q(this.hass, this.config.restart_entity)} @click=${() => this.confirmServerAction("restart")}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer le serveur</button>` : w}
+                ${this.config?.shutdown_entity ? S`<button class="action danger" ?disabled=${!q(this.hass, this.config.shutdown_entity)} @click=${() => this.confirmServerAction("shutdown")}><ha-icon icon="mdi:power"></ha-icon>Éteindre le serveur</button>` : w}
               </div></div>` : w}
         </div>
       `);
@@ -5779,7 +5779,7 @@ var Pt = class extends O {
     `;
 	}
 	renderWorkloadAction(e, t, n) {
-		return A(k(this.hass, e.entity)) ? n ? S`<button class="action primary" ?disabled=${!J(this.hass, e.resume_entity)} @click=${() => B(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? S`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : S`<button class="action" ?disabled=${!J(this.hass, e.restart_entity)} @click=${() => B(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : S`<button class="action primary" ?disabled=${!J(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0))} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>` : S`<span class="muted">Indisponible</span>`;
+		return A(k(this.hass, e.entity)) ? n ? S`<button class="action primary" ?disabled=${!J(this.hass, e.resume_entity)} @click=${() => V(this.hass, e.resume_entity)}><ha-icon icon="mdi:play"></ha-icon>Reprendre</button>` : t ? e.console_url ? S`<button class="action" @click=${() => window.open(e.console_url, "_blank", "noopener,noreferrer")}><ha-icon icon="mdi:console"></ha-icon>Console</button>` : S`<button class="action" ?disabled=${!J(this.hass, e.restart_entity)} @click=${() => V(this.hass, e.restart_entity)}><ha-icon icon="mdi:restart"></ha-icon>Redémarrer</button>` : S`<button class="action primary" ?disabled=${!J(this.hass, e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0))} @click=${() => this.startItem(e)}><ha-icon icon="mdi:play"></ha-icon>Démarrer</button>` : S`<span class="muted">Indisponible</span>`;
 	}
 	toggleSelected(e) {
 		let t = new Set(this.selected);
@@ -5788,7 +5788,7 @@ var Pt = class extends O {
 	async startItem(e) {
 		if (!A(k(this.hass, e.entity)) || this.itemActive(e) || this.itemPaused(e)) return;
 		let t = e.start_entity || (e.entity.startsWith("switch.") ? e.entity : void 0);
-		J(this.hass, t) && await B(this.hass, t);
+		J(this.hass, t) && await V(this.hass, t);
 	}
 	confirmClusterAction(e) {
 		let t = e === "restart", n = t ? this.config?.restart_entity : this.config?.shutdown_entity;
@@ -5796,7 +5796,7 @@ var Pt = class extends O {
 			title: `${t ? "Redémarrer" : "Arrêter"} ${this.config?.name || "le nœud"} ?`,
 			message: "Cette action peut interrompre plusieurs machines virtuelles et services. Vérifiez les migrations avant de continuer.",
 			confirmLabel: t ? "Redémarrer" : "Arrêter",
-			action: () => B(this.hass, n)
+			action: () => V(this.hass, n)
 		}), this.dialog = "cluster");
 	}
 	renderClusterDialog() {
@@ -5868,7 +5868,7 @@ var Pt = class extends O {
         </div>`)}</div>
         ${e.backup_action_entity ? S`<div class="dialog-section"><button class="action"
           ?disabled=${!n || !J(this.hass, e.backup_action_entity)}
-          @click=${() => B(this.hass, e.backup_action_entity)}>
+          @click=${() => V(this.hass, e.backup_action_entity)}>
           <ha-icon icon="mdi:backup-restore"></ha-icon>Lancer la sauvegarde</button></div>` : w}
         ${e.restart_entity || e.shutdown_entity ? S`
           <div class="dialog-danger-zone"><div class="dialog-section-title">Actions du nœud</div><div class="actions">
@@ -6621,7 +6621,7 @@ var Zt = class extends O {
 	}
 	color(e) {
 		let t = this.colorIds(e).map((e) => k(this.hass, e));
-		return tt(R(t.find((e) => M(e) && R(e)) ?? t[0]));
+		return z(R(t.find((e) => M(e) && R(e)) ?? t[0]));
 	}
 	imageStyle(e) {
 		let t = e.image?.trim();
@@ -6634,7 +6634,7 @@ var Zt = class extends O {
 		this.hass && e.length && await this.hass.callService("light", "turn_on", { brightness_pct: Math.round(t) }, { entity_id: e });
 	}
 	async colorize(e, t) {
-		this.hass && e.length && $t(t) && await ot(this.hass, e, t);
+		this.hass && e.length && $t(t) && await at(this.hass, e, t);
 	}
 	renderSwatches(e, t) {
 		return e.length ? S`<div class="swatches" aria-label=${`Couleurs prédéfinies pour ${t}`}>
@@ -6686,10 +6686,10 @@ var Zt = class extends O {
 		let t = k(this.hass, e), n = A(t), r = M(t), i = et(t), a = $e(t), o = this.label(e);
 		return S`<div class="light-row">
       <div class="light-head">
-        <span class="tile-icon" style=${`color:${r ? tt(R(t)) : "var(--auralis-muted)"}`}><ha-icon .icon=${r ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
+        <span class="tile-icon" style=${`color:${r ? z(R(t)) : "var(--auralis-muted)"}`}><ha-icon .icon=${r ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon></span>
         <span class="name">${o}</span>
         <button class="control" type="button" title=${`Plus d’informations sur ${o}`} aria-label=${`Plus d’informations sur ${o}`}
-          @click=${() => H(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
+          @click=${() => U(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
         <button class="control ${r ? "on" : ""}" type="button" title=${`${r ? "Éteindre" : "Allumer"} ${o}`} aria-label=${`${r ? "Éteindre" : "Allumer"} ${o}`}
           ?disabled=${!n} @click=${() => this.power([e], !r)}><ha-icon .icon=${r ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
       </div>
@@ -6697,7 +6697,7 @@ var Zt = class extends O {
         <input type="range" min="1" max="100" .value=${String(Math.max(a, 1))} aria-label=${`Intensité de ${o}`}
           ?disabled=${!n || !this.supportsBrightness(e)} @change=${(t) => this.brightness([e], Number(t.target.value))} />
         <output>${a}%</output>
-        ${i ? S`<input class="color-input" type="color" .value=${tt(R(t))}
+        ${i ? S`<input class="color-input" type="color" .value=${z(R(t))}
           title=${`Couleur de ${o}`} aria-label=${`Couleur de ${o}`} ?disabled=${!n}
           @change=${(t) => this.colorize([e], t.target.value)} />` : w}
       </label>
@@ -6708,7 +6708,7 @@ var Zt = class extends O {
 		return S`<div class="scene-grid">${this.scenes(e).map((e) => S`<div class="scene-item">
       <button class="control" type="button" title=${e.label || e.entity} aria-label=${`Activer ${e.label || e.entity}`}
         @click=${async () => {
-			this.hass && await B(this.hass, e.entity), this.closeDialog();
+			this.hass && await V(this.hass, e.entity), this.closeDialog();
 		}}>
         <ha-icon .icon=${e.icon || "mdi:creation-outline"}></ha-icon></button>
       <small>${e.label || e.entity}</small>
@@ -6999,7 +6999,7 @@ var Zt = class extends O {
 		return S`<div class="switch-row"><span class="tile-icon ${n ? "on" : ""}"><ha-icon .icon=${t?.attributes.icon || "mdi:power-socket-eu"}></ha-icon></span>
       <span class="switch-meta"><strong>${r}</strong><small>${i}</small></span>
       <button class="switch-info" type="button" aria-label=${`Plus d’informations sur ${r}`} title=${`Plus d’informations sur ${r}`}
-        @click=${() => H(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
+        @click=${() => U(this, e)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
       <button class="switch-toggle" type="button" role="switch" aria-checked=${n ? "true" : "false"} aria-label=${`${n ? "Éteindre" : "Allumer"} ${r}`}
         ?disabled=${!this.available(e)} @click=${() => this.power([e], !n)}></button></div>`;
 	}
@@ -7264,7 +7264,7 @@ var ln = class extends O {
           </div>
         </header>
         <button class="info-button" type="button" title=${`Détails de ${this.label(t)}`} aria-label=${`Détails de ${this.label(t)}`}
-          ?disabled=${!r} @click=${() => H(this, t)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
+          ?disabled=${!r} @click=${() => U(this, t)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
         ${e.length > 1 ? S`<nav class="selector" aria-label="Choisir un thermostat">
           ${e.map((e) => S`<button type="button" class=${A(k(this.hass, e)) ? "" : "unavailable"}
             aria-pressed=${e === t} @click=${() => {
@@ -7503,7 +7503,7 @@ var fn = {
 		A(t) && (e.startsWith("switch.") ? await this.call("switch", "toggle", e) : e.startsWith("button.") ? await this.call("button", "press", e) : e.startsWith("lock.") && await this.call("lock", t?.state === "locked" ? "unlock" : "lock", e));
 	}
 	detail(e, t, n, r) {
-		return n ? S`<button class="detail-tile" type="button" aria-label=${`Plus d’informations : ${e}`} @click=${() => H(this, n)}>
+		return n ? S`<button class="detail-tile" type="button" aria-label=${`Plus d’informations : ${e}`} @click=${() => U(this, n)}>
       <ha-icon .icon=${t}></ha-icon><span><small>${e}</small><strong>${r ?? L(this.hass, n)}</strong></span><ha-icon icon="mdi:chevron-right"></ha-icon></button>` : S``;
 	}
 	target(e, t) {
@@ -7843,7 +7843,7 @@ var fn = {
 	}
 	renderReading(e, t, n) {
 		let r = k(this.hass, e), i = P(r, NaN), a = r?.attributes.unit_of_measurement;
-		return S`<button type="button" class="reading" @click=${() => H(this, e)}>
+		return S`<button type="button" class="reading" @click=${() => U(this, e)}>
       <ha-icon .icon=${n} aria-hidden="true"></ha-icon><span><small>${t}</small><strong>${Number.isFinite(i) ? [I(i, 2), a].filter(Boolean).join(" ") : "—"}</strong></span>
     </button>`;
 	}
@@ -8499,9 +8499,9 @@ var Rn = class extends O {
 		})}
       </section>` : w}
       <div class="actions">
-        <button class="action" type="button" @click=${() => H(this, e.room.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Température</button>
-        ${e.room.humidity_entity ? S`<button class="action" type="button" @click=${() => H(this, e.room.humidity_entity)}><ha-icon icon="mdi:water-percent"></ha-icon>Humidité</button>` : w}
-        ${e.room.battery_entity ? S`<button class="action" type="button" @click=${() => H(this, e.room.battery_entity)}><ha-icon icon="mdi:battery-outline"></ha-icon>Batterie</button>` : w}
+        <button class="action" type="button" @click=${() => U(this, e.room.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Température</button>
+        ${e.room.humidity_entity ? S`<button class="action" type="button" @click=${() => U(this, e.room.humidity_entity)}><ha-icon icon="mdi:water-percent"></ha-icon>Humidité</button>` : w}
+        ${e.room.battery_entity ? S`<button class="action" type="button" @click=${() => U(this, e.room.battery_entity)}><ha-icon icon="mdi:battery-outline"></ha-icon>Batterie</button>` : w}
       </div>
     </div>`);
 	}
@@ -9391,9 +9391,9 @@ var cr = class extends O {
         ${s === "hourly" ? S`<p class="dialog-section-title">Prochaines ${i.length} heures</p>${this.renderHourlyChart(i, c)}` : s === "daily" ? S`<p class="dialog-section-title">Prochains jours</p>${this.renderDays(a)}` : S`<p class="muted-note">${this.forecastError ? "Prévisions indisponibles" : "Aucune prévision pour le moment"}</p>`}
       </section>
       <div class="actions">
-        <button class="action" type="button" @click=${() => H(this, this.config.entity)}><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Service météo</button>
-        ${this.config?.temperature_entity ? S`<button class="action" type="button" @click=${() => H(this, this.config.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Capteur local</button>` : w}
-        ${this.config?.alert_entity ? S`<button class="action" type="button" @click=${() => H(this, this.config.alert_entity)}><ha-icon icon="mdi:alert-outline"></ha-icon>Vigilance</button>` : w}
+        <button class="action" type="button" @click=${() => U(this, this.config.entity)}><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Service météo</button>
+        ${this.config?.temperature_entity ? S`<button class="action" type="button" @click=${() => U(this, this.config.temperature_entity)}><ha-icon icon="mdi:thermometer"></ha-icon>Capteur local</button>` : w}
+        ${this.config?.alert_entity ? S`<button class="action" type="button" @click=${() => U(this, this.config.alert_entity)}><ha-icon icon="mdi:alert-outline"></ha-icon>Vigilance</button>` : w}
       </div>
     </div>`);
 	}
@@ -9506,7 +9506,7 @@ function vr(e, t) {
 		path: e.navigation_path
 	};
 	if (!e.entity) return;
-	let r = z(e.entity), i = (t, i = r) => ({
+	let r = B(e.entity), i = (t, i = r) => ({
 		kind: "service",
 		domain: i,
 		service: t,
@@ -9550,8 +9550,8 @@ function xr(e, t, n) {
 		"button",
 		"input_button",
 		"scene"
-	].includes(z(e.entity_id))) return "Indisponible";
-	let r = z(e.entity_id);
+	].includes(B(e.entity_id))) return "Indisponible";
+	let r = B(e.entity_id);
 	if (r === "button" || r === "input_button" || r === "scene") {
 		if (e.state === "unavailable") return "Indisponible";
 		let n = br(e.state);
@@ -9585,7 +9585,7 @@ function xr(e, t, n) {
 	return i[e.state] ? i[e.state] : n?.formatEntityState ? n.formatEntityState(e) : e.state;
 }
 function Sr(e) {
-	return !e || z(e.entity_id) === "automation" ? !1 : _r.has(e.state);
+	return !e || B(e.entity_id) === "automation" ? !1 : _r.has(e.state);
 }
 var Cr = class extends O {
 	constructor(...e) {
@@ -9758,11 +9758,11 @@ var Cr = class extends O {
 		return e.name?.trim() ? e.name.trim() : e.entity ? N(k(this.hass, e.entity), e.entity) : e.navigation_path ? "Ouvrir" : e.service ?? "Action";
 	}
 	tone(e) {
-		return e.color ?? (e.navigation_path && !e.entity ? "#79d6f2" : mr[z(e.entity ?? e.service)] ?? "#79d6f2");
+		return e.color ?? (e.navigation_path && !e.entity ? "#79d6f2" : mr[B(e.entity ?? e.service)] ?? "#79d6f2");
 	}
 	icon(e) {
 		let t = k(this.hass, e.state_entity || e.entity), n = k(this.hass, e.entity)?.attributes.icon;
-		return e.icon || (typeof n == "string" ? n : void 0) || (typeof t?.attributes.icon == "string" ? t.attributes.icon : void 0) || (e.navigation_path && !e.entity ? "mdi:arrow-right-circle-outline" : hr[z(e.entity ?? e.service)] ?? "mdi:gesture-tap");
+		return e.icon || (typeof n == "string" ? n : void 0) || (typeof t?.attributes.icon == "string" ? t.attributes.icon : void 0) || (e.navigation_path && !e.entity ? "mdi:arrow-right-circle-outline" : hr[B(e.entity ?? e.service)] ?? "mdi:gesture-tap");
 	}
 	setStatus(e, t) {
 		let n = new Map(this.status);
@@ -9788,7 +9788,7 @@ var Cr = class extends O {
 		let n = vr(t, k(this.hass, t.entity));
 		if (n) {
 			if (n.kind === "more-info") {
-				H(this, n.entity);
+				U(this, n.entity);
 				return;
 			}
 			if (n.kind === "navigate") {
@@ -9811,7 +9811,7 @@ var Cr = class extends O {
 		this.held = !1, window.clearTimeout(this.holdTimer);
 		let t = this.config?.actions[e], n = t?.state_entity || t?.entity;
 		n && (this.holdTimer = window.setTimeout(() => {
-			this.held = !0, H(this, n);
+			this.held = !0, U(this, n);
 		}, pr));
 	}
 	cancelHold() {
@@ -9834,7 +9834,7 @@ var Cr = class extends O {
       @pointerdown=${() => this.startHold(t)} @pointerup=${this.cancelHold} @pointerleave=${this.cancelHold} @pointercancel=${this.cancelHold}
       @contextmenu=${(t) => {
 			let n = e.state_entity || e.entity;
-			n && (t.preventDefault(), this.cancelHold(), H(this, n));
+			n && (t.preventDefault(), this.cancelHold(), U(this, n));
 		}}>
       <span class="act-icon"><ha-icon .icon=${l}></ha-icon>${n === "pending" ? S`<span class="spinner"></span>` : w}</span>
       <span class="act-text"><span class="act-name">${s}</span>
@@ -9879,9 +9879,451 @@ var Cr = class extends O {
 			min_columns: 3
 		};
 	}
-}, wr = "0.18.0";
-customElements.get("auralis-room-card") || customElements.define("auralis-room-card", st), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", ct), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", St), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Dt), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", Pt), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Zt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", en), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", tn), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", ln), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", pn), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", vn), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", Rn), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", cr), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", Cr), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends st {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends St {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Dt {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends Pt {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Zt {}), window.customCards = window.customCards || [];
-var Tr = [
+}, wr = /^camera\.[a-z0-9_]+$/, Tr = /^binary_sensor\.[a-z0-9_]+$/, Er = 1500;
+function Dr(e) {
+	if (typeof e == "number" && e > 0) return 1 / e;
+	let t = typeof e == "string" ? /^\s*(\d+(?:[.,]\d+)?)\s*[:/x]\s*(\d+(?:[.,]\d+)?)\s*$/i.exec(e) : null;
+	if (!t) return 9 / 16;
+	let n = Number.parseFloat(t[1].replace(",", ".")), r = Number.parseFloat(t[2].replace(",", ".")) / n;
+	return Number.isFinite(r) && r > .2 && r < 5 ? r : 9 / 16;
+}
+function Or(e, t) {
+	if (typeof e == "string" && e.trim()) return `${e}${e.includes("?") ? "&" : "?"}t=${Math.floor(t)}`;
+}
+function kr(e) {
+	return !e || e.state === "unavailable" ? "Indisponible" : {
+		streaming: "Diffusion active",
+		recording: "Enregistrement",
+		idle: "En veille",
+		unknown: "État inconnu"
+	}[e.state] ?? e.state;
+}
+function Ar(e, t) {
+	if (e === void 0) return "";
+	let n = Math.max(0, Math.round((t - e) / 1e3));
+	return n < 60 ? `il y a ${n} s` : yr(e, t);
+}
+function jr(e, t, n) {
+	return n ? ((e + t) % n + n) % n : 0;
+}
+var Mr = class extends O {
+	constructor(...e) {
+		super(...e), this.tick = Date.now(), this.dialogTick = Date.now(), this.featured = 0, this.loaded = /* @__PURE__ */ new Map(), this.errors = /* @__PURE__ */ new Set(), this.actionStatus = /* @__PURE__ */ new Map(), this.visible = !0, this.onKey = (e) => {
+			this.dialog !== "camera" || this.confirmState || (e.key === "ArrowLeft" && this.step(-1), e.key === "ArrowRight" && this.step(1));
+		};
+	}
+	static {
+		this.properties = {
+			...O.properties,
+			tick: { state: !0 },
+			dialogTick: { state: !0 },
+			selected: { state: !0 },
+			featured: { state: !0 },
+			loaded: { state: !0 },
+			errors: { state: !0 },
+			liveReady: { state: !0 },
+			actionStatus: { state: !0 }
+		};
+	}
+	static {
+		this.styles = [O.styles, o`
+    :host { --motion:#ff6b74; }
+    .cam-shell, .cam-content { min-height:0; }
+    .cam-shell { padding:16px; }
+    .cam-header { display:flex; align-items:center; gap:11px; margin-bottom:14px; }
+    .cam-header .badge { display:grid; width:39px; height:39px; flex:0 0 auto; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:14px; background:rgba(12,19,27,.72); color:var(--machine-accent); }
+    .cam-header .badge ha-icon { --mdc-icon-size:22px; }
+    .cam-header h2 { overflow:hidden; font-size:19px; text-overflow:ellipsis; white-space:nowrap; }
+    .cam-header .machine-status { margin-top:4px; }
+    .cam-header .machine-status.motion { color:var(--motion); }
+    .cam-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+    .cam-grid.fixed { grid-template-columns:repeat(var(--cam-columns),minmax(0,1fr)); }
+    .thumbs { display:grid; grid-auto-columns:minmax(120px,1fr); grid-auto-flow:column; gap:8px; margin-top:10px; padding-bottom:2px; overflow-x:auto; scrollbar-width:thin; }
+    .cam { position:relative; display:block; width:100%; min-width:0; padding:0; overflow:hidden; border:1px solid rgba(195,211,229,.16); border-radius:18px; background:#05080c; color:#fff; cursor:pointer; text-align:start; aspect-ratio:var(--cam-ratio-css,16 / 9); }
+    .cam:hover { border-color:color-mix(in srgb,var(--machine-accent) 65%,transparent); }
+    .cam:focus-visible { outline:2px solid var(--machine-accent); outline-offset:2px; }
+    .cam.thumb { border-radius:13px; }
+    .cam.thumb.current { border-color:var(--machine-accent); box-shadow:0 0 0 1px var(--machine-accent); }
+    .cam img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .cam::after { position:absolute; inset:0; background:linear-gradient(180deg,rgba(3,6,10,.6),transparent 30%,transparent 62%,rgba(3,6,10,.78)); content:""; pointer-events:none; }
+    .cam.motion { border-color:var(--motion); animation:pulse 1.6s ease-in-out infinite; }
+    .cam-empty { position:absolute; inset:0; display:grid; place-content:center; justify-items:center; gap:6px; color:#7f8d9e; font-size:12px; }
+    .cam-empty ha-icon { --mdc-icon-size:30px; }
+    .cam-top, .cam-bottom { position:absolute; z-index:1; inset-inline:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .cam-top { top:9px; }
+    .cam-bottom { bottom:8px; color:#c9d4e0; font-size:10.5px; }
+    .cam-name { display:flex; min-width:0; align-items:center; gap:6px; font-size:13px; font-weight:720; text-shadow:0 1px 4px #000; }
+    .cam-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cam-name ha-icon { --mdc-icon-size:16px; flex:0 0 auto; color:var(--machine-accent); }
+    .cam.thumb .cam-name { font-size:11px; }
+    .cam.thumb .cam-bottom { display:none; }
+    .tag { display:inline-flex; flex:0 0 auto; align-items:center; gap:5px; padding:3px 8px; border-radius:999px; background:rgba(5,9,14,.72); font-size:10px; font-weight:750; backdrop-filter:blur(8px); }
+    .tag::before { width:6px; height:6px; border-radius:50%; background:currentColor; content:""; }
+    .tag.motion { background:color-mix(in srgb,var(--motion) 85%,#000); color:#fff; }
+    .tag.stale { color:var(--auralis-active,#ffc45f); }
+    .tag.ok { color:#5bd69b; }
+    .tag.ok::before { animation:blink 2s ease-in-out infinite; }
+    @media (min-width:481px) { .dialog.cam-dialog { width:min(980px,calc(100vw - 24px)); } }
+    .media { position:relative; overflow:hidden; border-radius:20px; background:#000; aspect-ratio:var(--cam-ratio-css,16 / 9); }
+    .media img, .media ha-camera-stream { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+    .media .cam-empty { color:#9aa8b9; }
+    .nav { position:absolute; z-index:2; top:50%; display:grid; width:40px; height:40px; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:50%; background:rgba(5,9,14,.62); color:#fff; cursor:pointer; transform:translateY(-50%); backdrop-filter:blur(8px); }
+    .nav.prev { left:10px; }
+    .nav.next { right:10px; }
+    .nav ha-icon { --mdc-icon-size:22px; }
+    .media-tags { position:absolute; z-index:2; top:10px; left:10px; display:flex; gap:6px; }
+    .info { display:flex; flex-wrap:wrap; gap:8px 16px; margin:12px 2px 0; color:var(--auralis-muted); font-size:12px; }
+    .info strong { color:var(--auralis-text); font-weight:650; }
+    .info .motion { color:var(--motion); }
+    .action.done { border-color:color-mix(in srgb,var(--auralis-healthy) 45%,transparent); color:var(--auralis-healthy); }
+    .action.failed { border-color:color-mix(in srgb,var(--auralis-danger) 45%,transparent); color:var(--auralis-danger); }
+    @keyframes pulse { 0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb,var(--motion) 0%,transparent); } 50% { box-shadow:0 0 0 4px color-mix(in srgb,var(--motion) 45%,transparent); } }
+    @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:.35; } }
+    @media (prefers-reduced-motion: reduce) { .cam.motion, .tag.ok::before { animation:none; } }
+    @container (max-width:520px) { .cam-grid, .cam-grid.fixed { grid-template-columns:1fr; } }
+  `];
+	}
+	static getStubConfig(e) {
+		let t = Object.keys(e?.states ?? {}).filter((e) => e.startsWith("camera.")).slice(0, 4);
+		return {
+			theme: "carbon",
+			cameras: (t.length ? t : ["camera.entree"]).map((e) => ({ entity: e }))
+		};
+	}
+	static getConfigForm() {
+		let e = {
+			name: "Titre",
+			icon: "Icône",
+			cameras: "Caméras (entity, name, motion_entity, actions)",
+			layout: "Présentation",
+			columns: "Colonnes (vide = automatique)",
+			aspect_ratio: "Format des images",
+			refresh_interval: "Rafraîchissement (secondes)",
+			live: "Flux en direct dans la fenêtre",
+			show_header: "Afficher l’en-tête",
+			theme: "Thème",
+			accent_color: "Couleur d’accent",
+			card_background: "Fond de la carte"
+		};
+		return {
+			schema: [
+				{
+					name: "name",
+					selector: { text: {} }
+				},
+				{
+					name: "icon",
+					selector: { icon: {} }
+				},
+				{
+					name: "cameras",
+					required: !0,
+					selector: { object: {} }
+				},
+				{
+					name: "layout",
+					selector: { select: { options: [{
+						value: "grid",
+						label: "Mosaïque"
+					}, {
+						value: "featured",
+						label: "Une grande et des vignettes"
+					}] } }
+				},
+				{
+					name: "columns",
+					selector: { number: {
+						min: 1,
+						max: 4,
+						step: 1,
+						mode: "box"
+					} }
+				},
+				{
+					name: "aspect_ratio",
+					selector: { select: {
+						options: [
+							"16:9",
+							"4:3",
+							"1:1",
+							"9:16"
+						],
+						custom_value: !0
+					} }
+				},
+				{
+					name: "refresh_interval",
+					selector: { number: {
+						min: 2,
+						max: 300,
+						step: 1,
+						mode: "box",
+						unit_of_measurement: "s"
+					} }
+				},
+				{
+					name: "live",
+					selector: { boolean: {} }
+				},
+				{
+					name: "show_header",
+					selector: { boolean: {} }
+				},
+				{
+					name: "theme",
+					selector: { select: { options: [
+						"auto",
+						"halo",
+						"carbon",
+						"mono",
+						"aurora"
+					] } }
+				},
+				{
+					name: "accent_color",
+					selector: { text: {} }
+				},
+				{
+					name: "card_background",
+					selector: { object: {} }
+				}
+			],
+			computeLabel: ({ name: t }) => e[t]
+		};
+	}
+	setConfig(e) {
+		let t = Array.isArray(e?.cameras) ? e.cameras : [], n = t.find((e) => !e || typeof e.entity != "string" || !wr.test(e.entity) || e.motion_entity !== void 0 && e.motion_entity !== "" && !(typeof e.motion_entity == "string" && Tr.test(e.motion_entity)) || e.actions !== void 0 && !Array.isArray(e.actions));
+		if (!t.length || n) throw Error("Configurez au moins une caméra : cameras: - entity: camera.xxx (motion_entity en binary_sensor.* facultatif).");
+		let r = (e, t, n) => {
+			let r = Number(e);
+			return e != null && e !== "" && Number.isFinite(r) ? Math.min(n, Math.max(t, r)) : void 0;
+		}, i = r(e.columns, 1, 4);
+		this.config = {
+			...e,
+			theme: e.theme || "carbon",
+			cameras: t,
+			layout: e.layout === "featured" ? "featured" : "grid",
+			columns: i === void 0 ? void 0 : Math.round(i),
+			refresh_interval: Math.round(r(e.refresh_interval, 2, 300) ?? 10)
+		}, this.featured >= t.length && (this.featured = 0), this.selected !== void 0 && this.selected >= t.length && this.closeDialog(), this.isConnected && this.startRefresh();
+	}
+	connectedCallback() {
+		super.connectedCallback(), this.tick = Date.now(), this.startRefresh(), window.addEventListener("keydown", this.onKey), typeof IntersectionObserver < "u" && (this.observer = new IntersectionObserver((e) => {
+			let t = this.visible;
+			this.visible = e.some((e) => e.isIntersecting), this.visible && !t && (this.tick = Date.now());
+		}), this.observer.observe(this));
+	}
+	disconnectedCallback() {
+		super.disconnectedCallback(), window.clearInterval(this.refreshTimer), window.clearInterval(this.dialogTimer), window.removeEventListener("keydown", this.onKey), this.observer?.disconnect(), this.observer = void 0;
+	}
+	closeDialog() {
+		super.closeDialog(), this.selected = void 0, window.clearInterval(this.dialogTimer), this.dialogTimer = void 0;
+	}
+	startRefresh() {
+		window.clearInterval(this.refreshTimer);
+		let e = this.config?.refresh_interval ?? 10;
+		this.refreshTimer = window.setInterval(() => {
+			!this.visible || typeof document < "u" && document.visibilityState === "hidden" || (this.tick = Date.now());
+		}, e * 1e3);
+	}
+	openCamera(e) {
+		this.selected = e, this.dialogTick = Date.now(), this.openDialog("camera"), this.prepareLive(), window.clearInterval(this.dialogTimer), this.dialogTimer = window.setInterval(() => {
+			(this.liveReady !== !0 || this.config?.live === !1) && (this.dialogTick = Date.now());
+		}, Er);
+	}
+	step(e) {
+		let t = this.config?.cameras.length ?? 0;
+		this.selected === void 0 || t < 2 || (this.selected = jr(this.selected, e, t), this.dialogTick = Date.now());
+	}
+	async prepareLive() {
+		if (this.config?.live === !1 || this.liveReady !== void 0) return;
+		if (customElements.get("ha-camera-stream")) {
+			this.liveReady = !0;
+			return;
+		}
+		let e = window.loadCardHelpers;
+		if (!e) {
+			this.liveReady = !1;
+			return;
+		}
+		try {
+			(await e()).createCardElement({
+				type: "picture-entity",
+				entity: this.config.cameras[0].entity,
+				camera_view: "live"
+			}), await Promise.race([customElements.whenDefined("ha-camera-stream"), new Promise((e) => window.setTimeout(e, 4e3))]);
+		} catch {}
+		this.liveReady = !!customElements.get("ha-camera-stream");
+	}
+	view(e, t, n) {
+		let r = k(this.hass, e.entity), i = A(r) || r?.state === "unknown", a = this.loaded.get(e.entity), o = (this.config?.refresh_interval ?? 10) * 1e3;
+		return {
+			index: t,
+			camera: e,
+			state: r,
+			label: e.name?.trim() || N(r, e.entity),
+			icon: e.icon || "mdi:cctv",
+			available: !!r && r.state !== "unavailable" && i,
+			motion: k(this.hass, e.motion_entity)?.state === "on",
+			url: r && r.state !== "unavailable" ? Or(r.attributes.entity_picture, n) : void 0,
+			loaded: a,
+			stale: a !== void 0 && Date.now() - a > Math.max(3e4, o * 3),
+			error: this.errors.has(e.entity)
+		};
+	}
+	markLoaded(e) {
+		if (this.loaded = new Map(this.loaded).set(e, Date.now()), this.errors.has(e)) {
+			let t = new Set(this.errors);
+			t.delete(e), this.errors = t;
+		}
+	}
+	markError(e) {
+		this.errors.has(e) || (this.errors = new Set(this.errors).add(e));
+	}
+	clock(e) {
+		let t = {
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit"
+		};
+		try {
+			return new Intl.DateTimeFormat("fr-FR", {
+				...t,
+				timeZone: this.hass?.config?.time_zone
+			}).format(e);
+		} catch {
+			return new Intl.DateTimeFormat("fr-FR", t).format(e);
+		}
+	}
+	renderImage(e) {
+		return !e.available || !e.url ? S`<span class="cam-empty"><ha-icon icon="mdi:cctv-off"></ha-icon>${e.state ? "Caméra indisponible" : "Caméra introuvable"}</span>` : S`<img src=${e.url} alt="" decoding="async" @load=${() => this.markLoaded(e.camera.entity)} @error=${() => this.markError(e.camera.entity)} />
+      ${e.error && e.loaded === void 0 ? S`<span class="cam-empty"><ha-icon icon="mdi:image-off-outline"></ha-icon>Image indisponible</span>` : w}`;
+	}
+	tag(e) {
+		return e.motion ? S`<span class="tag motion">Mouvement</span>` : e.available ? e.stale || e.error ? S`<span class="tag stale">${e.error ? "Erreur" : "Image figée"}</span>` : e.state?.state === "recording" ? S`<span class="tag motion">REC</span>` : S`<span class="tag ok">Actif</span>` : w;
+	}
+	renderTile(e, t = "tile", n = () => this.openCamera(e.index)) {
+		let r = [e.label, e.motion ? "mouvement détecté" : kr(e.state)].join(", ");
+		return S`<button type="button" class="cam ${t === "thumb" ? "thumb" : ""} ${e.motion ? "motion" : ""} ${t === "thumb" && e.index === this.featured ? "current" : ""}"
+      aria-label=${t === "thumb" ? `Afficher ${e.label} en grand` : `${r}. Ouvrir la caméra`} @click=${n}>
+      ${this.renderImage(e)}
+      <span class="cam-top"><span class="cam-name"><ha-icon .icon=${e.icon}></ha-icon><span>${e.label}</span></span>${this.tag(e)}</span>
+      <span class="cam-bottom"><span>${kr(e.state)}</span><span>${e.loaded === void 0 ? "" : this.clock(e.loaded)}</span></span>
+    </button>`;
+	}
+	async runAction(e, t) {
+		let n = this.config?.cameras[e]?.actions?.[t];
+		if (!n || !this.hass) return;
+		let r = vr(n, k(this.hass, n.entity));
+		if (!r) return;
+		if (r.kind === "more-info") {
+			U(this, r.entity);
+			return;
+		}
+		if (r.kind === "navigate") {
+			window.history.pushState(null, "", r.path), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
+			return;
+		}
+		let i = `${e}:${t}`, a = (e) => {
+			let t = new Map(this.actionStatus);
+			e ? t.set(i, e) : t.delete(i), this.actionStatus = t;
+		};
+		a("pending");
+		try {
+			await this.hass.callService(r.domain, r.service, r.data, r.target), a("done");
+		} catch (e) {
+			a("error"), console.warn("Auralis Caméras : échec de l’action", r, e);
+		}
+		window.setTimeout(() => a(void 0), 2500);
+	}
+	pressAction(e, t, n, r) {
+		if (!n.confirm) {
+			this.runAction(e, t);
+			return;
+		}
+		this.askConfirmation({
+			title: r,
+			message: typeof n.confirm == "string" && n.confirm.trim() ? n.confirm.trim() : `Lancer « ${r} » ?`,
+			confirmLabel: "Confirmer",
+			action: () => this.runAction(e, t)
+		});
+	}
+	renderDialogActions(e) {
+		return S`<div class="actions">
+      ${(e.camera.actions ?? []).map((t, n) => {
+			let r = this.actionStatus.get(`${e.index}:${n}`), i = k(this.hass, t.entity), a = t.name?.trim() || (t.entity ? N(i, t.entity) : "Action"), o = i ? [
+				"on",
+				"open",
+				"unlocked"
+			].includes(i.state) : !1, s = r === "done" ? "mdi:check" : r === "error" ? "mdi:alert-outline" : t.icon || (typeof i?.attributes.icon == "string" ? i.attributes.icon : "mdi:gesture-tap");
+			return S`<button class="action ${o ? "primary" : ""} ${r === "done" ? "done" : r === "error" ? "failed" : ""}" type="button"
+          ?disabled=${r === "pending" || !!t.entity && (!i || i.state === "unavailable")}
+          @click=${() => this.pressAction(e.index, n, t, a)}>
+          <ha-icon .icon=${s}></ha-icon>${r === "pending" ? "En cours…" : a}</button>`;
+		})}
+      ${e.camera.motion_entity ? S`<button class="action" type="button" @click=${() => U(this, e.camera.motion_entity)}><ha-icon icon="mdi:motion-sensor"></ha-icon>Mouvements</button>` : w}
+      <button class="action" type="button" @click=${() => U(this, e.camera.entity)}><ha-icon icon="mdi:information-outline"></ha-icon>Fiche</button>
+    </div>`;
+	}
+	renderCameraDialog(e) {
+		let t = this.config?.cameras.length ?? 1, n = this.config?.live !== !1 && this.liveReady === !0 && e.available && e.state, r = k(this.hass, e.camera.motion_entity), i = r?.last_changed ? Date.parse(r.last_changed) : NaN, a = n ? "Flux en direct" : this.config?.live === !1 || this.liveReady === !1 ? "Images rafraîchies en continu" : "Préparation du direct…";
+		return this.renderDialog(e.label, e.icon, S`<div class="dialog-body">
+      <div class="media">
+        ${n ? S`<ha-camera-stream .hass=${this.hass} .stateObj=${e.state} .controls=${!0} .muted=${!0} .allowExoPlayer=${!0}></ha-camera-stream>` : this.renderImage({
+			...e,
+			url: e.available ? Or(e.state?.attributes.entity_picture, this.dialogTick) : void 0
+		})}
+        <span class="media-tags">${this.tag(e)}</span>
+        ${t > 1 ? S`
+          <button class="nav prev" type="button" aria-label="Caméra précédente" @click=${() => this.step(-1)}><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+          <button class="nav next" type="button" aria-label="Caméra suivante" @click=${() => this.step(1)}><ha-icon icon="mdi:chevron-right"></ha-icon></button>` : w}
+      </div>
+      <div class="info">
+        <span><strong>${kr(e.state)}</strong> · ${a}</span>
+        ${!n && e.loaded !== void 0 ? S`<span>Image ${Ar(e.loaded, Date.now())}</span>` : w}
+        ${r ? S`<span class=${e.motion ? "motion" : ""}>${e.motion ? "Mouvement en cours" : Number.isFinite(i) ? `Dernier mouvement ${yr(i, Date.now())}` : "Aucun mouvement"}</span>` : w}
+        ${t > 1 ? S`<span>${e.index + 1} / ${t}</span>` : w}
+      </div>
+      ${this.renderDialogActions(e)}
+    </div>`, "cam-dialog");
+	}
+	render() {
+		let e = this.config;
+		if (!e) return w;
+		let t = e.cameras.map((e, t) => this.view(e, t, this.tick)), n = t.filter((e) => e.motion).length, r = t.filter((e) => !e.available).length, i = Dr(e.aspect_ratio), a = `--cam-ratio-css:1 / ${Math.round(i * 1e4) / 1e4}`, o = e.show_header ?? !0, s = [
+			`${t.length} caméra${t.length > 1 ? "s" : ""}`,
+			n ? `${n} mouvement${n > 1 ? "s" : ""}` : void 0,
+			r ? `${r} indisponible${r > 1 ? "s" : ""}` : void 0
+		].filter(Boolean).join(" · "), c = t[this.featured] ?? t[0], l = this.dialog === "camera" && this.selected !== void 0 ? t[this.selected] : void 0;
+		return S`<ha-card><div class="machine-shell cam-shell ${this.machineGridClass()}" style=${`${this.machineStyle("#79d6f2")};${a}`}>
+      <div class="machine-content cam-content">
+        ${o ? S`<header class="cam-header">
+          <span class="badge"><ha-icon .icon=${e.icon || "mdi:cctv"}></ha-icon></span>
+          <div class="title-wrap"><h2>${e.name || "Caméras"}</h2>
+            <div class="machine-status ${n ? "motion" : ""}"><span class="dot ${n ? "danger" : r ? "warning" : "healthy"}"></span>${s}</div></div>
+        </header>` : w}
+        ${e.layout === "featured" && t.length > 1 ? S`${this.renderTile(c)}
+              <div class="thumbs">${t.map((e) => this.renderTile(e, "thumb", () => {
+			this.featured = e.index;
+		}))}</div>` : S`<div class="cam-grid ${e.columns ? "fixed" : ""}" style=${e.columns ? `--cam-columns:${e.columns}` : ""}>
+              ${t.map((e) => this.renderTile(e))}</div>`}
+      </div>
+    </div></ha-card>
+    ${l ? S`<div style=${a}>${this.renderCameraDialog(l)}</div>` : w}`;
+	}
+	getCardSize() {
+		let e = this.config?.cameras.length ?? 1;
+		return this.config?.layout === "featured" ? 7 : 1 + Math.ceil(e / 2) * 3;
+	}
+	getGridOptions() {
+		return {
+			columns: 12,
+			min_columns: 6
+		};
+	}
+}, Nr = "0.19.0";
+customElements.get("auralis-room-card") || customElements.define("auralis-room-card", ot), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", st), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", xt), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Dt), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", Pt), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Zt), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", en), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", tn), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", ln), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", pn), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", vn), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", Rn), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", cr), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", Cr), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", Mr), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends ot {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends xt {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Dt {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends Pt {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Zt {}), window.customCards = window.customCards || [];
+var Pr = [
 	{
 		type: "auralis-navbar-card",
 		name: "Auralis · Navigation",
@@ -10002,10 +10444,20 @@ var Tr = [
 			type: "custom:auralis-actions-card",
 			actions: [{ entity: t }]
 		} } : null
+	},
+	{
+		type: "auralis-cameras-card",
+		name: "Auralis · Caméras",
+		description: "Mosaïque de caméras rafraîchie, détection de mouvement et fenêtre en direct avec commandes.",
+		preview: !0,
+		getEntitySuggestion: (e, t) => t.startsWith("camera.") ? { config: {
+			type: "custom:auralis-cameras-card",
+			cameras: [{ entity: t }]
+		} } : null
 	}
 ];
-for (let e of Tr) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
-console.info(`%c AURALIS CARDS %c v${wr} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
+for (let e of Pr) window.customCards.some((t) => t.type === e.type) || window.customCards.push(e);
+console.info(`%c AURALIS CARDS %c v${Nr} `, "color:#fff;background:#3d7ce8;font-weight:700;padding:3px 7px;border-radius:7px 0 0 7px;", "color:#17233d;background:#dfeaff;font-weight:700;padding:3px 7px;border-radius:0 7px 7px 0;");
 //#endregion
 
 //# sourceMappingURL=auralis-cards.js.map

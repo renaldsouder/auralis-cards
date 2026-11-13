@@ -13,8 +13,9 @@ import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
 import { AuralisClimateCard } from "./src/cards/auralis-climate-card";
 import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
 import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
+import { AuralisCamerasCard } from "./src/cards/auralis-cameras-card";
 
-const VERSION = "0.18.0";
+const VERSION = "0.19.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -30,6 +31,7 @@ if (!customElements.get("auralis-energy-card")) customElements.define("auralis-e
 if (!customElements.get("auralis-climate-card")) customElements.define("auralis-climate-card", AuralisClimateCard);
 if (!customElements.get("auralis-weather-card")) customElements.define("auralis-weather-card", AuralisWeatherCard);
 if (!customElements.get("auralis-actions-card")) customElements.define("auralis-actions-card", AuralisActionsCard);
+if (!customElements.get("auralis-cameras-card")) customElements.define("auralis-cameras-card", AuralisCamerasCard);
 
 // Alias de transition : les anciens dashboards continuent de fonctionner,
 // tandis que l'éditeur Home Assistant ne propose que les nouvelles cartes Auralis.
@@ -148,6 +150,15 @@ const cards = [
     preview: true,
     getEntitySuggestion: (_hass: unknown, entityId: string) => /^(script|button|input_button|scene)\./.test(entityId)
       ? { config: { type: "custom:auralis-actions-card", actions: [{ entity: entityId }] } }
+      : null,
+  },
+  {
+    type: "auralis-cameras-card",
+    name: "Auralis · Caméras",
+    description: "Mosaïque de caméras rafraîchie, détection de mouvement et fenêtre en direct avec commandes.",
+    preview: true,
+    getEntitySuggestion: (_hass: unknown, entityId: string) => entityId.startsWith("camera.")
+      ? { config: { type: "custom:auralis-cameras-card", cameras: [{ entity: entityId }] } }
       : null,
   },
 ];
