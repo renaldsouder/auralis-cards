@@ -4,14 +4,19 @@
 # Remplacer les entités d'exemple par celles exposées par votre frigo.
 type: custom:auralis-fridge-card
 name: Frigo connecté
-theme: carbon
+theme: auto
 background_image: /local/auralis-cards/images/frigo-connecte.jpg
 background_position: 62% center
 image_brightness: 72
 glass_opacity: 0.84
-connected_entity: binary_sensor.frigo_connecte
+# Connexion de l'appareil ; l'ancien nom connected_entity reste accepté.
+status_entity: binary_sensor.frigo_connecte
 fridge_temperature_entity: sensor.frigo_temperature
+# Sans entité de congélateur, la tuile Congélateur n'est pas affichée.
 freezer_temperature_entity: sensor.congelateur_temperature
+# Au-delà de ces températures, la valeur passe en rouge (8 °C et −12 °C par défaut).
+fridge_alert_above: 8
+freezer_alert_above: -12
 fridge_target_entity: number.frigo_consigne
 freezer_target_entity: number.congelateur_consigne
 door_entity: binary_sensor.frigo_porte
