@@ -66,4 +66,28 @@ describe("Auralis fridge card", () => {
     await actions.quickAction("switch.quick_cool");
     expect(callService).toHaveBeenCalledTimes(3);
   });
+
+  it("reads and adjusts a fridge exposed only as a climate entity", async () => {
+    const callService = vi.fn(async () => undefined);
+    const climate = state("climate.frigo", "cool", { current_temperature: 4.2, temperature: 4, target_temp_step: 1, min_temp: 1, max_temp: 7, preset_modes: ["eco", "boost"], preset_mode: "eco" });
+    expect(fridge.fridgeTemperature(climate)).toBe(4.2);
+    expect(fridge.fridgeTemperature(climate, "target")).toBe(4);
+    expect(fridge.fridgeTemperature(state("sensor.t", "3,5"))).toBe(3.5);
+    expect(fridge.fridgeTemperature(state("climate.x", "unavailable"))).toBeUndefined();
+    expect(fridge.normalizeFridgeConfig({ type: "custom:auralis-fridge-card", climate_entity: "climate.frigo", fridge_temperature_entity: "sensor.sonde" })).toMatchObject({
+      fridge_temperature_entity: "sensor.sonde", fridge_target_entity: "climate.frigo", mode_entity: "climate.frigo",
+    });
+
+    const card = new fridge.AuralisFridgeCard();
+    card.setConfig({ type: "custom:auralis-fridge-card", climate_entity: "climate.frigo" });
+    expect(card.config).toMatchObject({ fridge_temperature_entity: "climate.frigo", fridge_target_entity: "climate.frigo" });
+    card.hass = { states: { "climate.frigo": climate }, callService } as HomeAssistant;
+    const actions = card as unknown as { adjustTarget(id: string, direction: -1 | 1): Promise<void>; temperature(id?: string, role?: "current" | "target"): string; modeLabel(): string };
+    expect(actions.temperature("climate.frigo").replace(/\s/g, " ")).toBe("4,2 °C");
+    expect(actions.temperature("climate.frigo", "target").replace(/\s/g, " ")).toBe("4 °C");
+    expect(actions.modeLabel()).toBe("eco");
+    await actions.adjustTarget("climate.frigo", -1);
+    expect(callService).toHaveBeenCalledWith("climate", "set_temperature", { temperature: 3 }, { entity_id: "climate.frigo" });
+    expect(() => card.setConfig({ type: "custom:auralis-fridge-card", climate_entity: "sensor.frigo" })).toThrow();
+  });
 });

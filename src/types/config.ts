@@ -309,6 +309,8 @@ export interface UnraidCardConfig extends BaseCardConfig {
   array_stop_entity?: string;
   shutdown_entity?: string;
   restart_entity?: string;
+  /** Script, bouton Wake-on-LAN ou interrupteur qui démarre le serveur éteint. */
+  wake_entity?: string;
 }
 
 export interface ProxmoxNode {
@@ -374,6 +376,8 @@ export interface ProxmoxCardConfig extends BaseCardConfig {
   backup_action_entity?: string;
   restart_entity?: string;
   shutdown_entity?: string;
+  /** Script, bouton Wake-on-LAN ou interrupteur qui démarre le nœud éteint. */
+  wake_entity?: string;
 }
 
 export interface ProxmoxStorage {

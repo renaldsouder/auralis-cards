@@ -6,6 +6,10 @@ theme: carbon
 energy_entity: sensor.compteur_energie
 # Facultatif. L'unité affichée est celle du capteur, par exemple VA ou W.
 power_entity: sensor.compteur_puissance_apparente
+# Facultatif. Unité des consommations : par défaut kWh pour l'électricité,
+# ou l'unité du capteur pour un compteur de gaz ou d'eau (m³, L…).
+# unit: kWh
+# decimals: 1
 # Dans une vue Sections, occupe toute la largeur de la section.
 grid_options:
   columns: full

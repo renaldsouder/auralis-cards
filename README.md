@@ -86,9 +86,9 @@ Chaque GitHub Release contenant `auralis-cards.js` devient une version sélectio
 
 Le fichier `examples/dashboard.yaml` est une configuration complète à coller dans l'éditeur de configuration brute du dashboard. Les blocs commençant directement par `type: custom:...` sont, eux, destinés à l'éditeur YAML d'une carte individuelle.
 
-Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les autres cartes. Leurs configurations sont dans [Lumières](examples/lights-card.yaml) ([version minimale](examples/lights-card-minimal.yaml)), [Thermostats](examples/thermostat-card.yaml) et [Frigo connecté](examples/fridge-card.yaml). Pour le fond du frigo, copiez [frigo-connecte.jpg](images/frigo-connecte.jpg) dans `config/www/auralis-cards/images/`, puis remplacez les identifiants d'entités par ceux de votre appareil. Voir les guides [Lumières](docs/LIGHTS_CARD.md), [Thermostats](docs/THERMOSTAT_CARD.md) et [Frigo](docs/FRIDGE_CARD.md).
+Lumières, Thermostats et Frigo utilisent le même `auralis-cards.js` que les autres cartes. La carte Lumières accepte aussi les éclairages commandés par relais (`switch.*`), et la carte Frigo un réfrigérateur exposé comme thermostat (`climate_entity`). Leurs configurations sont dans [Lumières](examples/lights-card.yaml) ([version minimale](examples/lights-card-minimal.yaml)), [Thermostats](examples/thermostat-card.yaml) et [Frigo connecté](examples/fridge-card.yaml). Pour le fond du frigo, copiez [frigo-connecte.jpg](images/frigo-connecte.jpg) dans `config/www/auralis-cards/images/`, puis remplacez les identifiants d'entités par ceux de votre appareil. Voir les guides [Lumières](docs/LIGHTS_CARD.md), [Thermostats](docs/THERMOSTAT_CARD.md) et [Frigo](docs/FRIDGE_CARD.md).
 
-La [carte Énergie](examples/energy-card.yaml) compare les sept derniers jours aux mêmes jours de la semaine précédente. Renseignez `energy_entity` avec un capteur d’énergie cumulée qui alimente les statistiques Recorder, et `power_entity` pour afficher la puissance instantanée.
+La [carte Énergie](examples/energy-card.yaml) compare les sept derniers jours aux mêmes jours de la semaine précédente. Renseignez `energy_entity` avec un capteur d’énergie cumulée qui alimente les statistiques Recorder, et `power_entity` pour afficher la puissance instantanée. Elle suit aussi un compteur de gaz ou d’eau : l’unité du capteur (m³, L…) est reprise automatiquement, et `unit` permet d’en choisir une autre.
 
 Dans une vue Sections, la carte Énergie utilise 12 colonnes par défaut. Modifiez sa largeur dans l’onglet **Disposition** ou définissez `grid_options.columns: full` pour occuper toute la section.
 
@@ -448,6 +448,8 @@ La carte principale affiche deux cadrans circulaires CPU/RAM côte à côte, l�
 
 Chaque entrée de `disks` accepte `group` pour séparer l’array des caches et pools, `show_on_card` pour l’inclure ou non dans le panneau inférieur, et `healthy_state` pour les intégrations dont un capteur binaire à `off` signifie « sain ». Le champ `name` devient le libellé affiché. `docker_group_labels` et `vm_group_labels` remplacent les libellés de groupe sans modifier les valeurs `group` des éléments. Les sections et commandes sans entité configurée sont masquées.
 
+`wake_entity` démarre le serveur éteint : un script, un bouton Wake-on-LAN ou un interrupteur. Le bouton **Réveiller le serveur** n’apparaît sous l’état que lorsque le serveur est hors ligne, puis indique « Démarrage demandé… » pendant trois minutes.
+
 Les pop-up Docker et VM sont indépendantes. Chaque élément distingue les états actif, arrêté, suspendu et indisponible, et son icône devient verte lorsqu’il fonctionne. Une entité `switch` sert automatiquement au démarrage et à l’arrêt lorsque `start_entity` ou `stop_entity` ne sont pas fournis. Les commandes dédiées restent recommandées pour les intégrations UNRAID qui les exposent. L’arrêt et le redémarrage demandent confirmation.
 
 ## Exemple minimal — Proxmox
@@ -503,6 +505,8 @@ Le panneau inférieur contient uniquement les entrées de `storages`, sans limit
 Le rail comporte **Détails du nœud**, **VM** et **LXC**. Chaque pop-up VM/LXC présente exclusivement son type de charge, avec recherche, groupes, filtres, sélection multiple et commandes disponibles. Les icônes sont vertes pour les charges actives, neutres pour les charges arrêtées, orange pour les suspendues et atténuées pour les indisponibles. Les groupes se nomment via `group` et chaque charge via `name`.
 
 La pop-up Détails regroupe l’état, CPU, RAM, version, quorum, température, uptime, réseau, Ceph, sauvegarde et alertes si leurs capteurs sont disponibles. Elle ne répète aucune liste de disques, VM ou LXC. L’ancien bouton circulaire était la commande de sauvegarde : elle se trouve désormais ici, avec son libellé explicite. Les commandes sensibles conservent leur confirmation.
+
+`wake_entity` démarre le nœud éteint (script, bouton Wake-on-LAN ou interrupteur). Le bouton **Démarrer le nœud** n’apparaît que lorsque le nœud est hors ligne.
 
 Compatibilité : `cluster_usage_entity` reste un alias CPU ; `storage_entity` et `storage_label_entity` fournissent une ligne de stockage lorsque `storages` est absent. Consultez [l’exemple YAML Proxmox complet](examples/proxmox-card.yaml) et remplacez ses entités d’exemple par celles de votre nœud.
 

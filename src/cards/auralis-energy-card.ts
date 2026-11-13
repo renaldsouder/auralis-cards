@@ -2,12 +2,50 @@ import { css, html, nothing } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import type { BaseCardConfig } from "../types/config";
 import { fireMoreInfo } from "../utils/actions";
+import type { HassEntity } from "../types/home-assistant";
 import { entity, formatNumber, numericState } from "../utils/entities";
 
-interface EnergyCardConfig extends BaseCardConfig {
+export interface EnergyCardConfig extends BaseCardConfig {
   type: "custom:auralis-energy-card";
   energy_entity: string;
   power_entity?: string;
+  /** Unité affichée (kWh, Wh, m³, L…). Par défaut, celle du capteur ; une énergie est convertie en kWh. */
+  unit?: string;
+  /** Nombre de décimales des consommations. */
+  decimals?: number;
+}
+
+export interface EnergyProfile {
+  unit: string;
+  /** Conversion demandée au Recorder, quand l'unité appartient à une classe qu'il sait convertir. */
+  units?: Record<string, string>;
+  decimals: number;
+  eyebrow: string;
+  title: string;
+  icon: string;
+  rateLabel: string;
+  rateIcon: string;
+}
+
+const ENERGY_UNITS = ["Wh", "kWh", "MWh", "GWh", "TWh", "MJ", "GJ", "cal", "kcal", "Mcal", "Gcal"];
+const VOLUME_UNITS = ["L", "mL", "m³", "ft³", "CCF", "gal", "fl. oz."];
+
+/** Unité, conversion et libellés selon le compteur suivi : électricité, gaz ou eau. */
+export function energyProfile(state: HassEntity | undefined, config: Pick<EnergyCardConfig, "unit" | "decimals">): EnergyProfile {
+  const native = typeof state?.attributes.unit_of_measurement === "string" ? state.attributes.unit_of_measurement.trim() : "";
+  const nativeIsEnergy = !native || ENERGY_UNITS.includes(native);
+  const unit = config.unit?.trim() || (nativeIsEnergy ? "kWh" : native);
+  const units: Record<string, string> | undefined = ENERGY_UNITS.includes(unit) && nativeIsEnergy ? { energy: unit }
+    : VOLUME_UNITS.includes(unit) && VOLUME_UNITS.includes(native) ? { volume: unit } : undefined;
+  const configured = Number(config.decimals);
+  const decimals = config.decimals !== undefined && Number.isFinite(configured) ? Math.min(3, Math.max(0, Math.round(configured)))
+    : ["Wh", "L", "mL"].includes(unit) ? 0 : unit === "m³" ? 2 : 1;
+  const deviceClass = state?.attributes.device_class;
+  const water = deviceClass === "water" || (!deviceClass && ["L", "mL", "gal"].includes(unit));
+  const gas = deviceClass === "gas";
+  if (water) return { unit, units, decimals, eyebrow: "Eau", title: "Consommation d’eau", icon: "mdi:water", rateLabel: "Débit instantané", rateIcon: "mdi:water-pump" };
+  if (gas) return { unit, units, decimals, eyebrow: "Gaz", title: "Consommation de gaz", icon: "mdi:fire", rateLabel: "Débit instantané", rateIcon: "mdi:gauge" };
+  return { unit, units, decimals, eyebrow: "Énergie", title: "Consommation électrique", icon: "mdi:lightning-bolt", rateLabel: "Puissance instantanée", rateIcon: "mdi:flash-outline" };
 }
 
 interface DailyStatistic {
@@ -147,14 +185,18 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       name: "Titre",
       icon: "Icône",
       theme: "Thème",
-      energy_entity: "Capteur d’énergie cumulée",
-      power_entity: "Capteur de puissance instantanée",
+      energy_entity: "Capteur de consommation cumulée (électricité, gaz ou eau)",
+      power_entity: "Capteur de puissance ou de débit instantané",
+      unit: "Unité affichée (vide = celle du capteur)",
+      decimals: "Décimales",
     };
     return {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "energy_entity", required: true, selector: { entity: { filter: { domain: "sensor" } } } },
         { name: "power_entity", selector: { entity: { filter: { domain: "sensor" } } } },
+        { name: "unit", selector: { select: { options: ["kWh", "Wh", "MWh", "m³", "L"], custom_value: true } } },
+        { name: "decimals", selector: { number: { min: 0, max: 3, step: 1, mode: "box" } } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
         { name: "icon", selector: { icon: {} } },
       ],
@@ -201,7 +243,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     const id = this.config?.energy_entity;
     if (!this.isConnected || !hass?.callWS || !id) return;
     const date = this.dayFormatter;
-    const key = `${id}/${date.resolvedOptions().timeZone}`;
+    const profile = this.profile();
+    const key = `${id}/${date.resolvedOptions().timeZone}/${profile.unit}`;
     const time = Date.now();
     if (this.request?.key === key && time - this.request.time < REFRESH_INTERVAL) return;
     if (this.request?.key !== key) {
@@ -219,7 +262,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
         statistic_ids: [id],
         period: "day",
         types: ["change"],
-        units: { energy: "kWh" },
+        ...(profile.units ? { units: profile.units } : {}),
       });
       if (this.request !== request) return;
       this.history = new Map((result[id] ?? []).flatMap(({ start, change }) =>
@@ -232,23 +275,29 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     }
   }
 
+  private profile(): EnergyProfile {
+    return energyProfile(entity(this.hass, this.config?.energy_entity), this.config ?? {});
+  }
+
   private renderTotal(label: string, series: string, value?: number) {
+    const { unit, decimals } = this.profile();
     return html`<div class="total ${series}">
-      <strong>${value === undefined ? "—" : html`${formatNumber(value, 1)}<span class="unit">kWh</span>`}</strong>
+      <strong>${value === undefined ? "—" : html`${formatNumber(value, decimals)}<span class="unit">${unit}</span>`}</strong>
       <small>${label}</small>
     </div>`;
   }
 
   private renderChart(days: DayComparison[]) {
     if (!days.some(({ current, previous }) => current !== undefined || previous !== undefined)) {
-      const message = this.historyError ? "Historique indisponible" : this.history ? "Aucune statistique d’énergie" : "Chargement de l’historique…";
+      const message = this.historyError ? "Historique indisponible" : this.history ? "Aucune statistique de consommation" : "Chargement de l’historique…";
       return html`<p class="empty-chart" role="status">${message}</p>`;
     }
     const peak = Math.max(1, ...days.map(({ current, previous }) => Math.max(current ?? 0, previous ?? 0)));
     const step = 10 ** Math.floor(Math.log10(peak / 2));
     const ceiling = Math.ceil(peak / (2 * step)) * 2 * step;
     const active = days.find(({ date }) => date === this.activeDay);
-    const value = (number?: number) => number === undefined ? "—" : `${formatNumber(number, 1)} kWh`;
+    const { unit, decimals } = this.profile();
+    const value = (number?: number) => number === undefined ? "—" : `${formatNumber(number, decimals)} ${unit}`;
     const bar = (series: string, amount?: number) => html`<span class="bar ${series}"
       aria-hidden="true" ?hidden=${amount === undefined} style=${`height:${((amount ?? 0) / ceiling) * 100}%`}></span>`;
 
@@ -256,9 +305,9 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       @keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") this.activeDay = undefined; }}>
       <div class="plot">
         ${[0, 50, 100].map((tick) => html`<div class="gridline" aria-hidden="true" style=${`bottom:${tick}%`}>
-          <span>${formatNumber(ceiling * tick / 100, 1)}</span>
+          <span>${formatNumber(ceiling * tick / 100, Math.min(decimals, 1))}</span>
         </div>`)}
-        <div class="day-grid controls" role="group" aria-label="Consommation journalière en kilowattheures">
+        <div class="day-grid controls" role="group" aria-label=${`Consommation journalière en ${unit}`}>
           ${days.map((day) => html`<button type="button" class="chart-day"
             aria-label=${`${fullDate.format(day.date)} : ${value(day.current)}. ${fullDate.format(day.date - 7 * DAY)} : ${value(day.previous)}`}
             aria-expanded=${day.date === this.activeDay}
@@ -293,6 +342,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
   protected render() {
     if (!this.config) return nothing;
     const today = Date.parse(this.dayFormatter.format(Date.now()));
+    const profile = this.profile();
     const days = Array.from({ length: 7 }, (_, index): DayComparison => {
       const date = today - (6 - index) * DAY;
       return { date, current: this.history?.get(date), previous: this.history?.get(date - 7 * DAY) };
@@ -301,8 +351,8 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       <ha-card>
         <div class="energy-shell">
           <header class="header energy-header">
-            <span class="energy-icon"><ha-icon .icon=${this.config.icon ?? "mdi:lightning-bolt"}></ha-icon></span>
-            <div class="title-wrap"><p class="eyebrow">Énergie</p><h2>${this.config.name || "Consommation électrique"}</h2></div>
+            <span class="energy-icon"><ha-icon .icon=${this.config.icon ?? profile.icon}></ha-icon></span>
+            <div class="title-wrap"><p class="eyebrow">${profile.eyebrow}</p><h2>${this.config.name || profile.title}</h2></div>
           </header>
           <div class="totals">
             ${this.renderTotal("Aujourd’hui", "current", days[6].current)}
@@ -310,13 +360,13 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
           </div>
           <div class="chart-heading">
             <span class="eyebrow">7 jours comparés</span>
-            <span class="muted">${this.historyError && this.history ? "Actualisation indisponible" : "kWh"}</span>
+            <span class="muted">${this.historyError && this.history ? "Actualisation indisponible" : profile.unit}</span>
           </div>
           ${this.renderChart(days)}
         </div>
       </ha-card>
       <ha-card class="readings">
-        ${this.config.power_entity ? this.renderReading(this.config.power_entity, "Puissance instantanée", "mdi:flash-outline") : nothing}
+        ${this.config.power_entity ? this.renderReading(this.config.power_entity, profile.rateLabel, profile.rateIcon) : nothing}
         ${this.renderReading(this.config.energy_entity, "Index compteur", "mdi:counter")}
       </ha-card>`;
   }

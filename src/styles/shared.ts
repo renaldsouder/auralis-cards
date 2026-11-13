@@ -788,6 +788,33 @@ export const sharedStyles = css`
     --mdc-icon-size: 17px;
   }
 
+  .machine-wake {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 7px;
+    margin-top: 11px;
+    padding: 0 14px 0 11px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--machine-accent);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--machine-accent) 38%, transparent);
+    color: #071018;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 750;
+  }
+
+  .machine-wake ha-icon {
+    --mdc-icon-size: 17px;
+  }
+
+  .machine-wake:disabled {
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.62;
+  }
+
   .machine-bars {
     display: grid;
     gap: 11px;

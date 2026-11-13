@@ -16,7 +16,7 @@ import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
 import { AuralisCamerasCard } from "./src/cards/auralis-cameras-card";
 import { AuralisMediaCard } from "./src/cards/auralis-media-card";
 
-const VERSION = "0.20.0";
+const VERSION = "0.21.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);

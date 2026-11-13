@@ -18,4 +18,17 @@ Copiez `auralis-cards.js` dans `config/www/auralis-cards/`, puis déclarez `/loc
 
 Tous les champs sont facultatifs ; les valeurs non configurées ou indisponibles affichent `—`. Les identifiants du YAML sont des exemples à remplacer. Les températures et mesures viennent des entités `sensor.*`. Les portes, la connexion et l'alerte sont prévues pour des `binary_sensor.*` (`on` signifie ouvert ou actif). Les consignes modifiables attendent des entités `number.*`, dont la plage et le pas sont lus avant chaque commande. Le mode accepte `select.*` ou `input_select.*`. Les fonctions rapides acceptent `switch.*` ou `button.*` ; le verrouillage accepte aussi `lock.*`. Une commande n'est envoyée que si l'entité correspondante est disponible.
 
+### Frigo exposé comme thermostat
+
+Certaines intégrations n'exposent le réfrigérateur que sous forme de thermostat `climate.*`. Indiquez-le dans `climate_entity` (et `freezer_climate_entity` pour le congélateur) :
+
+```yaml
+type: custom:auralis-fridge-card
+climate_entity: climate.refrigerateur
+```
+
+La carte lit alors la température mesurée (`current_temperature`) et la consigne (`temperature`) du thermostat. Les boutons − et + de la fenêtre règlent la consigne au pas, au minimum et au maximum du thermostat. S'il propose des préréglages (`preset_modes`), ils apparaissent dans le choix du mode.
+
+Les champs `fridge_temperature_entity`, `fridge_target_entity` et `mode_entity` restent prioritaires : vous pouvez par exemple garder une sonde de température plus précise et la consigne du thermostat.
+
 La carte ne crée aucune entité et ne suppose aucune intégration ou marque de frigo particulière. Vous pouvez omettre les fonctions absentes de votre modèle. `extra_entities` ajoute des mesures ou diagnostics dans la fenêtre de détails.

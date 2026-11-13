@@ -34,6 +34,9 @@ const DEFAULT_COLORS: ColorPreset[] = [
 ];
 
 const validHex = (value: string): boolean => /^#[0-9a-f]{6}$/i.test(value);
+/** Lampes et éclairages commandés par relais (interrupteurs marche/arrêt). */
+const LIGHT_ID = /^(light|switch)\.[a-z0-9_]+$/;
+const isLight = (id: string): boolean => id.startsWith("light.");
 
 export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
   static styles = [AuralisBaseCard.styles, css`
@@ -93,8 +96,8 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
 
   public setConfig(config: LightsCardConfig): void {
     const groups = config.groups ?? (config.lights?.length ? [{ name: config.name || "Lumières", lights: config.lights }] : []);
-    if (!groups.length || groups.some((group) => !group.name || !Array.isArray(group.lights) || !group.lights.length || group.lights.some((id) => !id.startsWith("light.")))) {
-      throw new Error("Configurez au moins un groupe avec des entités light.*.");
+    if (!groups.length || groups.some((group) => !group.name || !Array.isArray(group.lights) || !group.lights.length || group.lights.some((id) => typeof id !== "string" || !LIGHT_ID.test(id)))) {
+      throw new Error("Configurez au moins un groupe avec des entités light.* ou switch.*.");
     }
     if (config.preset_colors?.some((preset) => !validHex(preset.color))) throw new Error("Les couleurs prédéfinies doivent être au format #RRGGBB.");
     this.config = { ...config, theme: config.theme || "carbon", groups };
@@ -108,7 +111,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     return { schema: [
       { name: "name", selector: { text: {} } },
       { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
-      { name: "lights", selector: { entity: { multiple: true, filter: { domain: "light" } } } },
+      { name: "lights", selector: { entity: { multiple: true, filter: { domain: ["light", "switch"] } } } },
       { name: "groups", selector: { object: {} } },
       { name: "scenes", selector: { object: {} } },
       { name: "preset_colors", selector: { object: {} } },
@@ -118,8 +121,11 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
 
   private groups(): LightsGroup[] { return this.config?.groups || []; }
   private available(group: LightsGroup): string[] { return group.lights.filter((id) => isAvailable(entity(this.hass, id))); }
-  private colorIds(group: LightsGroup): string[] { return this.available(group).filter((id) => lightSupportsColor(entity(this.hass, id))); }
+  private colorIds(group: LightsGroup): string[] { return this.available(group).filter((id) => isLight(id) && lightSupportsColor(entity(this.hass, id))); }
+  /** Un groupe d'interrupteurs n'a ni intensité ni couleur à proposer. */
+  private onOffOnly(group: LightsGroup): boolean { return !group.lights.some(isLight); }
   private supportsBrightness(id: string): boolean {
+    if (!isLight(id)) return false;
     const state = entity(this.hass, id);
     const modes = state?.attributes.supported_color_modes;
     return typeof state?.attributes.brightness === "number"
@@ -130,7 +136,8 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
   private scenes(group: LightsGroup): RoomSceneConfig[] { return group.scenes ?? this.config?.scenes ?? []; }
   private label(id: string): string { return this.config?.entity_labels?.[id] || friendlyName(entity(this.hass, id), id); }
   private average(group: LightsGroup): number {
-    const values = group.lights.map((id) => entity(this.hass, id)).filter(isActive).map(lightBrightness);
+    // Intensité moyenne des lampes allumées : un interrupteur n'a pas d'intensité.
+    const values = group.lights.filter(isLight).map((id) => entity(this.hass, id)).filter(isActive).map(lightBrightness);
     return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
   }
   private color(group: LightsGroup): string {
@@ -145,7 +152,9 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
 
   private async power(ids: string[], on: boolean): Promise<void> {
     if (!this.hass || !ids.length) return;
-    await this.hass.callService("light", on ? "turn_on" : "turn_off", {}, { entity_id: ids });
+    // Lampes et interrupteurs mélangés : un seul appel générique.
+    const domain = ids.every(isLight) ? "light" : ids.every((id) => id.startsWith("switch.")) ? "switch" : "homeassistant";
+    await this.hass.callService(domain, on ? "turn_on" : "turn_off", {}, { entity_id: ids });
   }
   private async brightness(ids: string[], percentage: number): Promise<void> {
     if (!this.hass || !ids.length) return;
@@ -188,16 +197,16 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
           ${scenes.length ? html`<button class="control" type="button" title=${`Ambiances de ${group.name}`} aria-label=${`Ambiances de ${group.name}`}
             aria-haspopup="dialog" @click=${() => this.openDialog(`scenes:${index}`)}><ha-icon icon="mdi:creation-outline"></ha-icon></button>` : nothing}
           <span class="spacer"></span>
-          <input class="color-input" type="color" .value=${this.color(group)} title=${`Couleur de ${group.name}`}
+          ${this.onOffOnly(group) ? nothing : html`<input class="color-input" type="color" .value=${this.color(group)} title=${`Couleur de ${group.name}`}
             aria-label=${`Couleur de ${group.name}`} ?disabled=${!colorIds.length}
-            @change=${(event: Event) => this.colorize(colorIds, (event.target as HTMLInputElement).value)} />
+            @change=${(event: Event) => this.colorize(colorIds, (event.target as HTMLInputElement).value)} />`}
         </div>
-        <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
+        ${this.onOffOnly(group) ? nothing : html`<label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
           <input type="range" min="1" max="100" .value=${String(Math.max(average, 1))}
             aria-label=${`Intensité de ${group.name}`} ?disabled=${!dimmableIds.length}
             @change=${(event: Event) => this.brightness(dimmableIds, Number((event.target as HTMLInputElement).value))} />
           <output>${average}%</output>
-        </label>
+        </label>`}
         ${this.renderSwatches(colorIds, group.name)}
         ${group.show_lights ? html`<div class="inline-lights">${group.lights.map((id) => {
           const state = entity(this.hass, id);
@@ -214,7 +223,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     const state = entity(this.hass, id);
     const available = isAvailable(state);
     const on = isActive(state);
-    const supportsColor = lightSupportsColor(state);
+    const supportsColor = isLight(id) && lightSupportsColor(state);
     const brightness = lightBrightness(state);
     const label = this.label(id);
     return html`<div class="light-row">
@@ -226,14 +235,14 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
         <button class="control ${on ? "on" : ""}" type="button" title=${`${on ? "Éteindre" : "Allumer"} ${label}`} aria-label=${`${on ? "Éteindre" : "Allumer"} ${label}`}
           ?disabled=${!available} @click=${() => this.power([id], !on)}><ha-icon .icon=${on ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
       </div>
-      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
+      ${isLight(id) ? html`<label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon>
         <input type="range" min="1" max="100" .value=${String(Math.max(brightness, 1))} aria-label=${`Intensité de ${label}`}
           ?disabled=${!available || !this.supportsBrightness(id)} @change=${(event: Event) => this.brightness([id], Number((event.target as HTMLInputElement).value))} />
         <output>${brightness}%</output>
         ${supportsColor ? html`<input class="color-input" type="color" .value=${rgbToHex(lightRgbColor(state))}
           title=${`Couleur de ${label}`} aria-label=${`Couleur de ${label}`} ?disabled=${!available}
           @change=${(event: Event) => this.colorize([id], (event.target as HTMLInputElement).value)} />` : nothing}
-      </label>
+      </label>` : nothing}
       ${supportsColor ? this.renderSwatches(available ? [id] : [], label) : nothing}
     </div>`;
   }
@@ -254,17 +263,17 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     const active = ids.filter((id) => isActive(entity(this.hass, id))).length;
     return this.renderDialog(group.name, group.icon || "mdi:lightbulb-group-outline", html`<div class="dialog-body">
       <div class="dialog-overview"><div><span class="eyebrow">Éclairage</span><strong>${active} / ${group.lights.length} allumées</strong></div>
-        <div class="dialog-stat"><strong>${this.average(group)}%</strong><small>intensité</small></div></div>
+        ${this.onOffOnly(group) ? nothing : html`<div class="dialog-stat"><strong>${this.average(group)}%</strong><small>intensité</small></div>`}</div>
       <div class="dialog-section-title">Groupe</div>
       <div class="group-actions">
         <button class="control on" type="button" title="Tout allumer" aria-label="Tout allumer" ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
         <button class="control" type="button" title="Tout éteindre" aria-label="Tout éteindre" ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
-        <input class="color-input" type="color" .value=${this.color(group)} title="Couleur du groupe" aria-label="Couleur du groupe"
-          ?disabled=${!colorIds.length} @change=${(event: Event) => this.colorize(colorIds, (event.target as HTMLInputElement).value)} />
+        ${this.onOffOnly(group) ? nothing : html`<input class="color-input" type="color" .value=${this.color(group)} title="Couleur du groupe" aria-label="Couleur du groupe"
+          ?disabled=${!colorIds.length} @change=${(event: Event) => this.colorize(colorIds, (event.target as HTMLInputElement).value)} />`}
       </div>
-      <label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon><input type="range" min="1" max="100"
+      ${this.onOffOnly(group) ? nothing : html`<label class="dimmer"><ha-icon icon="mdi:brightness-6"></ha-icon><input type="range" min="1" max="100"
         .value=${String(Math.max(this.average(group), 1))} aria-label="Intensité du groupe" ?disabled=${!dimmableIds.length}
-        @change=${(event: Event) => this.brightness(dimmableIds, Number((event.target as HTMLInputElement).value))} /><output>${this.average(group)}%</output></label>
+        @change=${(event: Event) => this.brightness(dimmableIds, Number((event.target as HTMLInputElement).value))} /><output>${this.average(group)}%</output></label>`}
       ${this.renderSwatches(colorIds, group.name)}
       ${this.scenes(group).length ? html`<div class="section-caption">Ambiances</div>${this.renderScenes(group)}` : nothing}
       <div class="section-caption">Lumières</div>
