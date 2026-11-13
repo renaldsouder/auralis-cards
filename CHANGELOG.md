@@ -6,6 +6,7 @@
 - Carte Frigo : accepte un réfrigérateur ou un congélateur exposé comme thermostat (`climate_entity`, `freezer_climate_entity`), avec température, consigne réglable et préréglages. Sans congélateur configuré, la tuile Réfrigérateur occupe toute la largeur.
 - Carte Énergie : suit aussi un compteur de gaz ou d’eau dans son unité (m³, L…), avec titre, icône et libellés adaptés ; `unit` et `decimals` permettent de les choisir.
 - Cartes UNRAID et Proxmox : `wake_entity` ajoute un bouton de démarrage, visible seulement quand la machine est hors ligne.
+- Barre de navigation : la pastille d’un onglet (`badge_entity`) n’affiche plus que le nombre, sans unité (« 3 » et non « 3 notifications »). Elle disparaît à zéro et affiche « 99+ » au-delà de 99.
 
 ## 0.20.0
 

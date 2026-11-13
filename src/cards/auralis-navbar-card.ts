@@ -127,6 +127,24 @@ function pathnameOf(value: string): string {
   }
 }
 
+/**
+ * Texte de la pastille d'un onglet : uniquement un compteur, jamais l'état
+ * formaté (« 3 notifications » déborderait). Rien à zéro ni pour un état
+ * inactif ; « 99+ » au-delà de 99 ; « ! » pour un état binaire actif.
+ */
+export function navbarBadge(state: string | undefined): string | undefined {
+  const value = state?.trim().toLowerCase() ?? "";
+  if (UNAVAILABLE_STATES.has(value)) return undefined;
+  const count = Number(value.replace(",", "."));
+  if (Number.isFinite(count)) {
+    const rounded = Math.round(count);
+    if (rounded <= 0) return undefined;
+    return rounded > 99 ? "99+" : String(rounded);
+  }
+  if (["on", "true", "problem", "open", "detected"].includes(value)) return "!";
+  return undefined;
+}
+
 export function navbarTarget(item: NavbarItemConfig): string | undefined {
   const candidate = (item.path || item.navigation_path || "").trim();
   if (!candidate || candidate.startsWith("//") || /^[a-z][a-z\d+.-]*:/i.test(candidate)) return undefined;
@@ -330,7 +348,9 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         top: -7px;
         right: -10px;
         min-width: 16px;
+        max-width: 30px;
         height: 16px;
+        overflow: hidden;
         box-sizing: border-box;
         padding: 0 4px;
         border: 2px solid var(--auralis-card);
@@ -579,9 +599,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   private badge(item: NavbarItemConfig): string | undefined {
     if (!item.badge_entity) return undefined;
-    const state = this.hass?.states[item.badge_entity];
-    if (!state || UNAVAILABLE_STATES.has(state.state.toLowerCase())) return undefined;
-    return this.hass?.formatEntityState?.(state) || state.state;
+    return navbarBadge(this.hass?.states[item.badge_entity]?.state);
   }
 
   private navigate(event: MouseEvent, item: NavbarItemConfig): void {
