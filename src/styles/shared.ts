@@ -142,23 +142,24 @@ export const sharedStyles = css`
   }
 
   .dot {
+    --dot-color: var(--auralis-muted);
     width: 9px;
     height: 9px;
     flex: 0 0 auto;
     border-radius: 999px;
-    background: var(--auralis-muted);
+    background: var(--dot-color);
   }
 
   .dot.healthy {
-    background: var(--auralis-healthy);
+    --dot-color: var(--auralis-healthy);
   }
 
   .dot.warning {
-    background: var(--auralis-active);
+    --dot-color: var(--auralis-active);
   }
 
   .dot.danger {
-    background: var(--auralis-danger);
+    --dot-color: var(--auralis-danger);
   }
 
   button,
@@ -584,8 +585,9 @@ export const sharedStyles = css`
     font-size: 11px;
   }
 
+  /* Le halo prend la couleur de la pastille : vert en ligne, rouge hors ligne, gris indisponible. */
   .machine-status .dot {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--auralis-healthy) 14%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--dot-color) 14%, transparent);
   }
 
   .machine-rail {
