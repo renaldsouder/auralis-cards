@@ -58,6 +58,7 @@ declare global {
     "auralis-thermostat-card": HTMLElement;
     "auralis-fridge-card": HTMLElement;
     "auralis-energy-card": HTMLElement;
+    "auralis-climate-card": HTMLElement;
     "orbit-room-card": HTMLElement;
     "orbit-pc-card": HTMLElement;
     "orbit-unraid-card": HTMLElement;

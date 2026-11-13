@@ -160,6 +160,18 @@ const states = [
   e("switch.proxmox_lxc_mqtt", "on"),
   e("switch.proxmox_lxc_grafana", "on"),
   e("sensor.proxmox_vm_ha_ip", "192.168.1.50"),
+  e("sensor.chambre_temperature", "18.4", { unit_of_measurement: "°C" }),
+  e("sensor.chambre_humidity", "52", { unit_of_measurement: "%" }),
+  e("sensor.chambre_battery", "88", { unit_of_measurement: "%" }),
+  e("sensor.salle_de_bain_temperature", "23.6", { unit_of_measurement: "°C" }),
+  e("sensor.salle_de_bain_humidity", "71", { unit_of_measurement: "%" }),
+  e("sensor.salle_de_bain_battery", "12", { unit_of_measurement: "%" }),
+  e("sensor.bureau_temperature", "26.3", { unit_of_measurement: "°C" }),
+  e("sensor.bureau_humidity", "39", { unit_of_measurement: "%" }),
+  e("sensor.hall_temperature", "16.2", { unit_of_measurement: "°C" }),
+  e("sensor.garderie_temperature", "unavailable", { unit_of_measurement: "°C" }),
+  e("sensor.exterieur_temperature", "7.8", { unit_of_measurement: "°C" }),
+  e("sensor.exterieur_humidity", "83", { unit_of_measurement: "%" }),
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
 const hass: HomeAssistant = {
@@ -169,6 +181,40 @@ const hass: HomeAssistant = {
   callService: async (domain, service, data, target) => {
     console.info("Service Home Assistant simulé", { domain, service, data, target });
   },
+  // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
+  callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
+    if (message.type !== "history/history_during_period") throw new Error("Commande WebSocket non simulée");
+    const start = Date.parse(String(message.start_time));
+    const end = Date.parse(String(message.end_time));
+    const cycle = (time: number, shift: number): number => Math.sin((time / 86_400_000) * 2 * Math.PI + shift);
+    return Object.fromEntries((message.entity_ids as string[]).map((id, index) => {
+      const current = Number.parseFloat(states[id]?.state ?? "");
+      if (!Number.isFinite(current)) return [id, []];
+      const amplitude = id.includes("humidity") ? 7 : id.includes("exterieur") ? 5 : 1.8;
+      return [id, Array.from({ length: 120 }, (_, step) => {
+        const time = start + ((end - start) * step) / 119;
+        const value = current + amplitude * (cycle(time, index) - cycle(end, index)) + Math.sin(step * 1.7 + index) * amplitude * 0.06;
+        return { s: value.toFixed(1), lu: time / 1000 };
+      })];
+    })) as T;
+  },
+};
+
+const climate = {
+  type: "custom:auralis-climate-card",
+  name: "Températures",
+  theme: "carbon",
+  card_background: { mode: "gradient", gradient: "linear-gradient(145deg, #09111A 0%, #0D1822 58%, #081018 100%)" },
+  accent_color: "#79d6f2",
+  rooms: [
+    { name: "Salon", icon: "mdi:sofa-outline", temperature_entity: "sensor.salon_temperature", humidity_entity: "sensor.salon_humidity" },
+    { name: "Chambre", icon: "mdi:bed-outline", temperature_entity: "sensor.chambre_temperature", humidity_entity: "sensor.chambre_humidity", battery_entity: "sensor.chambre_battery" },
+    { name: "Salle de bain", icon: "mdi:shower", temperature_entity: "sensor.salle_de_bain_temperature", humidity_entity: "sensor.salle_de_bain_humidity", battery_entity: "sensor.salle_de_bain_battery" },
+    { name: "Bureau", icon: "mdi:desk", temperature_entity: "sensor.bureau_temperature", humidity_entity: "sensor.bureau_humidity" },
+    { name: "Hall", icon: "mdi:door", temperature_entity: "sensor.hall_temperature" },
+    { name: "Garderie", temperature_entity: "sensor.garderie_temperature" },
+    { name: "Extérieur", temperature_entity: "sensor.exterieur_temperature", humidity_entity: "sensor.exterieur_humidity", outdoor: true },
+  ],
 };
 
 const room: RoomCardConfig = {
@@ -398,6 +444,7 @@ const mount = <T extends HTMLElement & { hass?: HomeAssistant; setConfig(config:
 
 mount("auralis-navbar-card", navbar);
 mount("auralis-room-card", room);
+mount("auralis-climate-card", climate);
 mount("auralis-covers-card", covers);
 mount("auralis-pc-card", pc);
 mount("auralis-unraid-card", unraid);
