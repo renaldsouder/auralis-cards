@@ -1,4 +1,5 @@
 import type { LovelaceCardConfig } from "./home-assistant";
+import type { AlertLevel, AlertMetric } from "../utils/severity";
 
 export type AuralisTheme = "auto" | "halo" | "carbon" | "mono" | "aurora";
 export type CardBackgroundMode = "grid" | "solid" | "gradient";
@@ -21,6 +22,8 @@ export interface BaseCardConfig extends LovelaceCardConfig {
   glass_opacity?: number;
   card_background?: CardBackgroundConfig;
   show_grid?: boolean;
+  /** Seuils d'alerte des mesures (CPU, RAM, disques, températures). */
+  alert_levels?: Partial<Record<AlertMetric, AlertLevel>>;
 }
 
 export interface NavbarItemConfig {

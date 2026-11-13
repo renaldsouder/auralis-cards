@@ -8,6 +8,14 @@ export const sharedStyles = css`
     --auralis-radius-xl: 28px;
     --auralis-radius-lg: 20px;
     --auralis-radius-md: 14px;
+    /* Échelle de texte commune : rien sous 11 px, titres de carte à 20 px. */
+    --auralis-text-xs: 11px;
+    --auralis-text-sm: 12px;
+    --auralis-text-md: 13px;
+    --auralis-text-lg: 15px;
+    --auralis-title-size: 20px;
+    /* Taille minimale d'une cible tactile. */
+    --auralis-target: 44px;
     --auralis-shadow: 0 18px 48px rgba(22, 30, 42, 0.1);
     --auralis-bg: #eef3f9;
     --auralis-card: rgba(255, 255, 255, 0.88);
@@ -110,7 +118,7 @@ export const sharedStyles = css`
   }
 
   h2 {
-    font-size: 24px;
+    font-size: var(--auralis-title-size);
     line-height: 1.08;
     letter-spacing: -0.04em;
   }
@@ -172,8 +180,8 @@ export const sharedStyles = css`
 
   .icon-button {
     display: grid;
-    width: 38px;
-    height: 38px;
+    width: var(--auralis-target);
+    height: var(--auralis-target);
     place-items: center;
     border: 1px solid var(--auralis-border);
     border-radius: 13px;
@@ -370,7 +378,7 @@ export const sharedStyles = css`
   .dialog-overview .eyebrow,
   .dialog-section-title {
     color: var(--auralis-muted);
-    font-size: 10px;
+    font-size: var(--auralis-text-xs);
     font-weight: 760;
     letter-spacing: 0.11em;
     text-transform: uppercase;
@@ -640,7 +648,7 @@ export const sharedStyles = css`
   .machine-mini-stat small {
     display: block;
     color: #91a0b2;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
   }
 
   .machine-mini-stat strong {
@@ -670,6 +678,20 @@ export const sharedStyles = css`
     content: "";
   }
 
+  .machine-gauge.sev-warning,
+  .machine-bar.sev-warning,
+  .sev-warning {
+    --machine-accent: var(--auralis-active);
+    --sev-color: var(--auralis-active);
+  }
+
+  .machine-gauge.sev-critical,
+  .machine-bar.sev-critical,
+  .sev-critical {
+    --machine-accent: var(--auralis-danger);
+    --sev-color: var(--auralis-danger);
+  }
+
   .machine-gauge-content {
     z-index: 1;
     grid-area: 1 / 1;
@@ -686,7 +708,7 @@ export const sharedStyles = css`
     display: block;
     margin-top: 2px;
     color: #aab6c4;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
   }
 
   .machine-context {
@@ -727,7 +749,7 @@ export const sharedStyles = css`
   .machine-context small {
     display: block;
     color: #91a0b2;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
   }
 
   .machine-context strong {
@@ -757,7 +779,7 @@ export const sharedStyles = css`
 
   .machine-panel-title small {
     color: #8f9daf;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
     font-weight: 760;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -827,7 +849,7 @@ export const sharedStyles = css`
     align-items: center;
     gap: 8px;
     color: #aeb9c7;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
   }
 
   .machine-bar .track {
@@ -846,7 +868,7 @@ export const sharedStyles = css`
 
   .machine-bar strong {
     color: #f4f7fb;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
     text-align: right;
   }
 
@@ -856,7 +878,7 @@ export const sharedStyles = css`
     gap: 10px;
     margin-top: 18px;
     color: #9ba8b7;
-    font-size: 9px;
+    font-size: var(--auralis-text-xs);
   }
 
   .machine-foot strong {
@@ -906,6 +928,79 @@ export const sharedStyles = css`
 
     .list-row > .action {
       grid-column: 2;
+    }
+  }
+
+  .auralis-feedback {
+    position: fixed;
+    z-index: 1002;
+    top: max(16px, env(safe-area-inset-top));
+    left: 50%;
+    max-width: min(520px, calc(100vw - 32px));
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--feedback-color) 45%, transparent);
+    border-radius: var(--auralis-radius-md);
+    background: color-mix(in srgb, var(--feedback-color) 16%, #0f151d);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    color: #f4f7fb;
+    font-size: var(--auralis-text-md);
+    font-weight: 650;
+    line-height: 1.4;
+    transform: translateX(-50%);
+    animation: auralis-feedback-in 180ms ease-out;
+    --feedback-color: var(--auralis-danger);
+  }
+
+  .auralis-feedback[data-tone="success"] {
+    --feedback-color: var(--auralis-healthy);
+  }
+
+  .auralis-feedback[hidden] {
+    display: none;
+  }
+
+  @keyframes auralis-feedback-in {
+    from { opacity: 0; transform: translate(-50%, -8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .confirm-dialog {
+    position: fixed;
+    max-width: 430px;
+  }
+
+  .confirm-message {
+    color: var(--auralis-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .confirm-actions {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 18px;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--machine-accent, var(--auralis-info));
+    outline-offset: 2px;
+  }
+
+  [aria-busy="true"] ha-icon {
+    animation: auralis-busy 1s linear infinite;
+  }
+
+  @keyframes auralis-busy {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auralis-feedback,
+    [aria-busy="true"] ha-icon {
+      animation: none;
     }
   }
 `;
