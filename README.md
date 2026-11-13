@@ -50,6 +50,14 @@ glass_opacity: 0.84
 
 Le [cahier des charges](docs/CAHIER_DES_CHARGES.md) décrit le périmètre et les choix fonctionnels.
 
+## Thèmes
+
+Chaque carte accepte `theme` : `halo` (clair), `aurora` (clair, teinté), `carbon` (sombre) ou `mono` (sombre, sans couleur). Avec `auto`, la valeur par défaut, la carte suit le mode sombre de Home Assistant : `carbon` s'il est actif, `halo` sinon.
+
+Les surfaces planes suivent le thème : fond de carte, tuiles, lignes, puces, en-têtes, fenêtres de détail, confirmations et formulaires. Une fenêtre ouverte depuis une carte `halo` ou `aurora` est donc claire.
+
+Les façades photo restent sombres dans tous les thèmes, avec un texte clair : façade des cartes PC, UNRAID, Proxmox et Frigo, ciel de la carte Météo, pochette de la carte Multimédia, images des caméras, photo de la carte Pièce et tuiles photo des volets et des prises. Une image n'a pas de couleur fixe : le voile sombre garantit la lecture quelle que soit la photo. Les couleurs vives (seuils de température, conditions météo, accents) sont assombries automatiquement quand elles servent de texte sur un fond clair.
+
 ## Développement
 
 ```bash
