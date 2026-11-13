@@ -473,7 +473,10 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     if (this.layoutRoot !== layoutRoot) releaseLayout(this, this.layoutRoot);
     if (layoutRoot) reserveLayout(this, layoutRoot, position);
     this.layoutRoot = layoutRoot;
-    if (!this.config || position === "inline" || this.editing) {
+    // A card that has already left the page can still finish a pending update
+    // (route change while Home Assistant swaps views). It must not create a
+    // new overlay: nothing would remove it, and the bars would pile up.
+    if (!this.isConnected || !this.config || position === "inline" || this.editing) {
       this.removeOverlay();
       return;
     }
