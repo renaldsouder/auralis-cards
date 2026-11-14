@@ -23,6 +23,7 @@ import {
   machinePercentage,
   machineStatusDot,
   machineStatusLabel,
+  machineFlowStyles,
   machineStyles,
   metricSeverity,
   metricTile,
@@ -164,6 +165,7 @@ export class AuralisProxmoxCard extends AuralisBaseCard<ProxmoxCardConfig> {
       .node-actions { display: flex; gap: 6px; }
       .node-actions .icon-button { color: var(--auralis-danger); }
     `,
+    machineFlowStyles,
   ];
 
   private workloadTab: WorkloadTab = "vm";
