@@ -5,6 +5,7 @@ import type { BaseCardConfig, RoomSceneConfig } from "../types/config";
 import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, hexToRgb, isActive, isCommandable, lightBrightness, lightRgbColor, lightSupportsColor, rgbToHex } from "../utils/entities";
 import { activateEntity } from "../utils/actions";
+import { photoHint } from "../utils/photo-hint";
 import { BOOLEAN, entitySelector, ICON, listSelector, TEXT, YAML, type FormListField } from "../utils/form";
 
 export interface ColorPreset {
@@ -136,10 +137,6 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .group-photo { position:relative; display:block; width:100%; height:90px; padding:0; overflow:hidden; border:0; color:#fff; cursor:pointer; -webkit-tap-highlight-color:transparent; background:radial-gradient(circle at 22% 35%,color-mix(in srgb,var(--auralis-active) 32%,transparent),transparent 45%),linear-gradient(125deg,#1a2633,#0c1520); background-size:cover; background-position:center; }
     .group-photo::after { position:absolute; inset:0; background:linear-gradient(0deg,rgba(7,13,20,.28),transparent 70%); content:""; pointer-events:none; }
     .group-photo:focus-visible { outline:2px solid var(--auralis-active); outline-offset:-2px; }
-    /* Indice discret : un appui sur la photo ouvre tous les réglages du groupe. */
-    .photo-hint { position:absolute; right:10px; bottom:10px; z-index:1; display:grid; width:30px; height:30px; place-items:center; border-radius:50%;
-      background:rgba(7,13,20,.55); backdrop-filter:blur(6px); }
-    .photo-hint ha-icon { --mdc-icon-size:17px; }
     .group-body { padding:14px; }
     .group-top { display:flex; align-items:center; gap:9px; }
     .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active-ink); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
@@ -147,6 +144,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     .group-title strong, .group-title small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .group-title small { margin-top:3px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
     .group-top .icon-button { flex:0 0 auto; }
+    .group-top .group-power { display:flex; flex:0 0 auto; gap:6px; }
     .group-actions { display:flex; gap:7px; margin-top:13px; }
     .control { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:12px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; }
     .control ha-icon { --mdc-icon-size:21px; }
@@ -350,26 +348,26 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
     return html`<section class="group">
       <button class="group-photo" type="button" style=${groupImageStyle(group, this.config?.background_image)}
         title=${`Réglages de ${group.name}`} aria-label=${`Réglages de ${group.name}`} aria-haspopup="dialog"
-        @click=${() => this.openDialog(`group:${index}`)}><span class="photo-hint" aria-hidden="true"><ha-icon icon="mdi:tune-variant"></ha-icon></span></button>
+        @click=${() => this.openDialog(`group:${index}`)}>${photoHint()}</button>
       <div class="group-body">
         <div class="group-top">
           <span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
           <span class="group-title"><strong>${group.name}</strong><small>${active}/${group.lights.length} allumée${group.lights.length > 1 ? "s" : ""}${unavailable ? ` · ${unavailable} indisponible${unavailable > 1 ? "s" : ""}` : ""}</small></span>
-          <button class="icon-button" type="button" title=${`Détails de ${group.name}`} aria-label=${`Détails de ${group.name}`}
-            aria-haspopup="dialog" @click=${() => this.openDialog(`group:${index}`)}><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+          <span class="group-power">
+            <button class="control on" type="button" title=${`Allumer ${group.name}`} aria-label=${`Allumer ${group.name}`}
+              ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
+            <button class="control" type="button" title=${`Éteindre ${group.name}`} aria-label=${`Éteindre ${group.name}`}
+              ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
+          </span>
         </div>
-        <div class="group-actions">
-          <button class="control on" type="button" title=${`Allumer ${group.name}`} aria-label=${`Allumer ${group.name}`}
-            ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
-          <button class="control" type="button" title=${`Éteindre ${group.name}`} aria-label=${`Éteindre ${group.name}`}
-            ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
-          ${scenes.length && showColors ? html`<button class="control" type="button" title=${`Ambiances de ${group.name}`} aria-label=${`Ambiances de ${group.name}`}
+        ${showColors ? html`<div class="group-actions">
+          ${scenes.length ? html`<button class="control" type="button" title=${`Ambiances de ${group.name}`} aria-label=${`Ambiances de ${group.name}`}
             aria-haspopup="dialog" @click=${() => this.openDialog(`scenes:${index}`)}><ha-icon icon="mdi:creation-outline"></ha-icon></button>` : nothing}
           <span class="spacer"></span>
           ${this.onOffOnly(group) || !showColors ? nothing : html`<input class="color-input" type="color" .value=${this.color(group)} title=${`Couleur de ${group.name}`}
             aria-label=${`Couleur de ${group.name}`} ?disabled=${!colorIds.length}
             @change=${(event: Event) => this.colorize(this.colorTargets(group), (event.target as HTMLInputElement).value)} />`}
-        </div>
+        </div>` : nothing}
         ${this.onOffOnly(group) ? nothing : this.renderDimmer(`group:${index}`, this.average(group), `Intensité de ${group.name}`,
           brightnessTargets(this.hass, group.lights), !dimmableIds.length)}
         ${showColors ? this.renderSwatches(this.colorTargets(group), group.name) : nothing}

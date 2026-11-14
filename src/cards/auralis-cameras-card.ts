@@ -12,6 +12,7 @@ import { clockTime, relativeTime } from "../utils/format";
 import { navigate } from "../utils/navigation";
 import { bounded } from "../utils/validate";
 import { entitySelector, ICON, listSelector, TEXT, YAML } from "../utils/form";
+import { photoHint } from "../utils/photo-hint";
 
 export interface CameraConfig {
   entity: string;
@@ -238,6 +239,7 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
     .cam-top, .cam-bottom { position:absolute; z-index:1; inset-inline:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .cam-top { top:9px; }
     .cam-bottom { bottom:8px; color:#c9d4e0; font-size:var(--auralis-text-xs); }
+    .cam-bottom-end { display:inline-flex; align-items:center; gap:6px; }
     .cam-name { display:flex; min-width:0; align-items:center; gap:6px; font-size:var(--auralis-text-md); font-weight:720; text-shadow:0 1px 4px #000; }
     .cam-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .cam-name ha-icon { --mdc-icon-size:16px; flex:0 0 auto; color:var(--machine-accent); }
@@ -542,7 +544,7 @@ export class AuralisCamerasCard extends AuralisBaseCard<CamerasCardConfig> {
       aria-label=${variant === "thumb" ? `Afficher ${view.label} en grand` : `${description}. Ouvrir la caméra`} @click=${onClick}>
       ${this.renderImage(view)}
       <span class="cam-top"><span class="cam-name"><ha-icon .icon=${view.icon}></ha-icon><span>${view.label}</span></span>${this.tag(view)}</span>
-      <span class="cam-bottom"><span>${cameraStatus(view.state)}</span><span>${view.loaded === undefined ? "" : this.clock(view.loaded)}</span></span>
+      <span class="cam-bottom"><span>${cameraStatus(view.state)}</span><span class="cam-bottom-end"><span>${view.loaded === undefined ? "" : this.clock(view.loaded)}</span>${variant === "thumb" ? nothing : photoHint(true)}</span></span>
     </button>`;
   }
 

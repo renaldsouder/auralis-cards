@@ -1,6 +1,6 @@
 # Carte Lumières Auralis
 
-La carte dédiée `custom:auralis-lights-card` complète la carte Pièce. Elle affiche un ou plusieurs groupes. Comme les autres cartes Auralis, chaque groupe ne montre sur la carte que l'essentiel : allumer, éteindre et régler l'intensité. Un appui sur la photo du groupe (ou sur le chevron) ouvre la fenêtre qui réunit tout le reste : couleur, couleurs prédéfinies, ambiances Home Assistant et les mêmes commandes pour chaque lampe. `show_colors: true` remet la couleur, les couleurs prédéfinies et le bouton des ambiances sur la carte.
+La carte dédiée `custom:auralis-lights-card` complète la carte Pièce. Elle affiche un ou plusieurs groupes. Comme les autres cartes Auralis, chaque groupe ne montre sur la carte que l'essentiel : allumer et éteindre (à droite du nom) et l'intensité. Un appui sur la photo du groupe, marquée d'une petite icône de réglages, ouvre la fenêtre qui réunit tout le reste : couleur, couleurs prédéfinies, ambiances Home Assistant et les mêmes commandes pour chaque lampe. `show_colors: true` remet la couleur, les couleurs prédéfinies et le bouton des ambiances sur la carte.
 
 ## Installation manuelle
 

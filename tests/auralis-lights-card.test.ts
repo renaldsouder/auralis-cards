@@ -172,6 +172,11 @@ describe("Auralis lights card targets and options", () => {
     expect(face).toContain('class="group-photo"');
     expect(face).toContain('aria-haspopup="dialog"');
     expect(face).toContain('class="dimmer"');
+    // Réglages depuis la photo (indice), marche et arrêt à la place du chevron.
+    expect(face).toContain("photo-hint");
+    expect(face).toContain('class="group-power"');
+    expect(face).not.toContain("mdi:chevron-right");
+    expect(face).not.toContain('class="group-actions"');
     expect(face).not.toContain('class="swatches"');
     expect(face).not.toContain('type="color"');
     const dialog = text(internals.renderGroupDialog(group, 0));

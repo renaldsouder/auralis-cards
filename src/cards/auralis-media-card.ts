@@ -6,6 +6,7 @@ import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, isAvailable } from "../utils/entities";
 import { bounded, safeColor } from "../utils/validate";
 import { entitySelector, ICON, listSelector, numberSelector, TEXT, YAML } from "../utils/form";
+import { photoHint } from "../utils/photo-hint";
 
 export type MediaKind = "speaker" | "tv" | "receiver";
 
@@ -315,6 +316,8 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     .cover { position:relative; display:grid; width:96px; height:96px; flex:0 0 auto; place-items:center; padding:0; overflow:hidden; border:1px solid rgba(255,255,255,.16); border-radius:20px; background:linear-gradient(145deg,color-mix(in srgb,var(--tone) 36%,#141c27),#0b1118); color:var(--tone); cursor:pointer; box-shadow:0 14px 34px rgba(0,0,0,.42); }
     .cover:focus-visible { outline:2px solid var(--tone); outline-offset:2px; }
     .cover img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .cover .photo-hint { top:6px; right:6px; width:24px; height:24px; }
+    .cover .photo-hint ha-icon { --mdc-icon-size:14px; }
     .cover > ha-icon { --mdc-icon-size:44px; filter:drop-shadow(0 0 14px color-mix(in srgb,var(--tone) 60%,transparent)); }
     .cover .eq { position:absolute; right:8px; bottom:8px; padding:4px 5px; border-radius:8px; background:rgba(5,9,14,.7); }
     .eq { display:inline-flex; height:12px; align-items:flex-end; gap:2px; color:var(--tone); }
@@ -658,6 +661,7 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     return html`<button class="cover" type="button" aria-label=${`Ouvrir ${view.label}`} @click=${() => this.openDialog("media")}>
       ${artwork ? html`<img src=${artwork} alt="" decoding="async" @error=${() => this.artworkFailed(artwork)} />` : html`<ha-icon .icon=${view.icon}></ha-icon>`}
       ${view.playing ? this.eq() : nothing}
+      ${photoHint()}
     </button>`;
   }
 
