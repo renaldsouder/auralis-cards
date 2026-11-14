@@ -77,7 +77,52 @@ describe("Auralis room photo", () => {
   });
 
 
+  it("names the room sensors Température and Humidité unless a label is set", () => {
+    const card = new roomCard.AuralisRoomCard();
+    card.setConfig(config({
+      humidity_entity: "sensor.capt_humidity",
+      extra_entities: ["sensor.chambre_temperature"],
+      entity_labels: { "sensor.capt_humidity": "Humidité du salon" },
+    }));
+    card.hass = {
+      states: {
+        "sensor.salon_temperature": { entity_id: "sensor.salon_temperature", state: "21", attributes: { friendly_name: "capt_temp_17 Température" } },
+        "sensor.chambre_temperature": { entity_id: "sensor.chambre_temperature", state: "19", attributes: { friendly_name: "Chambre" } },
+      },
+      callService: async () => undefined,
+    } as unknown as HomeAssistant;
+    expect(card.sensorLabel("sensor.salon_temperature")).toBe("Température");
+    expect(card.sensorLabel("sensor.capt_humidity")).toBe("Humidité du salon");
+    expect(card.sensorLabel("sensor.chambre_temperature")).toBe("Chambre");
+  });
+
+  it("switches and dims every light of the photo window in one command", async () => {
+    const callService = vi.fn(async () => undefined);
+    const card = new roomCard.AuralisRoomCard();
+    card.setConfig(config({ lights: ["light.plafond", "switch.ruban"], extra_entities: ["light.lampadaire"] }));
+    card.hass = {
+      states: {
+        "light.plafond": { entity_id: "light.plafond", state: "off", attributes: { supported_color_modes: ["brightness"] } },
+        "switch.ruban": { entity_id: "switch.ruban", state: "off", attributes: {} },
+        "light.lampadaire": { entity_id: "light.lampadaire", state: "on", attributes: { supported_color_modes: ["brightness"], brightness: 128 } },
+      },
+      callService,
+    } as unknown as HomeAssistant;
+    const internals = card as unknown as {
+      toggleLights(ids: string[]): Promise<boolean>;
+      setGlobalBrightness(value: number, ids?: string[]): Promise<boolean>;
+    };
+    const ids = card.detailGroups().lights;
+    expect(ids).toEqual(["light.plafond", "switch.ruban", "light.lampadaire"]);
+    await internals.toggleLights(ids);
+    expect(callService).toHaveBeenLastCalledWith("homeassistant", "turn_off", {}, { entity_id: ids });
+    await internals.setGlobalBrightness(60, ids);
+    // Seules les lampes allumées changent d'intensité, pour ne pas rallumer toute la pièce.
+    expect(callService).toHaveBeenLastCalledWith("light", "turn_on", { brightness_pct: 60 }, { entity_id: ["light.lampadaire"] });
+  });
+
   it("puts the settings hint in the first corner left free by the thermostat and the ambiance button", () => {
+
     const card = new roomCard.AuralisRoomCard();
     const internals = card as unknown as {
       occupiedCorners(modes: RoomSceneConfig[]): Set<RoomOverlayPosition>;

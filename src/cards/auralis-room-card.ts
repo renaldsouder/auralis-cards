@@ -1052,6 +1052,12 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         margin-top: 18px;
       }
 
+      /* Ligne « Toutes les lumières » : mise en avant par une bordure à la couleur d'accent. */
+      .all-lights-row {
+        border-color: color-mix(in srgb, var(--auralis-active) 38%, var(--auralis-border));
+        background: color-mix(in srgb, var(--auralis-active) 7%, var(--auralis-layer));
+      }
+
       .details-group-head {
         display: flex;
         align-items: center;
@@ -1505,6 +1511,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     return typeof configuredLabel === "string" && configuredLabel.trim()
       ? configuredLabel.trim()
       : friendlyName(entity(this.hass, id), fallback);
+  }
+
+  /**
+   * Nom d'un capteur de la pièce : le nom personnalisé s'il existe, sinon « Température » ou
+   * « Humidité » pour les capteurs de la pièce plutôt que le nom technique de l'appareil.
+   */
+  public sensorLabel(id: string): string {
+    const configuredLabel = this.room?.entity_labels?.[id];
+    if (typeof configuredLabel === "string" && configuredLabel.trim()) return configuredLabel.trim();
+    if (id === this.room?.temperature_entity) return "Température";
+    if (id === this.room?.humidity_entity) return "Humidité";
+    return this.entityLabel(id, id);
   }
 
   private popupTitle(key: "details" | "lights" | "covers" | "climate" | "media" | "tv" | "ambiance", fallback: string): string {
@@ -1967,15 +1985,18 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   /** Allume tout si tout est éteint, sinon éteint tout ; lampes et interrupteurs (switch.*) acceptés. */
-  private toggleAllLights = async (): Promise<boolean> => {
+  private toggleAllLights = (): Promise<boolean> => this.toggleLights(this.room?.lights || []);
+
+  /** Allume tout si tout est éteint, sinon éteint tout : une seule commande pour toutes les lumières. */
+  private async toggleLights(lights: string[]): Promise<boolean> {
     const hass = this.hass;
-    const ids = (this.room?.lights || []).filter((id) => isCommandable(entity(hass, id)));
+    const ids = lights.filter((id) => isCommandable(entity(hass, id)));
     if (!hass || !ids.length) return false;
     const anyOn = ids.some((id) => isActive(entity(hass, id)));
     return this.runCommand("lights:all", () => hass.callService(powerDomain(ids), anyOn ? "turn_off" : "turn_on", {}, { entity_id: ids }), {
       errorMessage: anyOn ? "L’extinction a échoué." : "L’allumage a échoué.",
     });
-  };
+  }
 
   private toggleLight(id: string, on: boolean): Promise<boolean> {
     const hass = this.hass;
@@ -1986,9 +2007,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   /** Intensité générale : un seul appel, vers les lampes allumées (ou toutes les lampes réglables si aucune ne l'est). */
-  private setGlobalBrightness(value: number): Promise<boolean> {
+  private setGlobalBrightness(value: number, lights: string[] = this.room?.lights || []): Promise<boolean> {
     const hass = this.hass;
-    const targets = brightnessTargets(hass, this.room?.lights || []);
+    const targets = brightnessTargets(hass, lights);
     if (!hass || !targets.length) return Promise.resolve(false);
     return this.runCommand("lights:brightness", () => hass.callService("light", "turn_on", { brightness_pct: Math.round(value) }, { entity_id: targets }), {
       errorMessage: "L’intensité n’a pas pu être modifiée.",
@@ -2188,7 +2209,6 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const { lights, covers, media, thermostats, sensors, others } = groups;
     const total = lights.length + covers.length + media.length + thermostats.length + sensors.length + others.length;
     const activeLights = lights.filter((id) => isActive(entity(this.hass, id))).length;
-    const commandableLights = lights.filter((id) => isCommandable(entity(this.hass, id)));
     const openCovers = covers.filter((id) => isActive(entity(this.hass, id))).length;
     const playing = media.filter(({ id }) => {
       const state = entity(this.hass, id);
@@ -2209,10 +2229,10 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
             ${hasClimate ? html`<div class="dialog-stat"><strong>${temperature}</strong><small>${humidity} humidité</small></div>` : nothing}
           </div>
           ${lights.length ? this.renderDetailsGroup("Éclairage", "mdi:lightbulb-group-outline", `${activeLights}/${lights.length} allumée${activeLights > 1 ? "s" : ""}`,
-            html`<div class="list">${lights.map((id) => this.renderLightRow(id))}</div>`,
-            html`<button class="details-group-action ${activeLights ? "" : "primary"}" type="button" ?disabled=${!commandableLights.length || this.isPending("lights:all")}
-              aria-busy=${this.isPending("lights:all") ? "true" : "false"} @click=${this.toggleAllLights}>
-              <ha-icon icon=${activeLights ? "mdi:lightbulb-group-off-outline" : "mdi:lightbulb-group-outline"}></ha-icon>${activeLights ? "Tout éteindre" : "Tout allumer"}</button>`) : nothing}
+            html`<div class="list">
+              ${lights.length > 1 ? this.renderAllLightsRow(lights) : nothing}
+              ${lights.map((id) => this.renderLightRow(id))}
+            </div>`) : nothing}
           ${covers.length ? this.renderDetailsGroup("Volets", "mdi:blinds-horizontal", `${openCovers}/${covers.length} ouvert${openCovers > 1 ? "s" : ""}`,
             html`${covers.length > 1 ? renderCoverGroupBar(this.coverHost, covers, "details:covers", null) : nothing}
               <div class="list">${covers.map((id) => renderCoverRow(this.coverHost, id))}</div>`) : nothing}
@@ -2228,6 +2248,43 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         </div>
       `,
     );
+  }
+
+  /** Première ligne de l'éclairage : intensité, couleur et marche/arrêt de toutes les lumières en une fois. */
+  private renderAllLightsRow(ids: string[]): TemplateResult {
+    const commandable = ids.filter((id) => isCommandable(entity(this.hass, id)));
+    const active = ids.filter((id) => isActive(entity(this.hass, id)));
+    const dimmable = commandable.filter((id) => supportsBrightness(id, entity(this.hass, id)));
+    const colorIds = commandable.filter((id) => isLight(id) && lightSupportsColor(entity(this.hass, id)));
+    const activeBrightness = active.filter((id) => isLight(id)).map((id) => lightBrightness(entity(this.hass, id)));
+    const average = activeBrightness.length
+      ? Math.round(activeBrightness.reduce((sum, value) => sum + value, 0) / activeBrightness.length)
+      : 0;
+    const key = "details:lights:brightness";
+    const shown = this.dragValues.get(key) ?? average;
+    const reference = colorIds.map((id) => entity(this.hass, id)).find((state) => isActive(state) && lightRgbColor(state))
+      ?? entity(this.hass, colorIds[0]);
+    const color = rgbToHex(lightRgbColor(reference));
+    const busy = this.isPending("lights:all");
+    const on = active.length > 0;
+    const status = !commandable.length ? "Indisponible" : dimmable.length && on ? `${shown} %` : `${active.length}/${ids.length} allumée${active.length > 1 ? "s" : ""}`;
+    return html`
+      <div class="list-row light-row all-lights-row">
+        <span class="tile-icon light-status-icon ${on ? "on" : ""}" style=${`--light-status-color:${color}`}><ha-icon .icon=${on ? "mdi:lightbulb-group" : "mdi:lightbulb-group-outline"}></ha-icon></span>
+        <div class="meta">
+          <div class="row-between"><span class="name">Toutes les lumières</span><span class="state">${status}</span></div>
+          ${dimmable.length || colorIds.length ? html`<div class="light-setting-row">
+            ${dimmable.length ? this.renderLightSlider(key, average, "Luminosité de toutes les lumières", false, (value) => this.setGlobalBrightness(value, ids)) : html`<span></span>`}
+            ${colorIds.length
+              ? html`<input class="color-picker" type="color" .value=${color} title="Couleur de toutes les lumières" aria-label="Couleur de toutes les lumières"
+                  @change=${(event: Event) => this.setLightsColor(lightTargets(this.hass, ids, (_id, state) => lightSupportsColor(state)), (event.target as HTMLInputElement).value, "details:lights:color")} />`
+              : nothing}
+          </div>` : nothing}
+        </div>
+        <button class="device-toggle" type="button" role="switch" aria-checked=${on ? "true" : "false"} aria-label=${on ? "Éteindre toutes les lumières" : "Allumer toutes les lumières"}
+          ?disabled=${!commandable.length || busy} aria-busy=${busy ? "true" : "false"} @click=${() => this.toggleLights(ids)}></button>
+      </div>
+    `;
   }
 
   private renderDetailsGroup(title: string, icon: string, summary: string, body: TemplateResult, action?: TemplateResult): TemplateResult {
@@ -2333,7 +2390,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     return html`
       <div class="list-row details-sensor" ${holdMoreInfo(id)}>
         <span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span>
-        <div class="meta"><span class="name">${this.entityLabel(id, id)}</span><strong class="details-value">${isAvailable(state) ? displayState(this.hass, id) : "Indisponible"}</strong></div>
+        <div class="meta"><span class="name">${this.sensorLabel(id)}</span><strong class="details-value">${isAvailable(state) ? displayState(this.hass, id) : "Indisponible"}</strong></div>
       </div>
     `;
   }
@@ -2476,7 +2533,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
                   ${graphEntities.map((id) => {
                     const isTemperature = id === this.room?.temperature_entity;
                     const isHumidity = id === this.room?.humidity_entity;
-                    const label = this.entityLabel(id, isTemperature ? "Température" : isHumidity ? "Humidité" : id);
+                    const label = this.sensorLabel(id);
                     const icon = entity(this.hass, id)?.attributes.icon || (isTemperature ? "mdi:thermometer" : isHumidity ? "mdi:water-percent" : "mdi:chart-line");
                     return html`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span><strong>${displayState(this.hass, id)}</strong></div><div style="margin-top:10px;">${label}</div></div>`;
                   })}
@@ -2487,8 +2544,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
             ? html`
                 <div class="history-graphs">
                   ${graphEntities.map((id) => {
-                    const fallback = id === this.room?.temperature_entity ? "Température" : id === this.room?.humidity_entity ? "Humidité" : id;
-                    const label = this.entityLabel(id, fallback);
+                    const label = this.sensorLabel(id);
                     return html`<hui-card class="history-graph" .hass=${this.hass} .config=${this.historyGraphConfig(id, label, graphHours)}></hui-card>`;
                   })}
                 </div>
