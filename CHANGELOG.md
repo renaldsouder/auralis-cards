@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.28.0
+
+- **Pièce** : la fenêtre de la photo est rangée par groupes, **Éclairage**, **Volets**, **Multimédia**, **Température et humidité** et **Autres**, avec les réglages directement dans chaque ligne, comme dans la fenêtre de la carte Lumières : intensité, couleur et marche/arrêt ; position et ouvrir/stop/fermer ; marche/arrêt, lecture et volume ; consigne −/+ et mode du thermostat ; interrupteur, bouton, liste, curseur ou aperçu de caméra. « Tout allumer / Tout éteindre » en tête de l'éclairage, commande groupée des volets, bouton « Historique » pour les courbes de température. Un appui long sur une ligne ouvre toujours la fiche Home Assistant.
+- **Pièce** : nouvelle option `extra_entities` pour ajouter d'autres appareils à la fenêtre ; chacun rejoint le groupe de son type. Avec `area`, les autres appareils de la zone (prises, ventilateurs, détecteurs…) y sont repris automatiquement.
+
 ## 0.27.0
 
 - **Volets** : nouvelle option `compact: true`, des tuiles carrées plus petites (nom, état et les trois commandes sur la photo) pour une colonne étroite comme l'accueil d'une tablette. Deux groupes restent côte à côte même sur un téléphone.

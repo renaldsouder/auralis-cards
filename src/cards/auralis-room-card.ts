@@ -5,6 +5,7 @@ import {
   coverPopupStyles,
   holdMoreInfo,
   renderCoverGroupBar,
+  renderCoverRow,
   renderCoverRows,
   runCoverCommand,
   withDragValue,
@@ -95,6 +96,7 @@ export function withAreaEntities(config: RoomCardConfig, area: ResolvedArea): Ro
     name: configured(config.name) ?? area.name,
     lights: configuredList(config.lights) ?? area.lights,
     covers: configuredList(config.covers) ?? area.covers,
+    extra_entities: configuredList(config.extra_entities) ?? area.others,
     temperature_entity: configured(config.temperature_entity) ?? area.temperature,
     humidity_entity: configured(config.humidity_entity) ?? area.humidity,
     climate_entity: configured(config.climate_entity) ?? area.climate,
@@ -110,6 +112,29 @@ function powerDomain(ids: string[]): string {
   const domains = new Set(ids.map(domainOf));
   return domains.size === 1 && (domains.has("light") || domains.has("switch")) ? [...domains][0] : "homeassistant";
 }
+
+/** Entités de la fenêtre de la photo, par groupe. */
+export interface RoomDetailGroups {
+  lights: string[];
+  covers: string[];
+  media: Array<{ id: string; kind: "media" | "tv" }>;
+  thermostats: string[];
+  sensors: string[];
+  others: string[];
+}
+
+const HVAC_LABELS: Record<string, string> = {
+  off: "Arrêt", heat: "Chauffage", cool: "Climatisation", auto: "Auto", heat_cool: "Auto", dry: "Déshumidification", fan_only: "Ventilation",
+};
+const TOGGLE_DOMAINS = new Set(["switch", "fan", "input_boolean", "humidifier", "lock", "siren", "valve", "automation"]);
+const ACTIVATE_DOMAINS = new Set(["scene", "script", "button", "input_button"]);
+const OTHER_ICONS: Record<string, string> = {
+  switch: "mdi:power-socket-eu", fan: "mdi:fan", input_boolean: "mdi:toggle-switch-outline", humidifier: "mdi:air-humidifier",
+  lock: "mdi:lock-outline", siren: "mdi:alarm-light-outline", valve: "mdi:valve", automation: "mdi:robot-outline",
+  scene: "mdi:palette-outline", script: "mdi:script-text-outline", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button",
+  select: "mdi:format-list-bulleted", input_select: "mdi:format-list-bulleted", number: "mdi:ray-vertex", input_number: "mdi:ray-vertex",
+  vacuum: "mdi:robot-vacuum", camera: "mdi:cctv", binary_sensor: "mdi:checkbox-blank-circle-outline", sensor: "mdi:gauge",
+};
 
 export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   static properties = {
@@ -1022,6 +1047,231 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         opacity: 0.45;
       }
 
+      /* Fenêtre de la photo : un bloc par type d'appareil, réglages directement dans les lignes. */
+      .details-group {
+        margin-top: 18px;
+      }
+
+      .details-group-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 2px 10px;
+      }
+
+      .details-group-icon {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--auralis-active) 16%, transparent);
+        color: var(--auralis-active);
+        --mdc-icon-size: 18px;
+      }
+
+      .details-group-title {
+        display: grid;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .details-group-title strong {
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+
+      .details-group-title small {
+        overflow: hidden;
+        color: var(--auralis-muted);
+        font-size: var(--auralis-text-xs);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .details-group-action {
+        display: inline-flex;
+        min-height: 38px;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 6px;
+        padding: 0 12px;
+        border: 1px solid var(--auralis-border);
+        border-radius: 12px;
+        background: var(--auralis-layer);
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--auralis-text-sm);
+        font-weight: 680;
+        --mdc-icon-size: 18px;
+      }
+
+      .details-group-action.primary {
+        border-color: color-mix(in srgb, var(--auralis-active) 45%, transparent);
+        background: color-mix(in srgb, var(--auralis-active) 18%, transparent);
+      }
+
+      .details-group-action[disabled] {
+        cursor: default;
+        opacity: 0.45;
+      }
+
+      .details-group .group-bar {
+        margin-bottom: 8px;
+      }
+
+      /* Plus spécifique que la règle mobile des listes : la commande reste à droite du nom. */
+      .list-row.details-row {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+      }
+
+      .list-row.details-sensor {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .details-row .name,
+      .details-sensor .name {
+        display: block;
+      }
+
+      .details-row {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      .details-row .state {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .details-row .tile-icon.on {
+        background: color-mix(in srgb, var(--auralis-active) 22%, var(--auralis-layer));
+        color: var(--auralis-active);
+      }
+
+      .details-row-extra {
+        grid-column: 1 / -1;
+      }
+
+      .media-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .media-controls .details-slider {
+        flex: 1 1 auto;
+      }
+
+      .details-slider {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        color: var(--auralis-muted);
+        --mdc-icon-size: 18px;
+      }
+
+      .details-slider output {
+        min-width: 44px;
+        color: var(--auralis-text);
+        font-size: var(--auralis-text-sm);
+        font-weight: 680;
+        text-align: right;
+      }
+
+      .details-stepper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .details-stepper strong {
+        min-width: 48px;
+        font-size: 17px;
+        text-align: center;
+      }
+
+      .details-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .details-chip {
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--auralis-border);
+        border-radius: 999px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--auralis-text-sm);
+      }
+
+      .details-chip.active {
+        border-color: color-mix(in srgb, var(--auralis-active) 50%, transparent);
+        background: color-mix(in srgb, var(--auralis-active) 20%, transparent);
+        font-weight: 700;
+      }
+
+      .details-chip[disabled] { cursor: default; opacity: 0.5; }
+
+      .details-sensors {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .details-sensors:first-child { margin-top: 0; }
+
+      .details-sensor {
+        grid-template-columns: auto minmax(0, 1fr);
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      .details-value {
+        display: block;
+        font-size: 17px;
+        white-space: nowrap;
+      }
+
+      .details-select {
+        max-width: 160px;
+        min-height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--auralis-border);
+        border-radius: 12px;
+        background: var(--auralis-layer);
+        color: inherit;
+        font: inherit;
+      }
+
+      .camera-preview {
+        overflow: hidden;
+        padding: 0;
+        border: 0;
+        border-radius: 12px;
+        background: #000;
+        cursor: pointer;
+        height: 170px;
+      }
+
+      .camera-preview img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
       .quick-tile {
         color: inherit;
         text-align: left;
@@ -1190,6 +1440,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
       accent_color: "Couleur d’accent", area: "Zone (remplit les options laissées vides)",
       area_exclude: "Entités de la zone à ignorer (identifiants ou motifs light.veilleuse_*)",
       area_include_switches: "Reprendre aussi les interrupteurs de la zone comme lumières",
+      extra_entities: "Autres appareils (fenêtre de la photo)",
     };
     return {
       schema: [
@@ -1206,6 +1457,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         },
         { name: "lights", selector: { entity: { multiple: true, filter: { domain: ["light", "switch"] } } } },
         { name: "covers", selector: { entity: { multiple: true, filter: { domain: "cover" } } } },
+        { name: "extra_entities", selector: { entity: { multiple: true } } },
         { name: "left_controls", selector: { object: {} } },
         { name: "right_controls", selector: { object: {} } },
         { name: "card_background", selector: { object: {} } },
@@ -1528,16 +1780,64 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     return photoHint(false, corner);
   }
 
-  /** Toutes les entités de la carte, sans doublon : lumières, volets, climat, multimédia et commandes latérales. */
-  public roomEntities(): string[] {
+  /**
+   * Entités de la pièce rangées comme dans la fenêtre de la photo : éclairage, volets, multimédia,
+   * température et humidité, puis tout le reste. Chaque entité n'apparaît qu'une fois.
+   */
+  public detailGroups(): RoomDetailGroups {
+    const groups: RoomDetailGroups = { lights: [], covers: [], media: [], thermostats: [], sensors: [], others: [] };
     const room = this.room;
-    if (!room) return [];
-    const controls = [...this.sideControls("left"), ...this.sideControls("right")].map((control) => control.entity);
-    return [...new Set([
-      ...(room.lights || []), ...(room.covers || []),
-      this.thermostatEntityId(), room.climate_entity, room.temperature_entity, room.humidity_entity,
-      room.media_player_entity, ...controls,
-    ].filter((id): id is string => typeof id === "string" && id.includes(".")))];
+    if (!room) return groups;
+    const used = new Set<string>();
+    const valid = (id: unknown): id is string => typeof id === "string" && id.includes(".");
+    const push = (list: string[], id: unknown) => {
+      if (!valid(id) || used.has(id)) return;
+      used.add(id);
+      list.push(id);
+    };
+    const pushMedia = (id: unknown, kind: "media" | "tv") => {
+      if (!valid(id) || used.has(id)) return;
+      used.add(id);
+      groups.media.push({ id, kind });
+    };
+    for (const id of room.lights || []) push(groups.lights, id);
+    for (const id of room.covers || []) push(groups.covers, id);
+    const controls = [...this.sideControls("left"), ...this.sideControls("right")];
+    // Une télévision déclarée en commande latérale garde ses commandes TV, même si elle est aussi le lecteur de la pièce.
+    for (const control of controls) {
+      if (control.type === "tv") pushMedia(control.entity, "tv");
+      if (control.type === "media") pushMedia(control.entity || room.media_player_entity, "media");
+    }
+    pushMedia(room.media_player_entity, "media");
+    push(groups.thermostats, this.thermostatEntityId());
+    push(groups.thermostats, room.climate_entity);
+    push(groups.sensors, room.temperature_entity);
+    push(groups.sensors, room.humidity_entity);
+    const rest = [
+      ...controls.filter((control) => control.type === "entity" || control.type === "scene").map((control) => control.entity),
+      ...(room.extra_entities || []),
+    ];
+    for (const id of rest) {
+      if (!valid(id)) continue;
+      const domain = domainOf(id);
+      const deviceClass = entity(this.hass, id)?.attributes.device_class;
+      if (domain === "light") push(groups.lights, id);
+      else if (domain === "cover") push(groups.covers, id);
+      else if (domain === "media_player") pushMedia(id, deviceClass === "tv" ? "tv" : "media");
+      else if (domain === "climate") push(groups.thermostats, id);
+      else if (domain === "sensor" && (deviceClass === "temperature" || deviceClass === "humidity")) push(groups.sensors, id);
+      else push(groups.others, id);
+    }
+    return groups;
+  }
+
+  /** Toutes les entités de la carte, sans doublon, dans l'ordre des groupes de la fenêtre. */
+  public roomEntities(): string[] {
+    const groups = this.detailGroups();
+    return [
+      ...groups.lights, ...groups.covers, ...groups.media.map((item) => item.id),
+      ...groups.thermostats, ...groups.sensors, ...groups.others,
+    ];
   }
 
   private renderOverlaySlot(position: RoomOverlayPosition, modes: RoomSceneConfig[]): TemplateResult | typeof nothing {
@@ -1884,48 +2184,258 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   }
 
   private renderDetailsDialog(): TemplateResult {
-    const lights = this.room?.lights || [];
-    const covers = this.room?.covers || [];
-    const all = this.roomEntities();
+    const groups = this.detailGroups();
+    const { lights, covers, media, thermostats, sensors, others } = groups;
+    const total = lights.length + covers.length + media.length + thermostats.length + sensors.length + others.length;
     const activeLights = lights.filter((id) => isActive(entity(this.hass, id))).length;
+    const commandableLights = lights.filter((id) => isCommandable(entity(this.hass, id)));
+    const openCovers = covers.filter((id) => isActive(entity(this.hass, id))).length;
+    const playing = media.filter(({ id }) => {
+      const state = entity(this.hass, id);
+      return isAvailable(state) && state?.state !== "off" && state?.state !== "standby";
+    }).length;
     const temperature = displayState(this.hass, this.room?.temperature_entity);
     const humidity = displayState(this.hass, this.room?.humidity_entity);
-    const hasClimate = Boolean(this.room?.temperature_entity || this.room?.humidity_entity || this.room?.climate_entity);
-    const media = this.room?.media_player_entity;
+    const hasClimate = Boolean(this.room?.temperature_entity || this.room?.humidity_entity);
     const name = this.roomName();
+    const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
     return this.renderDialog(
       this.popupTitle("details", name),
       this.room?.icon || "mdi:sofa-outline",
       html`
-        <div class="dialog-body">
+        <div class="dialog-body details-body">
           <div class="dialog-overview">
-            <div><span class="eyebrow">Vue d'ensemble</span><strong>${name}</strong><span class="muted">Climat, éclairage, ouvrants et multimédia</span></div>
+            <div><span class="eyebrow">Vue d'ensemble</span><strong>${name}</strong><span class="muted">${plural(total, "appareil")} · appui long sur une ligne : fiche Home Assistant</span></div>
             ${hasClimate ? html`<div class="dialog-stat"><strong>${temperature}</strong><small>${humidity} humidité</small></div>` : nothing}
           </div>
-          <div class="dialog-section-title">Accès rapides</div>
-          <div class="grid two" style="margin-bottom:18px;">
-            ${lights.length ? html`<button class="tile clickable quick-tile" type="button" @click=${() => this.openDialog("lights")}><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:lightbulb-group-outline"></ha-icon></span><strong>${activeLights}/${lights.length}</strong></div><div class="quick-label">${this.popupTitle("lights", "Lumières")}</div><div class="muted">Régler l'intensité</div></button>` : nothing}
-            ${covers.length ? html`<button class="tile clickable quick-tile" type="button" @click=${() => this.openDialog("covers")}><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:blinds-horizontal"></ha-icon></span><ha-icon icon="mdi:chevron-right"></ha-icon></div><div class="quick-label">${this.popupTitle("covers", "Volets")}</div><div class="muted">Position, ouvrir ou fermer</div></button>` : nothing}
-            ${hasClimate ? html`<button class="tile clickable quick-tile" type="button" @click=${() => this.openDialog("climate")}><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:thermometer"></ha-icon></span><strong>${temperature}</strong></div><div class="quick-label">${this.popupTitle("climate", "Température et humidité")}</div><div class="muted">${humidity} d'humidité</div></button>` : nothing}
-            ${media ? html`<button class="tile clickable quick-tile" type="button" @click=${() => this.openMediaControl({ type: "media", entity: media })}><div class="tile-head"><span class="tile-icon"><ha-icon icon="mdi:music-note"></ha-icon></span><ha-icon icon="mdi:chevron-right"></ha-icon></div><div class="quick-label">${this.popupTitle("media", "Multimédia")}</div><div class="muted">${capitalize(mediaStatusLabel(entity(this.hass, media)))}</div></button>` : nothing}
-          </div>
-          ${all.length ? html`<div class="dialog-section-title">Tous les appareils</div>
-          <div class="grid two">
-            ${all.map((id) => {
-              const state = entity(this.hass, id);
-              const label = this.entityLabel(id, id);
-              return html`
-                <button class="tile clickable quick-tile" type="button" @click=${() => this.moreInfo(id)}>
-                  <div class="tile-head"><span class="tile-icon"><ha-icon .icon=${state?.attributes.icon || "mdi:circle-outline"}></ha-icon></span><ha-icon icon="mdi:chevron-right"></ha-icon></div>
-                  <div class="quick-label">${label}</div>
-                  <div class="muted">${isCommandable(state) ? displayState(this.hass, id) : "Indisponible"}</div>
-                </button>
-              `;
-            })}
-          </div>` : nothing}
+          ${lights.length ? this.renderDetailsGroup("Éclairage", "mdi:lightbulb-group-outline", `${activeLights}/${lights.length} allumée${activeLights > 1 ? "s" : ""}`,
+            html`<div class="list">${lights.map((id) => this.renderLightRow(id))}</div>`,
+            html`<button class="details-group-action ${activeLights ? "" : "primary"}" type="button" ?disabled=${!commandableLights.length || this.isPending("lights:all")}
+              aria-busy=${this.isPending("lights:all") ? "true" : "false"} @click=${this.toggleAllLights}>
+              <ha-icon icon=${activeLights ? "mdi:lightbulb-group-off-outline" : "mdi:lightbulb-group-outline"}></ha-icon>${activeLights ? "Tout éteindre" : "Tout allumer"}</button>`) : nothing}
+          ${covers.length ? this.renderDetailsGroup("Volets", "mdi:blinds-horizontal", `${openCovers}/${covers.length} ouvert${openCovers > 1 ? "s" : ""}`,
+            html`${covers.length > 1 ? renderCoverGroupBar(this.coverHost, covers, "details:covers", null) : nothing}
+              <div class="list">${covers.map((id) => renderCoverRow(this.coverHost, id))}</div>`) : nothing}
+          ${media.length ? this.renderDetailsGroup("Multimédia", "mdi:music-note", playing ? `${plural(playing, "appareil")} allumé${playing > 1 ? "s" : ""}` : "Tout est éteint",
+            html`<div class="list">${media.map(({ id, kind }) => this.renderMediaRow(id, kind))}</div>`) : nothing}
+          ${thermostats.length || sensors.length ? this.renderDetailsGroup("Température et humidité", "mdi:thermometer", hasClimate ? `${temperature} · ${humidity}` : plural(thermostats.length, "thermostat"),
+            html`${thermostats.length ? html`<div class="list">${thermostats.map((id) => this.renderThermostatRow(id))}</div>` : nothing}
+              ${sensors.length ? html`<div class="details-sensors">${sensors.map((id) => this.renderSensorRow(id))}</div>` : nothing}`,
+            hasClimate ? html`<button class="details-group-action" type="button" @click=${() => this.openDialog("climate")}><ha-icon icon="mdi:chart-line"></ha-icon>Historique</button>` : undefined) : nothing}
+          ${others.length ? this.renderDetailsGroup("Autres", "mdi:dots-grid", plural(others.length, "appareil"),
+            html`<div class="list">${others.map((id) => this.renderOtherRow(id))}</div>`) : nothing}
+          ${total ? nothing : html`<p class="muted">Aucun appareil configuré dans cette pièce.</p>`}
         </div>
       `,
     );
+  }
+
+  private renderDetailsGroup(title: string, icon: string, summary: string, body: TemplateResult, action?: TemplateResult): TemplateResult {
+    return html`
+      <section class="details-group" aria-label=${title}>
+        <div class="details-group-head">
+          <span class="details-group-icon"><ha-icon .icon=${icon}></ha-icon></span>
+          <span class="details-group-title"><strong>${title}</strong><small>${summary}</small></span>
+          ${action ?? nothing}
+        </div>
+        ${body}
+      </section>
+    `;
+  }
+
+  /** Lecteur ou télévision : marche/arrêt, lecture et volume directement dans la ligne. */
+  private renderMediaRow(id: string, kind: "media" | "tv"): TemplateResult {
+    const media = entity(this.hass, id);
+    const label = this.entityLabel(id, kind === "tv" ? "Télévision" : "Lecteur multimédia");
+    const commandable = isCommandable(media);
+    const powered = isAvailable(media) && media?.state !== "off" && media?.state !== "standby";
+    const playing = media?.state === "playing";
+    const title = typeof media?.attributes.media_title === "string" ? media.attributes.media_title : "";
+    const artist = typeof media?.attributes.media_artist === "string" ? media.attributes.media_artist : "";
+    const status = !commandable
+      ? "Indisponible"
+      : title && powered ? [title, artist].filter(Boolean).join(" · ") : capitalize(mediaStatusLabel(media));
+    const rawVolume = media?.attributes.volume_level;
+    const volumeKey = `volume:${id}`;
+    const volume = typeof rawVolume === "number" ? Math.round(rawVolume * 100) : undefined;
+    const shownVolume = this.dragValues.get(volumeKey) ?? volume ?? 0;
+    const busy = (service: string) => this.isPending(`media:${id}:${service}`);
+    const powerService = powered ? "turn_off" : "turn_on";
+    const playback = (service: string, icon: string, text: string) => html`
+      <button class="icon-button" type="button" aria-label=${`${text} sur ${label}`} title=${text} ?disabled=${!commandable || !powered || busy(service)}
+        @click=${() => this.mediaCommand(id, service)}><ha-icon .icon=${icon}></ha-icon></button>`;
+    return html`
+      <div class="list-row details-row" ${holdMoreInfo(id)}>
+        <span class="tile-icon ${powered ? "on" : ""}"><ha-icon .icon=${kind === "tv" ? (powered ? "mdi:television" : "mdi:television-off") : "mdi:speaker"}></ha-icon></span>
+        <div class="meta"><span class="name">${label}</span><span class="state">${status}</span></div>
+        <button class="device-toggle" type="button" role="switch" aria-checked=${powered ? "true" : "false"} aria-label=${powered ? `Éteindre ${label}` : `Allumer ${label}`}
+          ?disabled=${!commandable || busy(powerService)} aria-busy=${busy(powerService) ? "true" : "false"} @click=${() => this.mediaCommand(id, powerService)}></button>
+        <div class="details-row-extra media-controls">
+          ${kind === "media" ? playback("media_previous_track", "mdi:skip-previous", "Précédent") : nothing}
+          ${playback("media_play_pause", playing ? "mdi:pause" : "mdi:play", playing ? "Pause" : "Lecture")}
+          ${kind === "media" ? playback("media_next_track", "mdi:skip-next", "Suivant") : nothing}
+          ${volume !== undefined ? html`<label class="details-slider"><ha-icon icon="mdi:volume-high"></ha-icon>
+            <input class="range light-slider" style=${`--range-value:${shownVolume}%`} type="range" min="0" max="100" .value=${String(shownVolume)} aria-label=${`Volume de ${label}`}
+              ?disabled=${!commandable || !powered}
+              @input=${(event: Event) => this.setDrag(volumeKey, Number((event.target as HTMLInputElement).value))}
+              @change=${(event: Event) => {
+                const value = Number((event.target as HTMLInputElement).value);
+                this.setDrag(volumeKey, value);
+                void this.mediaCommand(id, "volume_set", { volume_level: value / 100 }, "Le volume n’a pas pu être modifié.")
+                  .finally(() => this.setDrag(volumeKey, undefined));
+              }} /><output>${shownVolume} %</output></label>` : nothing}
+        </div>
+      </div>
+    `;
+  }
+
+  /** Thermostat : consigne −/+ et modes de chauffage dans la ligne. */
+  private renderThermostatRow(id: string): TemplateResult {
+    const state = entity(this.hass, id);
+    const label = this.entityLabel(id, "Thermostat");
+    const commandable = isCommandable(state);
+    const limits = setpointLimits(state, this.room?.thermostat?.step);
+    const target = this.setpoints.values(id).temperature;
+    const canStep = (direction: -1 | 1) => commandable && stepSetpoint(target, direction, limits) !== undefined;
+    const current = state?.attributes.current_temperature;
+    const modes = Array.isArray(state?.attributes.hvac_modes)
+      ? (state!.attributes.hvac_modes as unknown[]).filter((mode): mode is string => typeof mode === "string")
+      : [];
+    const value = target === undefined ? "—" : `${target.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}°`;
+    const status = !commandable
+      ? "Indisponible"
+      : [HVAC_LABELS[state?.state ?? ""] ?? capitalize(state?.state ?? ""), typeof current === "number" ? `${current.toLocaleString("fr-FR")}° mesurés` : ""].filter(Boolean).join(" · ");
+    const busyMode = this.isPending(`hvac:${id}`);
+    return html`
+      <div class="list-row details-row" ${holdMoreInfo(id)}>
+        <span class="tile-icon ${isActive(state) ? "on" : ""}"><ha-icon icon="mdi:thermostat"></ha-icon></span>
+        <div class="meta"><span class="name">${label}</span><span class="state">${status}</span></div>
+        <div class="details-stepper" aria-busy=${this.setpoints.pending(id) ? "true" : "false"}>
+          <button class="icon-button" type="button" aria-label=${`Baisser la consigne de ${label}`} ?disabled=${!canStep(-1)}
+            @click=${() => this.setpoints.adjust(id, "temperature", -1, limits)}><ha-icon icon="mdi:minus"></ha-icon></button>
+          <strong>${value}</strong>
+          <button class="icon-button" type="button" aria-label=${`Augmenter la consigne de ${label}`} ?disabled=${!canStep(1)}
+            @click=${() => this.setpoints.adjust(id, "temperature", 1, limits)}><ha-icon icon="mdi:plus"></ha-icon></button>
+        </div>
+        ${modes.length > 1 ? html`<div class="details-row-extra details-chips" role="group" aria-label=${`Mode de ${label}`}>
+          ${modes.map((mode) => html`<button class="details-chip ${state?.state === mode ? "active" : ""}" type="button" aria-pressed=${state?.state === mode ? "true" : "false"}
+            ?disabled=${!commandable || busyMode} @click=${() => this.callEntity(`hvac:${id}`, "climate", "set_hvac_mode", id, { hvac_mode: mode })}>
+            ${HVAC_LABELS[mode] ?? capitalize(mode)}</button>`)}
+        </div>` : nothing}
+      </div>
+    `;
+  }
+
+  private renderSensorRow(id: string): TemplateResult {
+    const state = entity(this.hass, id);
+    const deviceClass = state?.attributes.device_class;
+    const icon = state?.attributes.icon || (deviceClass === "humidity" ? "mdi:water-percent" : "mdi:thermometer");
+    return html`
+      <div class="list-row details-sensor" ${holdMoreInfo(id)}>
+        <span class="tile-icon"><ha-icon .icon=${icon}></ha-icon></span>
+        <div class="meta"><span class="name">${this.entityLabel(id, id)}</span><strong class="details-value">${isAvailable(state) ? displayState(this.hass, id) : "Indisponible"}</strong></div>
+      </div>
+    `;
+  }
+
+  /** Commande adaptée au type d'entité : interrupteur, bouton, liste, curseur, aperçu de caméra ou simple valeur. */
+  private renderOtherRow(id: string): TemplateResult {
+    const state = entity(this.hass, id);
+    const domain = domainOf(id);
+    const label = this.entityLabel(id, id);
+    const commandable = isCommandable(state);
+    const key = `other:${id}`;
+    const busy = this.isPending(key);
+    const status = !isAvailable(state) ? "Indisponible" : displayState(this.hass, id);
+    const icon = state?.attributes.icon || OTHER_ICONS[domain] || "mdi:circle-outline";
+    let control: TemplateResult | typeof nothing = nothing;
+    let extra: TemplateResult | typeof nothing = nothing;
+    let active = isActive(state);
+    let subtitle: string | undefined = status;
+
+    if (TOGGLE_DOMAINS.has(domain)) {
+      if (domain === "lock") active = state?.state === "locked";
+      if (isAvailable(state)) {
+        subtitle = domain === "lock" ? (active ? "Verrouillé" : "Déverrouillé") : domain === "valve" ? (active ? "Ouverte" : "Fermée") : active ? "Allumé" : "Éteint";
+      }
+      const service = domain === "lock" ? (active ? "unlock" : "lock") : active ? "turn_off" : "turn_on";
+      control = html`<button class="device-toggle" type="button" role="switch" aria-checked=${active ? "true" : "false"}
+        aria-label=${`${active ? (domain === "lock" ? "Déverrouiller" : "Éteindre") : domain === "lock" ? "Verrouiller" : "Allumer"} ${label}`}
+        ?disabled=${!commandable || busy} aria-busy=${busy ? "true" : "false"}
+        @click=${() => this.callEntity(key, domain === "lock" ? "lock" : "homeassistant", service, id)}></button>`;
+      const percentage = state?.attributes.percentage;
+      if (domain === "fan" && typeof percentage === "number") {
+        extra = this.renderEntitySlider(id, `percentage:${id}`, percentage, 0, 100, 1, "%", `Vitesse de ${label}`, !commandable || !active,
+          (value) => this.callEntity(`percentage:${id}`, "fan", "set_percentage", id, { percentage: value }));
+      }
+    } else if (ACTIVATE_DOMAINS.has(domain)) {
+      control = html`<button class="details-group-action" type="button" ?disabled=${!commandable || busy} aria-busy=${busy ? "true" : "false"}
+        @click=${() => this.runCommand(key, () => activateEntity(this.hass!, id), { errorMessage: "L’activation a échoué." })}>
+        <ha-icon icon=${domain === "button" || domain === "input_button" ? "mdi:gesture-tap-button" : "mdi:play"}></ha-icon>${domain === "button" || domain === "input_button" ? "Appuyer" : "Activer"}</button>`;
+    } else if (domain === "select" || domain === "input_select") {
+      const options = Array.isArray(state?.attributes.options) ? (state!.attributes.options as unknown[]).map(String) : [];
+      control = html`<select class="details-select" aria-label=${label} ?disabled=${!commandable || busy}
+        @change=${(event: Event) => this.callEntity(key, domain, "select_option", id, { option: (event.target as HTMLSelectElement).value })}>
+        ${options.map((option) => html`<option .value=${option} ?selected=${option === state?.state}>${option}</option>`)}
+      </select>`;
+    } else if (domain === "number" || domain === "input_number") {
+      const value = Number(state?.state);
+      const min = Number(state?.attributes.min ?? 0);
+      const max = Number(state?.attributes.max ?? 100);
+      const step = Number(state?.attributes.step ?? 1);
+      const unit = typeof state?.attributes.unit_of_measurement === "string" ? state.attributes.unit_of_measurement : "";
+      extra = this.renderEntitySlider(id, key, Number.isFinite(value) ? value : min, min, max, step, unit, label, !commandable,
+        (next) => this.callEntity(key, domain, "set_value", id, { value: next }));
+    } else if (domain === "vacuum") {
+      const cleaning = state?.state === "cleaning";
+      control = html`<div class="details-stepper">
+        <button class="icon-button" type="button" aria-label=${cleaning ? `Mettre en pause ${label}` : `Démarrer ${label}`} ?disabled=${!commandable || busy}
+          @click=${() => this.callEntity(key, "vacuum", cleaning ? "pause" : "start", id)}><ha-icon icon=${cleaning ? "mdi:pause" : "mdi:play"}></ha-icon></button>
+        <button class="icon-button" type="button" aria-label=${`Renvoyer ${label} à sa base`} ?disabled=${!commandable || busy}
+          @click=${() => this.callEntity(key, "vacuum", "return_to_base", id)}><ha-icon icon="mdi:home-import-outline"></ha-icon></button>
+      </div>`;
+    } else if (domain === "camera") {
+      const picture = typeof state?.attributes.entity_picture === "string" ? state.attributes.entity_picture : "";
+      control = html`<button class="icon-button" type="button" aria-label=${`Voir ${label} en direct`} title="Voir en direct" @click=${() => this.moreInfo(id)}><ha-icon icon="mdi:play-circle-outline"></ha-icon></button>`;
+      if (picture) {
+        extra = html`<button class="details-row-extra camera-preview" type="button" aria-label=${`Voir ${label} en direct`} @click=${() => this.moreInfo(id)}>
+          <img src=${picture} alt=${`Image de ${label}`} loading="lazy" /></button>`;
+      }
+    } else {
+      control = html`<strong class="details-value">${status}</strong>`;
+      subtitle = undefined;
+    }
+
+    return html`
+      <div class="list-row details-row" ${holdMoreInfo(id)}>
+        <span class="tile-icon ${active ? "on" : ""}"><ha-icon .icon=${icon}></ha-icon></span>
+        <div class="meta"><span class="name">${label}</span>${subtitle ? html`<span class="state">${subtitle}</span>` : nothing}</div>
+        ${control}
+        ${extra}
+      </div>
+    `;
+  }
+
+  private renderEntitySlider(id: string, key: string, value: number, min: number, max: number, step: number, unit: string, label: string,
+    disabled: boolean, send: (value: number) => Promise<boolean>): TemplateResult {
+    const shown = this.dragValues.get(key) ?? value;
+    const percent = max > min ? ((shown - min) / (max - min)) * 100 : 0;
+    return html`<label class="details-row-extra details-slider">
+      <ha-icon icon="mdi:tune-vertical-variant"></ha-icon>
+      <input class="range light-slider" style=${`--range-value:${percent}%`} type="range" min=${String(min)} max=${String(max)} step=${String(step)}
+        .value=${String(shown)} aria-label=${label} ?disabled=${disabled} data-entity=${id}
+        @input=${(event: Event) => this.setDrag(key, Number((event.target as HTMLInputElement).value))}
+        @change=${(event: Event) => {
+          const next = Number((event.target as HTMLInputElement).value);
+          this.setDrag(key, next);
+          void send(next).finally(() => this.setDrag(key, undefined));
+        }} /><output>${shown.toLocaleString("fr-FR")}${unit ? ` ${unit}` : ""}</output></label>`;
+  }
+
+  private callEntity(key: string, domain: string, service: string, id: string, data: Record<string, unknown> = {}): Promise<boolean> {
+    const hass = this.hass;
+    if (!hass) return Promise.resolve(false);
+    return this.runCommand(key, () => hass.callService(domain, service, data, { entity_id: id }), { errorMessage: "La commande a échoué." });
   }
 
   private renderClimateDialog(): TemplateResult {

@@ -48,6 +48,8 @@ export interface ResolvedArea {
   climate?: string;
   media?: string;
   tv?: string;
+  /** Autres entités pilotables ou utiles de la zone (prises, ventilateurs, capteurs d'ouverture…). */
+  others: string[];
   /** Toutes les entités retenues, pour le suivi des changements d'état. */
   entities: string[];
 }
@@ -68,6 +70,11 @@ interface AreaMembers {
 /** Volets qu'une commande « tout ouvrir » d'une pièce ne doit jamais actionner. */
 const EXCLUDED_COVER_CLASSES = new Set(["garage", "gate"]);
 const BATTERY_NAME = /batter(?:ie|y)/i;
+/** Domaines repris dans le groupe « Autres » de la fenêtre d'une pièce. */
+const OTHER_DOMAINS = new Set([
+  "switch", "fan", "input_boolean", "humidifier", "vacuum", "lock", "button", "input_button", "script",
+  "select", "input_select", "number", "input_number", "binary_sensor", "camera", "water_heater", "valve", "siren",
+]);
 
 const normalize = (value: string): string => value.trim().toLocaleLowerCase("fr");
 
@@ -168,10 +175,14 @@ function classify(hass: HomeAssistantWithRegistries, members: AreaMembers, exclu
     climate: ids.find((id) => id.startsWith("climate.")),
     media: players.find((id) => deviceClass(hass.states[id]) !== "tv"),
     tv: players.find((id) => deviceClass(hass.states[id]) === "tv"),
+    others: [],
     entities: [],
   };
+  const used = new Set([...lights, ...covers, ...players,
+    ...[resolved.temperature, resolved.humidity, resolved.climate].filter((id): id is string => Boolean(id))]);
+  resolved.others = ids.filter((id) => !used.has(id) && OTHER_DOMAINS.has(id.split(".")[0]!)).sort(byName);
   resolved.entities = [...new Set([
-    ...lights, ...covers,
+    ...lights, ...covers, ...resolved.others,
     ...[resolved.temperature, resolved.humidity, resolved.climate, resolved.media, resolved.tv].filter((id): id is string => Boolean(id)),
   ])];
   return resolved;

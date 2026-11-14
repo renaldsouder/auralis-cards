@@ -91,8 +91,11 @@ describe("Auralis areas", () => {
       climate: "climate.salon",
       media: "media_player.enceinte",
       tv: "media_player.tv",
+      // Les interrupteurs qui ne sont pas repris comme lumières vont dans « Autres ».
+      others: ["switch.guirlande", "switch.prise_tv"],
     });
     expect(resolved(resolveAreaEntities(house(), "cuisine")).lights).toEqual(["light.cuisine"]);
+
     expect(area.entities).toEqual(expect.arrayContaining(["light.plafonnier", "sensor.salon_temperature", "media_player.tv"]));
   });
 

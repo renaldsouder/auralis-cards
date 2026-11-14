@@ -182,12 +182,12 @@ export function runCoverCommand(host: CoverPopupHost, key: string, ids: string[]
 }
 
 /** Barre « Commande groupée » : ouvrir, stopper, fermer tous les volets disponibles. */
-export function renderCoverGroupBar(host: CoverPopupHost, ids: string[], keyPrefix: string): TemplateResult {
+export function renderCoverGroupBar(host: CoverPopupHost, ids: string[], keyPrefix: string, title: string | null = "Commande groupée"): TemplateResult {
   const commandable = ids.filter((id) => isCommandable(entity(host.hass, id)));
   const stopIds = commandable.filter((id) => canStopCover(entity(host.hass, id)));
   const busy = (command: string) => host.pending(`${keyPrefix}:${command}`);
   return html`
-    <div class="dialog-section-title">Commande groupée</div>
+    ${title ? html`<div class="dialog-section-title">${title}</div>` : nothing}
     <div class="group-bar">
       <button class="action" type="button" ?disabled=${!commandable.length || busy("open")} aria-busy=${busy("open") ? "true" : "false"}
         @click=${() => runCoverCommand(host, `${keyPrefix}:open`, commandable, "open")}><ha-icon icon="mdi:arrow-up"></ha-icon>Ouvrir</button>
@@ -201,7 +201,7 @@ export function renderCoverGroupBar(host: CoverPopupHost, ids: string[], keyPref
   `;
 }
 
-function renderCoverRow(host: CoverPopupHost, id: string): TemplateResult {
+export function renderCoverRow(host: CoverPopupHost, id: string): TemplateResult {
   const state = entity(host.hass, id);
   const label = host.label(id);
   const commandable = isCommandable(state);
