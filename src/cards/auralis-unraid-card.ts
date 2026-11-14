@@ -24,6 +24,7 @@ import {
   machinePercentage,
   machineStatusDot,
   machineStatusLabel,
+  machineFlowStyles,
   machineStyles,
   meterTrack,
   metricSeverity,
@@ -106,6 +107,11 @@ const FORM_LABELS: Record<string, string> = {
   array_stop_entity: "Commande d’arrêt de l’array",
   restart_entity: "Commande de redémarrage du serveur",
   shutdown_entity: "Commande d’arrêt du serveur",
+};
+
+/** États de l'array UNRAID, renvoyés en anglais par l'intégration. */
+const ARRAY_STATES: Record<string, string> = {
+  started: "Démarré", stopped: "Arrêté", starting: "Démarrage…", stopping: "Arrêt…",
 };
 
 export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
@@ -231,6 +237,7 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
         }
       }
     `,
+    machineFlowStyles,
   ];
 
   private serviceTab: ServiceTab = "docker";
@@ -380,7 +387,10 @@ export class AuralisUnraidCard extends AuralisBaseCard<UnraidCardConfig> {
   }
 
   private arrayState(availability: ReturnType<typeof machineAvailability>): string {
-    if (this.config?.array_state_entity) return displayState(this.hass, this.config.array_state_entity);
+    if (this.config?.array_state_entity) {
+      const raw = entity(this.hass, this.config.array_state_entity)?.state;
+      return (raw && ARRAY_STATES[raw]) || displayState(this.hass, this.config.array_state_entity);
+    }
     return availability === "unavailable" ? "Indisponible" : availability === "online" ? "Démarré" : "Arrêté";
   }
 

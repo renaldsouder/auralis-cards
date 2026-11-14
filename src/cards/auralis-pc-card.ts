@@ -14,6 +14,7 @@ import {
   machinePercentage,
   machineStatusDot,
   machineStatusLabel,
+  machineFlowStyles,
   machineStyles,
   meterTrack,
   metricSeverity,
@@ -215,6 +216,7 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
         .machine-bar { grid-template-columns: 58px minmax(0, 1fr) 40px; }
       }
     `,
+    machineFlowStyles,
   ];
 
   public setConfig(config: PcCardConfig): void {
@@ -315,7 +317,7 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
             ${this.renderResourceGauges(cpu, memory)}
             ${hasContext ? html`<div class="machine-context"><small>${user ? "Utilisateur" : session ? "Session" : "Uptime"}</small><strong>${user || session || uptime}</strong>${user && session ? html`<span>Session · ${session}</span>` : nothing}${uptime && (user || session) ? html`<span>Uptime · ${uptime}</span>` : nothing}</div>` : nothing}
             <section class="machine-panel">
-              <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${availability === "online" ? `${config.name} fonctionne normalement` : availability === "offline" ? `${config.name} est hors ligne` : `État de ${config.name} indisponible`}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>
+              <div class="machine-panel-head"><div class="machine-panel-title"><small>Performance</small><strong>${availability === "online" ? "Fonctionne normalement" : availability === "offline" ? "Hors ligne" : "État indisponible"}</strong></div><button class="machine-accent-action" @click=${() => this.openDialog("details")}><ha-icon icon="mdi:pulse"></ha-icon>Détails</button></div>
               ${panelBars.length ? html`<div class="machine-bars">${panelBars}</div>` : nothing}
               ${systemState || networkDown || networkUp || battery !== undefined ? html`<div class="machine-foot">${systemState ? html`<span class="pc-foot-item">Événement <strong>${systemState}</strong></span>` : nothing}${networkDown || networkUp ? html`<span class="pc-foot-item">Réseau <strong>${networkDown ? `↓ ${networkDown}` : ""}${networkDown && networkUp ? " · " : ""}${networkUp ? `↑ ${networkUp}` : ""}</strong></span>` : nothing}${battery !== undefined ? html`<span class="pc-foot-item">Batterie <strong class="sev-text ${severityClass(this.batteryLevel(battery))}">${percentageLabel(battery)}</strong></span>` : nothing}</div>` : nothing}
             </section>

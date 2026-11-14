@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.2
+
+- **PC, UNRAID, Proxmox** : les blocs s'empilent depuis le haut avec un écart régulier de 14 px. Plus de hauteur minimale de 530 px ni de bloc du bas repoussé au pied de la carte, qui laissaient un grand vide dans une colonne étroite. Le bloc d'informations (utilisateur, array) occupe toute la largeur.
+- **PC** : le titre du bloc Performance n'est plus répété avec le nom de la carte (« Fonctionne normalement », « Hors ligne », « État indisponible »).
+- **UNRAID** : l'état de l'array s'affiche en français (« Démarré », « Arrêté ») au lieu de « started ».
+
 ## 0.29.1
 
 - **Toutes les cartes** : une carte placée dans une autre (onglets de la page Pièces, par exemple) garde son état « en attente » jusqu'à la confirmation de l'appareil, avec « Allumage… » / « Extinction… » dans la fenêtre d'une pièce. Les deux cartes ne suivent plus la même commande chacune de leur côté.

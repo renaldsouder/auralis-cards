@@ -697,3 +697,34 @@ export const machineStyles = css`
     }
   }
 `;
+
+/**
+ * Mise en page des cartes machines (PC, UNRAID, Proxmox) : les blocs s'empilent depuis le haut
+ * avec un écart régulier, sans hauteur imposée ni bloc repoussé en bas de la carte, et le bloc
+ * d'informations occupe toute la largeur. Placé en dernier dans les styles de chaque carte.
+ */
+export const machineFlowStyles = css`
+  .machine-shell,
+  .machine-content {
+    min-height: 0;
+  }
+
+  .machine-content {
+    gap: 14px;
+  }
+
+  .machine-content > .machine-resource-gauges {
+    margin: 4px 58px 0 0;
+  }
+
+  .machine-content > .machine-context {
+    align-self: stretch;
+    max-width: none;
+    margin: 0;
+  }
+
+  .machine-content > .machine-panel,
+  .machine-content > .node-information {
+    margin: 0;
+  }
+`;
