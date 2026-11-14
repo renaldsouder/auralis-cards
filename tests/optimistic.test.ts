@@ -116,6 +116,34 @@ describe("Auralis base card tracking", () => {
     vi.stubGlobal("HTMLElement", class {});
   });
 
+  it("lets a card nested in another one track its own commands against the real states", async () => {
+    vi.stubGlobal("window", globalThis);
+    const callService = vi.fn(async () => undefined);
+    const real: HomeAssistant = { states: { "switch.tv": state("switch.tv", "on") }, callService };
+    const parent = new SwitchesCard();
+    parent.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.tv"] });
+    parent.hass = real;
+    const child = new SwitchesCard();
+    child.setConfig({ type: "custom:auralis-switches-card", switches: ["switch.tv"] });
+    // Une carte Onglets transmet son propre `hass` à ses cartes.
+    child.hass = parent.hass;
+    const internals = child as unknown as { runCommand(key: string, action: () => unknown): Promise<boolean>; isAwaiting(id: string): boolean };
+    await internals.runCommand("tv", () => child.hass!.callService("switch", "turn_off", {}, { entity_id: "switch.tv" }));
+    expect(callService).toHaveBeenCalledTimes(1);
+    expect(child.hass!.states["switch.tv"].state).toBe("off");
+    expect(internals.isAwaiting("switch.tv")).toBe(true);
+    // La carte parente redonne son `hass` à chaque mise à jour : l'attente de la carte imbriquée tient.
+    child.hass = parent.hass;
+    expect(internals.isAwaiting("switch.tv")).toBe(true);
+    // Une copie du `hass` montré garde le vrai `callService`.
+    child.hass = { ...child.hass!, states: { "switch.tv": state("switch.tv", "off") } };
+    expect(internals.isAwaiting("switch.tv")).toBe(false);
+    await internals.runCommand("tv2", () => child.hass!.callService("switch", "turn_on", {}, { entity_id: "switch.tv" }));
+    expect(callService).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("HTMLElement", class {});
+  });
+
   it("reverts at once when Home Assistant refuses the command", async () => {
     vi.stubGlobal("window", globalThis);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);

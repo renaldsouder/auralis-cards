@@ -9,6 +9,24 @@ import { collectEntityIds, hassChangeMatters } from "../utils/watch";
 import { CONFIRM_TIMEOUT, expectedChanges, isConfirmed, shownState, type PendingExpectation } from "../utils/optimistic";
 import { alertLevel, severity, severityClass } from "../utils/severity";
 
+/**
+ * Marque posée sur le `hass` montré par une carte (et sur son `callService` suivi) : une carte
+ * imbriquée (onglets, pile…) qui le reçoit retrouve le vrai `hass` de Home Assistant et suit ses
+ * propres commandes, sans que deux suivis se répondent l'un l'autre.
+ */
+const REAL_HASS = Symbol.for("auralis.realHass");
+
+type TrackedCallService = HomeAssistant["callService"] & { [REAL_HASS]?: () => HomeAssistant | undefined };
+
+/** Le `hass` de Home Assistant derrière celui qu'une carte Auralis a pu montrer. */
+export function unwrapHass(value: HomeAssistant | undefined): HomeAssistant | undefined {
+  if (!value) return value;
+  const marked = (value as HomeAssistant & { [REAL_HASS]?: HomeAssistant })[REAL_HASS];
+  if (marked) return marked;
+  const real = (value.callService as TrackedCallService)[REAL_HASS]?.();
+  return real ? { ...value, callService: real.callService } : value;
+}
+
 /** Durée pendant laquelle un réveil demandé reste affiché « en cours ». */
 export const WAKE_WINDOW = 180_000;
 
@@ -111,11 +129,8 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
 
   set hass(value: HomeAssistant | undefined) {
     const old = this.shownHass;
-    // Un `hass` déjà montré par cette carte, renvoyé tel quel : on garde le vrai `callService`.
-    if (value && value.callService === this.trackedCallService) {
-      value = { ...value, callService: this.realHass?.callService ?? (() => Promise.reject(new Error("Home Assistant n'est pas disponible."))) };
-    }
-    this.realHass = value;
+    // Un `hass` montré par une carte Auralis (celle-ci ou une carte parente) : on repart du vrai.
+    this.realHass = unwrapHass(value);
     this.settleExpectations();
     this.shownHass = this.buildShownHass();
     this.requestUpdate("hass", old);
@@ -132,7 +147,10 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
         if (shown) states[id] = shown;
       }
     }
-    return { ...real, states, callService: this.trackedCallService };
+    const shown: HomeAssistant = { ...real, states, callService: this.trackedCallService };
+    // Non énumérable : une copie `{ ...hass }` ne la reprend pas.
+    Object.defineProperty(shown, REAL_HASS, { value: real, enumerable: false });
+    return shown;
   }
 
   private refreshShownHass(): void {
@@ -142,7 +160,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   }
 
   /** Appel de service suivi : l'état visé s'affiche aussitôt et attend la confirmation de l'appareil. */
-  private trackedCallService = (...args: Parameters<HomeAssistant["callService"]>): Promise<unknown> => {
+  private trackedCallService: TrackedCallService = (...args: Parameters<HomeAssistant["callService"]>): Promise<unknown> => {
     const real = this.realHass;
     if (!real) return Promise.reject(new Error("Home Assistant n'est pas disponible."));
     const [domain, service, data, target] = args;
@@ -170,6 +188,9 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     });
     return result;
   };
+
+  // Le `callService` suivi sait retrouver le vrai `hass` (voir `unwrapHass`).
+  private readonly markTracked = Object.defineProperty(this.trackedCallService, REAL_HASS, { value: () => this.realHass, enumerable: false });
 
   private targetsOf(data?: Record<string, unknown>, target?: Record<string, unknown>): string[] {
     const raw = target?.entity_id ?? data?.entity_id;
