@@ -39,6 +39,27 @@ describe("Auralis energy card", () => {
     expect(energy.convertMeterValue(2, "kg", "kWh")).toBeUndefined();
   });
 
+  it("opens a detailed view from its header when navigation_path is set", () => {
+    const text = (value: unknown): string => {
+      if (Array.isArray(value)) return value.map(text).join("");
+      if (value && typeof value === "object" && "strings" in value && "values" in value) {
+        const result = value as { strings: readonly string[]; values: unknown[] };
+        return result.strings.join("") + result.values.map(text).join("");
+      }
+      return "";
+    };
+    const card = new energy.AuralisEnergyCard();
+    const header = (card as unknown as { renderHeader(profile: unknown): unknown }).renderHeader.bind(card);
+    const profile = { icon: "mdi:lightning-bolt", eyebrow: "Énergie", title: "Consommation électrique" };
+    card.setConfig({ type: "custom:auralis-energy-card", energy_entity: "sensor.compteur" });
+    expect(text(header(profile))).toContain("<header");
+    card.setConfig({ type: "custom:auralis-energy-card", energy_entity: "sensor.compteur", navigation_path: "/maison/energie" });
+    expect(text(header(profile))).toContain("<button");
+    expect(text(header(profile))).toContain("open-view");
+    expect(() => card.setConfig({ type: "custom:auralis-energy-card", energy_entity: "sensor.compteur", navigation_path: "https://exemple.fr" })).toThrow("navigation_path");
+    expect(energy.AuralisEnergyCard.getConfigForm().schema.map(({ name }) => name)).toContain("navigation_path");
+  });
+
   it("retries a failed history load after 30 s, then backs off up to 5 minutes", () => {
     expect(energy.historyRetryDelay(0)).toBe(300_000);
     expect(energy.historyRetryDelay(1)).toBe(30_000);

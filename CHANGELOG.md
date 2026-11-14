@@ -2,6 +2,7 @@
 
 ## 0.25.1
 
+- **Énergie** : nouvelle option `navigation_path`. Un appui sur l'en-tête de la carte ouvre la vue indiquée (une page Énergie détaillée, par exemple) ; un chevron le signale.
 - **Lumières** : le chevron d'accès aux réglages disparaît, la photo suffit. Les boutons allumer et éteindre prennent sa place, à droite du nom du groupe : une rangée de moins, la carte est plus basse.
 - **Toutes les cartes** : la petite icône de réglages de la carte Lumières marque désormais chaque image qui ouvre une fenêtre : groupes de volets (à la place du chevron), groupes d'interrupteurs et de prises, vignettes de caméras et pochette du lecteur multimédia.
 

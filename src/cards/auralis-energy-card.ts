@@ -2,6 +2,7 @@ import { css, html, nothing } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import type { BaseCardConfig } from "../types/config";
 import { fireMoreInfo } from "../utils/actions";
+import { isInternalPath, navigate } from "../utils/navigation";
 import type { HassEntity } from "../types/home-assistant";
 import { entity, formatNumber, numericState } from "../utils/entities";
 
@@ -27,6 +28,8 @@ export interface EnergyCardConfig extends BaseCardConfig {
   offpeak_price?: number;
   /** Plages des heures creuses, `["22:00-06:00"]` ou `"01:30-07:30, 12:30-14:30"`. */
   offpeak_hours?: string[] | string;
+  /** Vue ouverte par un appui sur l'en-tête (`/tableau/vue`), par exemple une page Énergie détaillée. */
+  navigation_path?: string;
 }
 
 export interface EnergyProfile {
@@ -305,6 +308,10 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       background: radial-gradient(ellipse at top right, var(--auralis-accent-soft), transparent 70%), var(--auralis-card);
     }
     .energy-header { margin-bottom: 10px; }
+    /* En-tête qui ouvre une vue détaillée (navigation_path). */
+    button.energy-header { width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    button.energy-header:focus-visible { outline: 2px solid var(--energy-current); outline-offset: 4px; border-radius: 12px; }
+    .energy-header .open-view { margin-left: auto; flex: 0 0 auto; --mdc-icon-size: 22px; color: var(--auralis-muted); }
     .energy-icon {
       display: grid;
       flex: 0 0 auto;
@@ -444,12 +451,14 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
       offpeak_price: "Prix des heures creuses",
       offpeak_hours: "Heures creuses (ex. 22:00-06:00, 12:00-14:00)",
       show_cost: "Afficher les coûts",
+      navigation_path: "Vue ouverte par un appui sur l’en-tête (/tableau/vue)",
     };
     return {
       schema: [
         { name: "name", selector: { text: {} } },
         { name: "energy_entity", required: true, selector: { entity: { filter: { domain: "sensor" } } } },
         { name: "power_entity", selector: { entity: { filter: { domain: "sensor" } } } },
+        { name: "navigation_path", selector: { text: {} } },
         { name: "unit", selector: { select: { options: ["kWh", "Wh", "MWh", "m³", "L"], custom_value: true } } },
         { name: "decimals", selector: { number: { min: 0, max: 3, step: 1, mode: "box" } } },
         { name: "price", selector: { number: { min: 0, step: 0.0001, mode: "box" } } },
@@ -474,6 +483,9 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
 
   public setConfig(config: EnergyCardConfig): void {
     if (!config.energy_entity?.trim()) throw new Error("Le capteur d’énergie (energy_entity) est requis.");
+    if (config.navigation_path !== undefined && config.navigation_path !== "" && !isInternalPath(config.navigation_path)) {
+      throw new Error("navigation_path doit être un chemin interne, par exemple /tableau/energie.");
+    }
     this.config = { ...config, energy_entity: config.energy_entity.trim(), theme: config.theme ?? "auto" };
   }
 
@@ -672,6 +684,16 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     </button>`;
   }
 
+  /** En-tête ; avec navigation_path, un appui ouvre la vue détaillée (chevron à droite). */
+  private renderHeader(profile: EnergyProfile) {
+    const content = html`<span class="energy-icon"><ha-icon .icon=${this.config?.icon ?? profile.icon}></ha-icon></span>
+      <div class="title-wrap"><p class="eyebrow">${profile.eyebrow}</p><h2>${this.config?.name || profile.title}</h2></div>`;
+    const path = this.config?.navigation_path;
+    if (!path || !isInternalPath(path)) return html`<header class="header energy-header">${content}</header>`;
+    return html`<button type="button" class="header energy-header" aria-label=${`${this.config?.name || profile.title} : ouvrir le détail`}
+      @click=${() => navigate(path)}>${content}<ha-icon class="open-view" icon="mdi:chevron-right"></ha-icon></button>`;
+  }
+
   protected render() {
     if (!this.config) return nothing;
     const today = Date.parse(this.dayFormatter.format(Date.now()));
@@ -687,10 +709,7 @@ export class AuralisEnergyCard extends AuralisBaseCard<EnergyCardConfig> {
     return html`
       <ha-card>
         <div class="energy-shell">
-          <header class="header energy-header">
-            <span class="energy-icon"><ha-icon .icon=${this.config.icon ?? profile.icon}></ha-icon></span>
-            <div class="title-wrap"><p class="eyebrow">${profile.eyebrow}</p><h2>${this.config.name || profile.title}</h2></div>
-          </header>
+          ${this.renderHeader(profile)}
           <div class="totals">
             ${this.renderTotal("Aujourd’hui", "current", days[6].current, cost(days[6].date, days[6].current))}
             ${this.renderTotal("Il y a 7 jours", "previous", days[6].previous, cost(days[6].date - 7 * DAY, days[6].previous))}
