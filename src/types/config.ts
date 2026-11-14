@@ -169,6 +169,8 @@ export interface CoversCardConfig extends BaseCardConfig {
   columns?: number;
   /** En-tête (icône, nom, état) : affiché par défaut quand `name` est renseigné. */
   show_header?: boolean;
+  /** Tuiles carrées compactes, pour une colonne étroite (accueil d'une tablette). */
+  compact?: boolean;
   entity_labels?: Record<string, string>;
 }
 

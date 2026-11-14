@@ -1,6 +1,7 @@
 import { css, html, nothing, svg, type TemplateResult } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import { chartPaths, chartPeriods, niceTicks, parseHistory, resampleHistory, seriesStyle, valuesAt } from "./auralis-climate-card";
+import { localClock } from "./auralis-energy-card";
 import type { BaseCardConfig } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { entity, formatNumber, friendlyName, isAvailable, numericState } from "../utils/entities";
@@ -72,6 +73,7 @@ interface HistoryState {
 }
 
 const HOUR = 3_600_000;
+const DAY = 86_400_000;
 const REFRESH_INTERVAL = 300_000;
 const LONG_REFRESH_INTERVAL = 1_800_000;
 const POWER_BUCKETS = 96;
@@ -119,6 +121,38 @@ export function cumulativeSeries(rows: StatisticRow[] | undefined, start: number
   return { values, total: sum };
 }
 
+export interface WeekDay {
+  /** Minuit UTC de la date locale. */
+  date: number;
+  current?: number;
+  previous?: number;
+}
+
+/**
+ * Sept derniers jours (aujourd'hui compris) face aux sept jours précédents, à partir des
+ * statistiques journalières du Recorder rangées par date locale.
+ */
+export function weekComparison(rows: StatisticRow[] | undefined, now: number, timeZone?: string): { days: WeekDay[]; current?: number; previous?: number } {
+  const usage = new Map<number, number>();
+  for (const row of rows ?? []) {
+    const time = typeof row.start === "number" ? row.start : Date.parse(String(row.start ?? ""));
+    if (!Number.isFinite(time) || !isNumber(row.change) || row.change < 0) continue;
+    const day = localClock(time, timeZone).day;
+    usage.set(day, (usage.get(day) ?? 0) + row.change);
+  }
+  const today = localClock(now, timeZone).day;
+  const days = Array.from({ length: 7 }, (_, index): WeekDay => {
+    const date = today - (6 - index) * DAY;
+    return { date, current: usage.get(date), previous: usage.get(date - 7 * DAY) };
+  });
+  const sum = (values: Array<number | undefined>): number | undefined =>
+    values.some(isNumber) ? values.filter(isNumber).reduce((total, value) => total + value, 0) : undefined;
+  return { days, current: sum(days.map((day) => day.current)), previous: sum(days.map((day) => day.previous)) };
+}
+
+const weekdayShort = new Intl.DateTimeFormat("fr-FR", { weekday: "short", timeZone: "UTC" });
+const weekdayLong = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+
 export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfig> {
   static properties = {
     ...AuralisBaseCard.properties,
@@ -128,6 +162,9 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
     hours: { state: true },
     focused: { state: true },
     hoverIndex: { state: true },
+    week: { state: true },
+    weekError: { state: true },
+    activeDay: { state: true },
   };
 
   static styles = [AuralisBaseCard.styles, css`
@@ -196,6 +233,36 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
     .legend-row .name { overflow:hidden; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
     .legend-row .values { display:flex; align-items:baseline; gap:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); white-space:nowrap; }
     .legend-row .values strong { color:var(--auralis-text); font-size:17px; font-weight:740; letter-spacing:-.03em; line-height:1; }
+    /* Appareil choisi : sept derniers jours face aux sept précédents. */
+    .week { margin-top:12px; padding-top:12px; border-top:1px solid var(--auralis-border); }
+    .week-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 12px; }
+    .week-head .eyebrow { color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+    .week-totals { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .week-totals strong { margin-inline-start:4px; color:var(--auralis-text); font-size:var(--auralis-text-md); font-weight:740; }
+    .week-totals .current strong { color:var(--color); }
+    .week-totals .delta { padding:2px 8px; border-radius:999px; background:color-mix(in srgb,var(--auralis-text) 8%,transparent); color:var(--auralis-text); font-weight:700; }
+    .week-totals .delta.up { color:var(--auralis-active-ink); background:color-mix(in srgb,var(--auralis-active) 14%,transparent); }
+    .week-totals .delta.down { color:var(--auralis-healthy-ink); background:color-mix(in srgb,var(--auralis-healthy) 14%,transparent); }
+    .week-key { display:inline-block; width:9px; height:9px; margin-inline-end:5px; border-radius:3px; background:var(--color); }
+    .week-key.previous { background:var(--previous); }
+    .week-chart { position:relative; margin-top:10px; padding-inline-start:30px; }
+    .week-plot { position:relative; height:92px; }
+    .week-plot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); }
+    .week-plot .gridline span { position:absolute; inset-inline-end:calc(100% + 6px); transform:translateY(-50%); color:var(--auralis-muted); font-size:var(--auralis-text-xs); }
+    .week-days { position:absolute; inset:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; }
+    .week-day { display:flex; min-width:0; align-items:flex-end; justify-content:center; gap:3px; padding:0 2px; border:0; border-radius:6px 6px 0 0; background:none; cursor:pointer; }
+    .week-day[aria-expanded="true"] { background:color-mix(in srgb,var(--auralis-text) 7%,transparent); }
+    .week-day:focus-visible { outline:2px solid var(--auralis-info); outline-offset:-2px; }
+    .week-bar { width:36%; max-width:20px; min-height:2px; border-radius:4px 4px 1px 1px; background:var(--color); }
+    .week-bar.previous { background:var(--previous); }
+    .week-bar[hidden] { display:block; visibility:hidden; }
+    .week-labels { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; padding-top:5px; }
+    .week-labels span { color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-align:center; text-transform:capitalize; }
+    .week-labels span:last-child { color:var(--auralis-text); font-weight:700; }
+    .week-tip { position:absolute; top:-6px; right:0; z-index:2; display:grid; gap:3px; padding:7px 10px; border:1px solid var(--auralis-border); border-radius:11px; background:color-mix(in srgb,var(--auralis-surface) 94%,transparent); box-shadow:0 10px 26px rgba(0,0,0,.25); font-size:var(--auralis-text-xs); pointer-events:none; }
+    .week-tip span { color:var(--auralis-muted); }
+    .week-tip strong { margin-inline-start:6px; color:var(--auralis-text); }
+    .week-empty { margin:10px 0 0; color:var(--auralis-muted); font-size:var(--auralis-text-sm); }
     @container (max-width:640px) {
       .chart-layout { grid-template-columns:1fr; }
       .legend { grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); }
@@ -211,6 +278,10 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
   private timer?: number;
   private request?: { key: string; time: number };
   private configuredMetric?: ConsumptionMetric;
+  private week?: { key: string; time: number; rows: StatisticRow[] };
+  private weekError = false;
+  private weekRequest?: { key: string; time: number };
+  private activeDay?: number;
   private configuredHours?: number;
 
   static getStubConfig(hass?: HomeAssistant): Partial<ConsumptionCardConfig> {
@@ -308,6 +379,92 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
   protected updated(): void {
     super.updated();
     void this.refreshHistory();
+    void this.refreshWeek();
+  }
+
+  /** Compteur d'énergie comparé sur deux semaines : celui de l'appareil choisi, ou de la maison. */
+  private weekEntity(): string | undefined {
+    if (this.focused === undefined) return undefined;
+    if (this.focused === TOTAL) return this.config?.total_energy_entity;
+    return this.config?.devices[this.focused]?.energy_entity;
+  }
+
+  /** Statistiques journalières des quinze derniers jours du compteur choisi, relues toutes les 5 minutes. */
+  private async refreshWeek(): Promise<void> {
+    const id = this.weekEntity();
+    if (!id || !this.hass?.callWS) return;
+    const timeZone = this.hass.config?.time_zone;
+    const key = `${id}/${timeZone ?? ""}`;
+    const time = Date.now();
+    if (this.weekRequest?.key === key && time - this.weekRequest.time < REFRESH_INTERVAL) return;
+    if (this.weekRequest?.key !== key) {
+      this.week = undefined;
+      this.weekError = false;
+      this.activeDay = undefined;
+    }
+    const request = { key, time };
+    this.weekRequest = request;
+    try {
+      const result = await this.hass.callWS<Record<string, StatisticRow[]>>({
+        type: "recorder/statistics_during_period",
+        // Les intervalles journaliers suivent le fuseau de Home Assistant : une marge couvre J−13.
+        start_time: new Date(time - 15 * DAY).toISOString(),
+        statistic_ids: [id],
+        period: "day",
+        types: ["change"],
+        units: { energy: "kWh" },
+      });
+      if (this.weekRequest !== request) return;
+      this.week = { key, time, rows: result?.[id] ?? [] };
+      this.weekError = false;
+    } catch {
+      if (this.weekRequest === request) this.weekError = true;
+    }
+  }
+
+  /** Bloc « 7 jours comparés » de l'appareil (ou de la maison) choisi : barres par jour, totaux et écart. */
+  private renderWeek(label: string, color: string, id: string | undefined): TemplateResult {
+    if (!id) return html`<p class="week-empty">Pas de compteur d’énergie : comparaison sur 7 jours indisponible.</p>`;
+    const timeZone = this.hass?.config?.time_zone;
+    const loaded = this.week?.key === `${id}/${timeZone ?? ""}` ? this.week : undefined;
+    if (!loaded) return html`<p class="week-empty" role="status">${this.weekError ? "Statistiques indisponibles" : "Chargement des 7 jours…"}</p>`;
+    const { days, current, previous } = weekComparison(loaded.rows, Date.now(), timeZone);
+    const peak = Math.max(0.1, ...days.map((day) => Math.max(day.current ?? 0, day.previous ?? 0)));
+    const ceiling = niceTicks(0, peak, 0.1, 3).max;
+    const delta = current !== undefined && previous ? ((current - previous) / previous) * 100 : undefined;
+    const active = days.find((day) => day.date === this.activeDay);
+    const bar = (series: string, amount?: number) => html`<span class="week-bar ${series}" aria-hidden="true" ?hidden=${amount === undefined}
+      style=${`height:${((amount ?? 0) / ceiling) * 100}%`}></span>`;
+    return html`<div class="week" style=${`--color:${color};--previous:color-mix(in srgb,${color} 38%,var(--auralis-muted))`}>
+      <div class="week-head">
+        <span class="eyebrow">7 jours comparés</span>
+        <span class="week-totals">
+          <span class="current"><span class="week-key"></span>7 derniers jours<strong>${formatEnergy(current)}</strong></span>
+          <span class="previous"><span class="week-key previous"></span>7 jours précédents<strong>${formatEnergy(previous)}</strong></span>
+          ${delta === undefined ? nothing : html`<span class="delta ${delta > 0.5 ? "up" : delta < -0.5 ? "down" : ""}">${delta > 0 ? "+" : ""}${formatNumber(delta)} %</span>`}
+        </span>
+      </div>
+      <div class="week-chart" @mouseleave=${() => { this.activeDay = undefined; }}>
+        <div class="week-plot">
+          ${[0, 0.5, 1].map((ratio) => html`<div class="gridline" aria-hidden="true" style=${`bottom:${ratio * 100}%`}>
+            <span>${formatNumber(ceiling * ratio, ceiling < 1 ? 2 : ceiling < 10 ? 1 : 0)}</span></div>`)}
+          <div class="week-days" role="group" aria-label=${`Consommation journalière de ${label} en kWh`}>
+            ${days.map((day) => html`<button type="button" class="week-day" aria-expanded=${day.date === this.activeDay ? "true" : "false"}
+              aria-label=${`${weekdayLong.format(day.date)} : ${formatEnergy(day.current)}. Même jour la semaine précédente : ${formatEnergy(day.previous)}`}
+              @pointerenter=${(event: PointerEvent) => { if (event.pointerType === "mouse") this.activeDay = day.date; }}
+              @focus=${() => { this.activeDay = day.date; }}
+              @click=${() => { this.activeDay = this.activeDay === day.date ? undefined : day.date; }}>
+              ${bar("current", day.current)}${bar("previous", day.previous)}
+            </button>`)}
+          </div>
+        </div>
+        <div class="week-labels" aria-hidden="true">${days.map((day, index) => html`<span>${index === 6 ? "Auj." : weekdayShort.format(day.date)}</span>`)}</div>
+        ${active ? html`<div class="week-tip" aria-hidden="true">
+          <div><span>${weekdayLong.format(active.date)}</span><strong>${formatEnergy(active.current)}</strong></div>
+          <div><span>Semaine précédente</span><strong>${formatEnergy(active.previous)}</strong></div>
+        </div>` : nothing}
+      </div>
+    </div>`;
   }
 
   private ids(metric: ConsumptionMetric): string[] {
@@ -568,7 +725,7 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
       const missing = focused && !(metric === "power" ? focused.device.power_entity : focused.device.energy_entity);
       const message = missing ? (metric === "power" ? "Pas de capteur de puissance pour cet appareil." : "Pas de compteur d’énergie pour cet appareil.")
         : this.historyError ? "Historique indisponible" : history || !this.hass?.callWS ? "Aucune mesure sur cette période" : "Chargement de l’historique…";
-      return html`<section class="global">${head}<p class="chart-empty" role="status">${message}</p></section>`;
+      return html`<section class="global">${head}<p class="chart-empty" role="status">${message}</p>${this.renderFocusedWeek(focused, focusTotal)}</section>`;
     }
     const values = series.flatMap((item) => item.values.filter(isNumber));
     const scale = niceTicks(0, Math.max(...values), metric === "power" ? 10 : 0.1);
@@ -615,7 +772,14 @@ export class AuralisConsumptionCard extends AuralisBaseCard<ConsumptionCardConfi
       <div class="time-axis" aria-hidden="true">
         <span>${this.timeLabel(start, hours)}</span><span>${this.timeLabel((start + end) / 2, hours)}</span><span>Maintenant</span>
       </div>
+      ${this.renderFocusedWeek(focused, focusTotal)}
     </section>`;
+  }
+
+  private renderFocusedWeek(focused: DeviceView | undefined, focusTotal: boolean): TemplateResult | typeof nothing {
+    if (focused) return this.renderWeek(focused.label, focused.color, focused.device.energy_entity);
+    if (focusTotal) return this.renderWeek("la maison", "var(--auralis-text)", this.config?.total_energy_entity);
+    return nothing;
   }
 
   /** Liste à droite : la maison puis chaque appareil, puissance actuelle et énergie de la période ; un appui isole une courbe. */

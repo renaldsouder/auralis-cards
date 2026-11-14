@@ -42,6 +42,8 @@ Un appareil a besoin d'au moins `power_entity` ou `energy_entity`. Les options v
 - **Puissance** : l'historique des capteurs de puissance, moyenné sur 96 intervalles, terminé par la mesure actuelle.
 - **Énergie cumulée** : les statistiques horaires du Recorder (`change`), additionnées depuis le début de la période. La dernière valeur de chaque courbe est donc l'énergie consommée sur la période, reprise dans la liste et le résumé. L'heure en cours n'est pas encore comptée.
 
+Quand un appareil (ou la maison) est choisi, un bloc « 7 jours comparés » s'ajoute sous le graphe : une paire de barres par jour (les sept derniers jours, aujourd'hui compris, face aux sept précédents, d'après les statistiques journalières), les deux totaux et l'écart en pourcentage. Un appui sur un jour affiche ses deux valeurs. Ce bloc demande un compteur d'énergie (`energy_entity`, ou `total_energy_entity` pour la maison).
+
 Survol, toucher ou flèches du clavier sur le graphe : heure et valeur de chaque courbe. Le bouton « i » d'un appareil isolé ouvre sa fiche Home Assistant. L'historique est relu toutes les 5 minutes (30 minutes au-delà de 48 heures).
 
 Les couleurs des courbes reprennent la palette du graphe des températures, validée pour le daltonisme en version claire et sombre ; au-delà de huit appareils, les couleurs reviennent en tirets puis en pointillés.

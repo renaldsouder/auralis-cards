@@ -393,6 +393,20 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         gap: 11px;
       }
 
+      /* compact : tuiles carrées pour une colonne étroite (accueil d'une tablette). */
+      .covers-shell.compact { padding: 10px; }
+      .compact .groups-grid { gap: 8px; }
+      .compact .group-tile { min-height: 0; aspect-ratio: 1 / 1; border-radius: 16px; }
+      .compact .group-open { min-height: 0; padding: 10px; }
+      .compact .group-topline { gap: 7px; }
+      .compact .group-topline .tile-icon { width: 30px; height: 30px; border-radius: 10px; }
+      .compact .group-topline .tile-icon ha-icon { --mdc-icon-size: 17px; }
+      .compact .group-name { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+      .compact .group-state { padding: 2px 7px; font-size: var(--auralis-text-xs); }
+      .compact .group-controls { gap: 4px; padding: 0 8px 8px; }
+      .compact .group-control { min-height: 36px; padding: 4px; border-radius: 9px; }
+      .compact .group-control ha-icon { --mdc-icon-size: 18px; }
+
       .group-tile {
         position: relative;
         display: flex;
@@ -582,6 +596,14 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
       /* Une colonne sous 330 px de contenu (téléphone) ; une colonne de tableau sur tablette (~350 px) garde deux groupes côte à côte. */
       @container (max-width: 330px) {
+        .compact .groups-grid:not(.single-column) {
+          grid-template-columns: repeat(min(var(--group-columns, 2), 2), minmax(0, 1fr));
+        }
+
+        .compact .group-tile {
+          min-height: 0;
+        }
+
         .groups-grid:not(.single-column),
         .groups-grid.single-column {
           grid-template-columns: 1fr;
@@ -632,7 +654,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème",
-      group_columns: "Colonnes de groupes", groups: "Groupes de volets",
+      group_columns: "Colonnes de groupes", groups: "Groupes de volets", compact: "Tuiles carrées compactes",
       entity_labels: "Noms personnalisés", background_image: "Image de fond des groupes", accent_color: "Couleur d’accent",
       card_background: "Fond de la carte",
     };
@@ -641,6 +663,8 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { name: "show_header", selector: { boolean: {} } },
+        { name: "compact", selector: { boolean: {} } },
+
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"], mode: "dropdown" } } },
         { name: "group_columns", selector: { number: { min: 1, max: 4, step: 1, mode: "box" } } },
         { name: "groups", selector: listSelector({
@@ -759,7 +783,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
 
     return html`
       <ha-card>
-        <div class="covers-shell">
+        <div class="covers-shell ${this.config.compact ? "compact" : ""}">
           ${this.renderHeader()}
           <div class=${columns === 1 ? "groups-grid single-column" : "groups-grid"} style=${`--group-columns:${columns}`}>
             ${groups.map((group, index) => this.renderGroup(group, index))}

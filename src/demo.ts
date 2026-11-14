@@ -812,6 +812,7 @@ mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-climate-card", { ...climate, name: "Graphe global", layout: "chart" });
 mount("auralis-covers-card", covers);
+mount("auralis-covers-card", { ...covers, name: undefined, compact: true, groups: covers.groups.slice(0, 2), group_columns: 2 });
 mount("auralis-switches-card", switches);
 mount("auralis-thermostat-card", thermostat);
 mount("auralis-pc-card", pc);

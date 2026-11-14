@@ -393,7 +393,7 @@ groups:
 
 Les quatre photos intégrées se répètent si davantage de groupes sont configurés. Les entités absentes ou indisponibles restent visibles, et leurs commandes individuelles sont désactivées.
 
-`group_columns` règle le nombre de colonnes des groupes, de 1 à 4. Sans cette option, un seul groupe occupe toute la largeur et plusieurs groupes utilisent deux colonnes. Pour forcer une seule colonne, ajoutez `group_columns: 1` au niveau de la carte, à côté de `theme`. Sur une carte étroite, la grille réduit automatiquement le nombre de colonnes pour garder les commandes utilisables. Cette option est distincte de `grid_options.columns`, qui règle la largeur de la carte dans Home Assistant.
+`group_columns` règle le nombre de colonnes des groupes, de 1 à 4. Sans cette option, un seul groupe occupe toute la largeur et plusieurs groupes utilisent deux colonnes. Pour forcer une seule colonne, ajoutez `group_columns: 1` au niveau de la carte, à côté de `theme`. Sur une carte étroite, la grille réduit automatiquement le nombre de colonnes pour garder les commandes utilisables. Cette option est distincte de `grid_options.columns`, qui règle la largeur de la carte dans Home Assistant. `compact: true` affiche des tuiles carrées plus petites (nom, état et commandes sur la photo), pour une colonne étroite comme l'accueil d'une tablette ; deux groupes y restent côte à côte, même sur un téléphone.
 
 ## Carte Prises et interrupteurs
 
