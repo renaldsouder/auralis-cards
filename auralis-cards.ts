@@ -10,6 +10,7 @@ import { AuralisSwitchesCard } from "./src/cards/auralis-switches-card";
 import { AuralisThermostatCard } from "./src/cards/auralis-thermostat-card";
 import { AuralisFridgeCard } from "./src/cards/auralis-fridge-card";
 import { AuralisEnergyCard } from "./src/cards/auralis-energy-card";
+import { AuralisConsumptionCard } from "./src/cards/auralis-consumption-card";
 import { AuralisClimateCard } from "./src/cards/auralis-climate-card";
 import { AuralisWeatherCard } from "./src/cards/auralis-weather-card";
 import { AuralisActionsCard } from "./src/cards/auralis-actions-card";
@@ -20,7 +21,7 @@ import { AuralisScreensaverCard } from "./src/cards/auralis-screensaver-card";
 import { AuralisBatteriesCard } from "./src/cards/auralis-batteries-card";
 import { AuralisIrrigationCard } from "./src/cards/auralis-irrigation-card";
 
-const VERSION = "0.25.1";
+const VERSION = "0.26.0";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);
@@ -33,6 +34,7 @@ if (!customElements.get("auralis-switches-card")) customElements.define("auralis
 if (!customElements.get("auralis-thermostat-card")) customElements.define("auralis-thermostat-card", AuralisThermostatCard);
 if (!customElements.get("auralis-fridge-card")) customElements.define("auralis-fridge-card", AuralisFridgeCard);
 if (!customElements.get("auralis-energy-card")) customElements.define("auralis-energy-card", AuralisEnergyCard);
+if (!customElements.get("auralis-consumption-card")) customElements.define("auralis-consumption-card", AuralisConsumptionCard);
 if (!customElements.get("auralis-climate-card")) customElements.define("auralis-climate-card", AuralisClimateCard);
 if (!customElements.get("auralis-weather-card")) customElements.define("auralis-weather-card", AuralisWeatherCard);
 if (!customElements.get("auralis-actions-card")) customElements.define("auralis-actions-card", AuralisActionsCard);
@@ -163,6 +165,12 @@ const cards = [
     type: "auralis-energy-card",
     name: "Auralis · Énergie",
     description: "Consommation électrique quotidienne comparée à J−7, puissance et index compteur.",
+    preview: true,
+  },
+  {
+    type: "auralis-consumption-card",
+    name: "Auralis · Consommation par appareil",
+    description: "Graphe global de la puissance ou de l’énergie de chaque appareil, avec la maison en référence.",
     preview: true,
   },
   {
