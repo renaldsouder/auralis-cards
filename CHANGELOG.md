@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.1
+
+- **Toutes les cartes** : une carte placée dans une autre (onglets de la page Pièces, par exemple) garde son état « en attente » jusqu'à la confirmation de l'appareil, avec « Allumage… » / « Extinction… » dans la fenêtre d'une pièce. Les deux cartes ne suivent plus la même commande chacune de leur côté.
+
 ## 0.29.0
 
 - **Toutes les cartes** : retour immédiat après un appui. L'état demandé s'affiche aussitôt (interrupteur basculé, lampe allumée, curseur à sa nouvelle valeur, volet à sa position, volume, mode du thermostat, verrou…) et l'élément pulse doucement jusqu'à ce que l'appareil confirme. Plus d'attente sans réaction pendant qu'une lampe Zigbee ou un volet répond.
