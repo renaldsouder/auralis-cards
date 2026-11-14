@@ -7,6 +7,7 @@ import type { HassEntity, HomeAssistant } from "../types/home-assistant";
 import { coverCommand, fireMoreInfo, setCoverPosition } from "../utils/actions";
 import { canStopCover, coverPosition, displayState, entity, friendlyName, isCommandable } from "../utils/entities";
 import { entitySelector, ICON, listSelector, TEXT } from "../utils/form";
+import { photoHint } from "../utils/photo-hint";
 
 /* -------------------------------------------------------------------------------------------
  * Outils partagés par les cartes « maison » (Volets, Pièce, Lumières, Prises).
@@ -719,7 +720,7 @@ export class AuralisCoversCard extends AuralisBaseCard<CoversCardConfig> {
           </span>
           <span class="group-bottomline">
             <span class=${`group-state ${status.tone}`}>${status.label}</span>
-            <ha-icon class="group-arrow" icon="mdi:chevron-right"></ha-icon>
+            ${photoHint(true)}
           </span>
         </button>
         <div class="group-controls" role="group" aria-label=${`Commandes du groupe ${name}`}>

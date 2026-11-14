@@ -119,6 +119,26 @@ export const sharedStyles = css`
     box-shadow: var(--auralis-shadow);
   }
 
+  /* Indice « réglages » sur une image qui ouvre la fenêtre de la carte (utils/photo-hint). */
+  .photo-hint {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(7, 13, 20, 0.55);
+    color: #fff;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+  }
+  .photo-hint.inline { position: static; flex: 0 0 auto; width: 26px; height: 26px; }
+  .photo-hint ha-icon { --mdc-icon-size: 17px; }
+  .photo-hint.inline ha-icon { --mdc-icon-size: 15px; }
+
   .shell {
     position: relative;
     padding: 20px;

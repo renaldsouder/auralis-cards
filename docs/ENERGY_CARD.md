@@ -26,6 +26,7 @@ Le capteur `energy_entity` doit être un compteur cumulé qui alimente les stati
 | `theme` | `auto` | `auto` suit le mode clair ou sombre de Home Assistant ; `halo`, `carbon`, `mono` ou `aurora`. |
 | `accent_color` | — | Couleur de la semaine en cours (barres, total du jour). |
 | `card_background` | — | Fond de la carte : `{ mode: solid, color: "#101923" }` ou `{ mode: gradient, gradient: "linear-gradient(…)" }`. |
+| `navigation_path` | — | Vue ouverte par un appui sur l'en-tête de la carte (`/tableau/vue`), par exemple une page Énergie détaillée. Un chevron apparaît alors à droite du titre. |
 
 Le type de compteur vient de la classe du capteur (`device_class`) : `gas` pour le gaz, `water` pour l'eau (ou une unité L, mL, gal sans classe), électricité sinon.
 

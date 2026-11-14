@@ -5,6 +5,7 @@ import type { SwitchesCardConfig, SwitchesGroupConfig } from "../types/config";
 import type { HomeAssistant } from "../types/home-assistant";
 import { entity, friendlyName, isCommandable } from "../utils/entities";
 import { entitySelector, ICON, listSelector, TEXT } from "../utils/form";
+import { photoHint } from "../utils/photo-hint";
 
 interface GroupStats {
   total: number;
@@ -235,6 +236,7 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
       ${image ? html`<img class="group-photo" src=${image} alt="" style=${`object-position:${safePosition}`} loading="lazy" />` : nothing}
       <button class="group-open" type="button" aria-haspopup="dialog" aria-label=${`Afficher les interrupteurs du groupe ${group.name}`}
         @click=${() => this.openDialog(`group:${index}`)}>
+        ${photoHint()}
         <span class="group-top"><span class="tile-icon"><ha-icon .icon=${group.icon || "mdi:power-socket-eu"}></ha-icon></span></span>
         <span class="group-copy"><span class="group-name">${group.name}</span><br/><span class="group-state">${status}</span></span>
       </button>
