@@ -44,6 +44,7 @@ beforeAll(async () => {
     batteries: (await import("../src/cards/auralis-batteries-card")).AuralisBatteriesCard,
     cameras: (await import("../src/cards/auralis-cameras-card")).AuralisCamerasCard,
     climate: (await import("../src/cards/auralis-climate-card")).AuralisClimateCard,
+    consumption: (await import("../src/cards/auralis-consumption-card")).AuralisConsumptionCard,
     covers: (await import("../src/cards/auralis-covers-card")).AuralisCoversCard,
     fridge: (await import("../src/cards/auralis-fridge-card")).AuralisFridgeCard,
     irrigation: (await import("../src/cards/auralis-irrigation-card")).AuralisIrrigationCard,
@@ -67,6 +68,7 @@ const STRUCTURED_LISTS: Record<string, string[]> = {
   actions: ["actions"],
   cameras: ["cameras"],
   climate: ["rooms", "thresholds", "outdoor_thresholds"],
+  consumption: ["devices"],
   covers: ["groups"],
   irrigation: ["zones"],
   lights: ["groups", "scenes", "preset_colors"],
@@ -85,6 +87,7 @@ const REQUIRED: Record<string, string[]> = {
   actions: ["actions"],
   cameras: ["cameras"],
   climate: ["rooms"],
+  consumption: ["devices"],
   proxmox: ["status_entity"],
   unraid: ["status_entity"],
   weather: ["entity"],
@@ -108,7 +111,7 @@ function itemKeys(card: string, name: string): string[] {
 
 describe("visual editors", () => {
   it("covers every card except Room and Energy", () => {
-    expect(Object.keys(forms)).toHaveLength(18);
+    expect(Object.keys(forms)).toHaveLength(19);
   });
 
   it("labels every field in French, without raw keys", () => {

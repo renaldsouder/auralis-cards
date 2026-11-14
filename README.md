@@ -19,6 +19,7 @@ Auralis Cards est une collection de cartes modernes pour Home Assistant : naviga
 | `custom:auralis-cameras-card` | Mosaïque de caméras, mouvement, direct | [CAMERAS_CARD](docs/CAMERAS_CARD.md) |
 | `custom:auralis-actions-card` | Scripts, boutons et scènes à un appui | [ACTIONS_CARD](docs/ACTIONS_CARD.md) |
 | `custom:auralis-energy-card` | Consommation du jour, comparaison à J−7, coût | [ENERGY_CARD](docs/ENERGY_CARD.md) |
+| `custom:auralis-consumption-card` | Graphe global de la puissance ou de l'énergie de chaque appareil | [CONSUMPTION_CARD](docs/CONSUMPTION_CARD.md) |
 | `custom:auralis-fridge-card` | Frigo connecté : températures, portes, alertes | [FRIDGE_CARD](docs/FRIDGE_CARD.md) |
 | `custom:auralis-irrigation-card` | Vannes d'arrosage, arrosage minuté sûr | [IRRIGATION_CARD](docs/IRRIGATION_CARD.md) |
 | `custom:auralis-batteries-card` | Piles faibles et appareils indisponibles, sans configuration | [BATTERIES_CARD](docs/BATTERIES_CARD.md) |

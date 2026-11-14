@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.0
+
+- **Consommation par appareil** : nouvelle carte `custom:auralis-consumption-card`. Un graphe global avec une courbe par appareil, comme celui des températures : puissance (W) ou énergie cumulée sur la période (kWh), sur 24 h, 3 jours ou 7 jours. À droite, la liste des appareils (puissance actuelle, énergie de la période) ; un appui isole une courbe. La maison (`total_power_entity`, `total_energy_entity`) sert de référence en tête de liste. Résumé : puissance de la maison, part des appareils suivis, plus gros poste. Voir [docs/CONSUMPTION_CARD.md](docs/CONSUMPTION_CARD.md).
+
 ## 0.25.1
 
 - **Énergie** : nouvelle option `navigation_path`. Un appui sur l'en-tête de la carte ouvre la vue indiquée (une page Énergie détaillée, par exemple) ; un chevron le signale.

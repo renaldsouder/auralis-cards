@@ -229,6 +229,16 @@ const states = [
   e("climate.refrigerateur", "cool", { friendly_name: "Réfrigérateur", current_temperature: 4.4, temperature: 4, target_temp_step: 1, min_temp: 1, max_temp: 7, preset_modes: ["normal", "eco", "vacances"], preset_mode: "eco" }),
   e("sensor.compteur_gaz", "8423.61", { friendly_name: "Compteur de gaz", unit_of_measurement: "m³", device_class: "gas" }),
   e("sensor.debit_gaz", "0.42", { friendly_name: "Débit de gaz", unit_of_measurement: "m³/h" }),
+  // Consommation par appareil : puissances (W) et compteurs (kWh).
+  e("sensor.maison_puissance", "2360", { friendly_name: "Maison", unit_of_measurement: "VA" }),
+  e("sensor.maison_energie", "63380.5", { friendly_name: "Compteur maison", unit_of_measurement: "kWh", device_class: "energy" }),
+  e("sensor.serveur_puissance", "188", { friendly_name: "Serveur", unit_of_measurement: "W", device_class: "power" }),
+  e("sensor.serveur_energie", "95.4", { friendly_name: "Serveur énergie", unit_of_measurement: "kWh", device_class: "energy" }),
+  e("sensor.lave_linge_puissance", "640", { friendly_name: "Lave-linge", unit_of_measurement: "W", device_class: "power" }),
+  e("sensor.lave_linge_energie", "412.3", { friendly_name: "Lave-linge énergie", unit_of_measurement: "kWh", device_class: "energy" }),
+  e("sensor.frigo_puissance", "92", { friendly_name: "Réfrigérateur", unit_of_measurement: "W", device_class: "power" }),
+  e("sensor.frigo_energie", "301.8", { friendly_name: "Réfrigérateur énergie", unit_of_measurement: "kWh", device_class: "energy" }),
+  e("sensor.caisson_puissance", "13", { friendly_name: "Caisson de basse", unit_of_measurement: "W", device_class: "power" }),
   e("script.wake_skynet_demo", "off", { friendly_name: "Réveiller le serveur" }),
   // Arrosage et piles : cartes Arrosage et Batteries.
   e("switch.vanne_jardiniere", "off", { friendly_name: "Vanne jardinière" }),
@@ -255,6 +265,15 @@ const hass: HomeAssistant = {
   // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
   callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
     // Statistiques journalières simulées : 14 jours de consommation pour la carte Énergie.
+    if (message.type === "recorder/statistics_during_period" && message.period === "hour") {
+      const hour = 3_600_000;
+      const first = Math.floor(Date.parse(String(message.start_time)) / hour) * hour;
+      const count = Math.max(1, Math.floor((Date.now() - first) / hour));
+      return Object.fromEntries((message.statistic_ids as string[]).map((id, index) => [id, Array.from({ length: count }, (_, step) => ({
+        start: first + step * hour,
+        change: Math.round(Math.max(0, (0.05 + index * 0.04) * (1.2 + Math.sin(step / 3 + index))) * 1000) / 1000,
+      }))])) as T;
+    }
     if (message.type === "recorder/statistics_during_period") {
       const day = 86_400_000;
       const today = new Date().setHours(0, 0, 0, 0);
@@ -777,6 +796,18 @@ mount("auralis-media-card", mediaCard);
 mount("auralis-lights-card", lightsCard);
 mount("auralis-fridge-card", fridgeCard);
 mount("auralis-energy-card", gasCard);
+mount("auralis-consumption-card", {
+  type: "custom:auralis-consumption-card",
+  theme: "carbon",
+  total_power_entity: "sensor.maison_puissance",
+  total_energy_entity: "sensor.maison_energie",
+  devices: [
+    { name: "Serveur", icon: "mdi:server", power_entity: "sensor.serveur_puissance", energy_entity: "sensor.serveur_energie" },
+    { name: "Lave-linge", icon: "mdi:washing-machine", power_entity: "sensor.lave_linge_puissance", energy_entity: "sensor.lave_linge_energie" },
+    { name: "Réfrigérateur", icon: "mdi:fridge-outline", power_entity: "sensor.frigo_puissance", energy_entity: "sensor.frigo_energie" },
+    { name: "Caisson de basse", icon: "mdi:speaker", power_entity: "sensor.caisson_puissance" },
+  ],
+});
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
 mount("auralis-climate-card", { ...climate, name: "Graphe global", layout: "chart" });
