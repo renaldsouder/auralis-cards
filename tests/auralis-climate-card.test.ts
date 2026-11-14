@@ -192,4 +192,58 @@ describe("Auralis climate card", () => {
       label: "Extérieur", available: false, temperature: undefined, lowBattery: false, band: undefined, icon: "mdi:tree-outline",
     });
   });
+
+  it("gives each room a fixed color slot, then dashes past eight rooms", () => {
+    expect([0, 7, 8, 15, 16, 40].map((index) => climate.seriesStyle(index))).toEqual([
+      { slot: 1, dash: "" }, { slot: 8, dash: "" }, { slot: 1, dash: "6 4" }, { slot: 8, dash: "6 4" },
+      { slot: 1, dash: "1.5 4" }, { slot: 1, dash: "1.5 4" },
+    ]);
+  });
+
+  it("builds round axis ticks covering the values, with a minimum span", () => {
+    expect(climate.niceTicks(19.7, 23.4)).toEqual({ min: 18, max: 24, ticks: [18, 20, 22, 24] });
+    expect(climate.niceTicks(21, 21.2)).toEqual({ min: 20, max: 23, ticks: [20, 21, 22, 23] });
+    expect(climate.niceTicks(38, 71, 10)).toEqual({ min: 20, max: 80, ticks: [20, 40, 60, 80] });
+    expect(climate.niceTicks(Number.NaN, 4).ticks).toEqual([0, 2]);
+  });
+
+  it("lists the values at a chart position from the highest, skipping gaps", () => {
+    const series = [{ label: "A", values: [20, 21] }, { label: "B", values: [22, undefined] }, { label: "C", values: [19, 23] }];
+    expect(climate.valuesAt(series, 0).map((item) => [item.label, item.value])).toEqual([["B", 22], ["A", 20], ["C", 19]]);
+    expect(climate.valuesAt(series, 1).map((item) => item.label)).toEqual(["C", "A"]);
+  });
+
+  it("accepts the chart layout and rejects unknown layouts or metrics", () => {
+    const card = new climate.AuralisClimateCard();
+    card.setConfig({ ...config, layout: "chart", chart_metric: "humidity" });
+    expect((card as unknown as { chartMetric: string }).chartMetric).toBe("humidity");
+    expect(card.getCardSize()).toBe(7);
+    expect(() => card.setConfig({ ...config, layout: "grille" as never })).toThrow("layout");
+    expect(() => card.setConfig({ ...config, chart_metric: "pression" as never })).toThrow("chart_metric");
+  });
+
+  it("averages curves point by point, ignoring gaps", () => {
+    expect(climate.meanSeries([[20, 22, undefined], [22, undefined, undefined], [21, 23]])).toEqual([21, 22.5, undefined]);
+    expect(climate.meanSeries([])).toEqual([]);
+    expect(climate.meanOf([20, undefined, 23])).toBe(21.5);
+    expect(climate.meanOf([undefined])).toBeUndefined();
+  });
+
+  it("offers 24 h, 3 days and 7 days, plus the configured duration", () => {
+    expect(climate.chartPeriods()).toEqual([24, 72, 168]);
+    expect(climate.chartPeriods(12)).toEqual([12, 24, 72, 168]);
+    expect(climate.chartPeriods(72)).toEqual([24, 72, 168]);
+  });
+
+  it("starts the chart on graph_hours and keeps the chosen period until the configuration changes it", () => {
+    const card = new climate.AuralisClimateCard();
+    const state = card as unknown as { chartHours: number };
+    card.setConfig({ ...config, layout: "chart", graph_hours: 12 });
+    expect(state.chartHours).toBe(12);
+    state.chartHours = 168;
+    card.setConfig({ ...config, layout: "chart", graph_hours: 12, name: "Autre" });
+    expect(state.chartHours).toBe(168);
+    card.setConfig({ ...config, layout: "chart", graph_hours: 48 });
+    expect(state.chartHours).toBe(48);
+  });
 });

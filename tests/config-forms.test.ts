@@ -172,7 +172,7 @@ describe("visual editors", () => {
       })],
       ["cameras", "cameras", keys<CameraConfig>({ entity: true, name: true, icon: true, motion_entity: true, actions: true })],
       ["climate", "rooms", keys<ClimateRoomConfig>({
-        name: true, icon: true, temperature_entity: true, humidity_entity: true, battery_entity: true, outdoor: true,
+        name: true, icon: true, temperature_entity: true, humidity_entity: true, battery_entity: true, outdoor: true, color: true,
       })],
       ["climate", "thresholds", keys<ClimateThreshold>({ below: true, color: true, label: true })],
       ["weather", "thresholds", keys<ClimateThreshold>({ below: true, color: true, label: true })],
