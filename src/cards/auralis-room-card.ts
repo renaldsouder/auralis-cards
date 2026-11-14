@@ -262,6 +262,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         color: color-mix(in srgb, var(--room-text) 68%, var(--room-muted));
       }
 
+      /* Trois colonnes fixes : la photo garde sa taille et reste centrée même si un côté est vide. */
       .cinema-body {
         display: grid;
         grid-template-columns: 54px minmax(0, 1fr) 54px;
@@ -269,16 +270,19 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         gap: 6px;
       }
 
-      .cinema-body.no-left {
-        grid-template-columns: minmax(0, 1fr) 54px;
+      .cinema-body > .side-control-column.left {
+        grid-column: 1;
+        grid-row: 1;
       }
 
-      .cinema-body.no-right {
-        grid-template-columns: 54px minmax(0, 1fr);
+      .cinema-body > .room-photo {
+        grid-column: 2;
+        grid-row: 1;
       }
 
-      .cinema-body.no-left.no-right {
-        grid-template-columns: minmax(0, 1fr);
+      .cinema-body > .side-control-column.right {
+        grid-column: 3;
+        grid-row: 1;
       }
 
       /* Colonnes latérales de commandes. */
@@ -507,10 +511,11 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         opacity: 0.55;
       }
 
-      /* Dock des volets, sous la photo. */
+      /* Dock des volets, sous la photo : centré sur toute la largeur pour ne jamais être rogné par une photo étroite. */
       .cover-dock {
         display: grid;
-        grid-column: 2;
+        grid-column: 1 / -1;
+        grid-row: 2;
         grid-template-columns: repeat(3, minmax(64px, 1fr));
         width: min(250px, 82%);
         min-height: 48px;
@@ -519,14 +524,6 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         border: 1px solid var(--room-line);
         border-radius: 16px 16px 0 0;
         background: var(--room-layer);
-      }
-
-      .cinema-body.no-left .cover-dock {
-        grid-column: 1;
-      }
-
-      .cinema-body.no-left.no-right .cover-dock {
-        grid-column: 1 / -1;
       }
 
       .cover-command {
@@ -573,7 +570,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         }
       }
 
-      @container (max-width: 320px) {
+      /* Carte étroite (téléphone) : pastilles sous le titre, éléments posés sur la photo resserrés.
+         Les commandes restent de part et d'autre de la photo. */
+      @container (max-width: 340px) {
         .cinema-header {
           flex-wrap: wrap;
         }
@@ -585,43 +584,6 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
 
         .climate-pill {
           flex: 1;
-        }
-
-        .cinema-body,
-        .cinema-body.no-left,
-        .cinema-body.no-right {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .room-photo {
-          grid-column: 1 / -1;
-          grid-row: 1;
-          min-height: 170px;
-        }
-
-        .side-control {
-          min-height: 56px;
-          flex-direction: row;
-          border: 1px solid var(--room-line);
-          background: var(--room-layer-strong);
-        }
-
-        .side-control-column {
-          grid-row: 2;
-          min-height: 56px;
-          flex-direction: row;
-        }
-
-        .side-control-column.left {
-          grid-column: 1;
-        }
-
-        .side-control-column.right {
-          grid-column: 2;
-        }
-
-        .side-control-column .side-control {
-          flex: 1 1 0;
         }
 
         .thermostat-control {
@@ -660,11 +622,56 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         .thermostat-value {
           font-size: 20px;
         }
+      }
 
-        .cover-dock,
-        .cinema-body.no-left .cover-dock {
+      /* Carte très étroite : la photo prend toute la largeur, les commandes passent dessous. */
+      @container (max-width: 280px) {
+        .cinema-body {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cinema-body > .room-photo {
           grid-column: 1 / -1;
-          grid-row: 3;
+          grid-row: 1;
+          min-height: 170px;
+        }
+
+        /* Commandes sous la photo : icône, valeur et libellé empilés pour rester lisibles. */
+        .side-control {
+          min-height: 64px;
+          border: 1px solid var(--room-line);
+          background: var(--room-layer-strong);
+        }
+
+        .side-control-column {
+          min-height: 64px;
+          flex-direction: row;
+        }
+
+        .cinema-body > .side-control-column.left {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        .cinema-body > .side-control-column.right {
+          grid-column: 2;
+          grid-row: 2;
+        }
+
+        /* Un seul côté occupé : il prend toute la largeur, sans moitié vide. */
+        .cinema-body.no-right > .side-control-column.left,
+        .cinema-body.no-left > .side-control-column.right {
+          grid-column: 1 / -1;
+        }
+
+        .side-control-column .side-control {
+          flex: 1 1 0;
+        }
+
+        /* Placé à la première ligne libre : pas de trou quand aucune commande latérale n'existe. */
+        .cover-dock {
+          grid-column: 1 / -1;
+          grid-row: auto;
           width: 100%;
           margin-top: 0;
           border-radius: 15px;

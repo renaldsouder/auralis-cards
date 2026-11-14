@@ -226,7 +226,8 @@ export class AuralisThermostatCard extends AuralisBaseCard<ThermostatCardConfig>
     .panel-head + .panel-head { margin-top:10px; }
     .panel-title { min-width:0; }
     .panel-title small { display:block; color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-transform:uppercase; letter-spacing:.08em; }
-    .panel-title strong { display:block; overflow:hidden; margin-top:4px; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
+    /* Deux lignes au plus plutôt qu'un libellé tronqué à côté des boutons − / +. */
+    .panel-title strong { display:-webkit-box; overflow:hidden; margin-top:4px; font-size:17px; line-height:1.25; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
     .stepper { display:flex; align-items:center; gap:8px; }
     .stepper button { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:13px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; font-size:24px; line-height:1; }
     .stepper button:hover, .mode-button:hover, .info-button:hover { border-color:var(--machine-accent); }

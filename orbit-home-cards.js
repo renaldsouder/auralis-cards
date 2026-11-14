@@ -1450,10 +1450,12 @@ var qe = o`
     text-align: right;
   }
 
+  /* Passe à la ligne sur une carte étroite au lieu de tronquer chaque information. */
   .machine-foot {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px 14px;
     margin-top: 18px;
     color: #9ba8b7;
     font-size: var(--auralis-text-xs);
@@ -3519,7 +3521,8 @@ var On = class extends N {
     .panel-head + .panel-head { margin-top:10px; }
     .panel-title { min-width:0; }
     .panel-title small { display:block; color:var(--auralis-muted); font-size:var(--auralis-text-xs); text-transform:uppercase; letter-spacing:.08em; }
-    .panel-title strong { display:block; overflow:hidden; margin-top:4px; font-size:17px; text-overflow:ellipsis; white-space:nowrap; }
+    /* Deux lignes au plus plutôt qu'un libellé tronqué à côté des boutons − / +. */
+    .panel-title strong { display:-webkit-box; overflow:hidden; margin-top:4px; font-size:17px; line-height:1.25; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
     .stepper { display:flex; align-items:center; gap:8px; }
     .stepper button { display:grid; width:var(--auralis-target); height:var(--auralis-target); flex:0 0 auto; place-items:center; border:1px solid var(--auralis-border); border-radius:13px; background:var(--auralis-card); color:var(--auralis-text); cursor:pointer; font-size:24px; line-height:1; }
     .stepper button:hover, .mode-button:hover, .info-button:hover { border-color:var(--machine-accent); }
@@ -4067,6 +4070,7 @@ var $n = class extends N {
         color: color-mix(in srgb, var(--room-text) 68%, var(--room-muted));
       }
 
+      /* Trois colonnes fixes : la photo garde sa taille et reste centrée même si un côté est vide. */
       .cinema-body {
         display: grid;
         grid-template-columns: 54px minmax(0, 1fr) 54px;
@@ -4074,16 +4078,19 @@ var $n = class extends N {
         gap: 6px;
       }
 
-      .cinema-body.no-left {
-        grid-template-columns: minmax(0, 1fr) 54px;
+      .cinema-body > .side-control-column.left {
+        grid-column: 1;
+        grid-row: 1;
       }
 
-      .cinema-body.no-right {
-        grid-template-columns: 54px minmax(0, 1fr);
+      .cinema-body > .room-photo {
+        grid-column: 2;
+        grid-row: 1;
       }
 
-      .cinema-body.no-left.no-right {
-        grid-template-columns: minmax(0, 1fr);
+      .cinema-body > .side-control-column.right {
+        grid-column: 3;
+        grid-row: 1;
       }
 
       /* Colonnes latérales de commandes. */
@@ -4312,10 +4319,11 @@ var $n = class extends N {
         opacity: 0.55;
       }
 
-      /* Dock des volets, sous la photo. */
+      /* Dock des volets, sous la photo : centré sur toute la largeur pour ne jamais être rogné par une photo étroite. */
       .cover-dock {
         display: grid;
-        grid-column: 2;
+        grid-column: 1 / -1;
+        grid-row: 2;
         grid-template-columns: repeat(3, minmax(64px, 1fr));
         width: min(250px, 82%);
         min-height: 48px;
@@ -4324,14 +4332,6 @@ var $n = class extends N {
         border: 1px solid var(--room-line);
         border-radius: 16px 16px 0 0;
         background: var(--room-layer);
-      }
-
-      .cinema-body.no-left .cover-dock {
-        grid-column: 1;
-      }
-
-      .cinema-body.no-left.no-right .cover-dock {
-        grid-column: 1 / -1;
       }
 
       .cover-command {
@@ -4378,7 +4378,9 @@ var $n = class extends N {
         }
       }
 
-      @container (max-width: 320px) {
+      /* Carte étroite (téléphone) : pastilles sous le titre, éléments posés sur la photo resserrés.
+         Les commandes restent de part et d'autre de la photo. */
+      @container (max-width: 340px) {
         .cinema-header {
           flex-wrap: wrap;
         }
@@ -4390,43 +4392,6 @@ var $n = class extends N {
 
         .climate-pill {
           flex: 1;
-        }
-
-        .cinema-body,
-        .cinema-body.no-left,
-        .cinema-body.no-right {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .room-photo {
-          grid-column: 1 / -1;
-          grid-row: 1;
-          min-height: 170px;
-        }
-
-        .side-control {
-          min-height: 56px;
-          flex-direction: row;
-          border: 1px solid var(--room-line);
-          background: var(--room-layer-strong);
-        }
-
-        .side-control-column {
-          grid-row: 2;
-          min-height: 56px;
-          flex-direction: row;
-        }
-
-        .side-control-column.left {
-          grid-column: 1;
-        }
-
-        .side-control-column.right {
-          grid-column: 2;
-        }
-
-        .side-control-column .side-control {
-          flex: 1 1 0;
         }
 
         .thermostat-control {
@@ -4465,11 +4430,56 @@ var $n = class extends N {
         .thermostat-value {
           font-size: 20px;
         }
+      }
 
-        .cover-dock,
-        .cinema-body.no-left .cover-dock {
+      /* Carte très étroite : la photo prend toute la largeur, les commandes passent dessous. */
+      @container (max-width: 280px) {
+        .cinema-body {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cinema-body > .room-photo {
           grid-column: 1 / -1;
-          grid-row: 3;
+          grid-row: 1;
+          min-height: 170px;
+        }
+
+        /* Commandes sous la photo : icône, valeur et libellé empilés pour rester lisibles. */
+        .side-control {
+          min-height: 64px;
+          border: 1px solid var(--room-line);
+          background: var(--room-layer-strong);
+        }
+
+        .side-control-column {
+          min-height: 64px;
+          flex-direction: row;
+        }
+
+        .cinema-body > .side-control-column.left {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        .cinema-body > .side-control-column.right {
+          grid-column: 2;
+          grid-row: 2;
+        }
+
+        /* Un seul côté occupé : il prend toute la largeur, sans moitié vide. */
+        .cinema-body.no-right > .side-control-column.left,
+        .cinema-body.no-left > .side-control-column.right {
+          grid-column: 1 / -1;
+        }
+
+        .side-control-column .side-control {
+          flex: 1 1 0;
+        }
+
+        /* Placé à la première ligne libre : pas de trou quand aucune commande latérale n'existe. */
+        .cover-dock {
+          grid-column: 1 / -1;
+          grid-row: auto;
           width: 100%;
           margin-top: 0;
           border-radius: 15px;
@@ -5917,7 +5927,10 @@ var Mr = o`
     margin: -6px 0;
     border: 0;
     background: transparent;
-    font: inherit;
+    /* Pas de « font: inherit » : il écraserait la petite taille de texte de .machine-bar. */
+    font-family: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
     text-align: left;
     cursor: pointer;
   }
@@ -6245,7 +6258,7 @@ var Kr = {
       .machine-panel { max-height: 285px; overflow: auto; }
       .machine-bar { grid-template-columns: 72px minmax(0, 1fr) 46px; }
       .machine-bar > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pc-foot-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pc-foot-item { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pc-foot-item .sev-text.sev-warning, .pc-foot-item .sev-text.sev-critical { color: var(--sev-color); }
       .pc-dialog { max-width: 820px; }
       .pc-detail-section + .pc-detail-section { margin-top: 22px; }
@@ -12318,8 +12331,9 @@ var fs = class {
     .act-shell:not(.has-image)::before { display:none; }
     .act-shell.compact { padding:12px; }
     .act-content { min-height:0; }
-    .act-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-    .act-grid.fixed { grid-template-columns:repeat(var(--act-columns),minmax(0,1fr)); }
+    .act-grid { --act-gap:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:var(--act-gap); }
+    /* « columns » est un maximum : une tuile ne descend jamais sous 150 px, la grille passe à moins de colonnes. */
+    .act-grid.fixed { grid-template-columns:repeat(auto-fill,minmax(max(150px,calc((100% - (var(--act-columns) - 1) * var(--act-gap)) / var(--act-columns) - 0.1px)),1fr)); }
     .act { --tone:var(--item-tone,var(--auralis-info)); position:relative; display:flex; min-width:0; min-height:74px; align-items:center; gap:11px; padding:12px; overflow:hidden; border:1px solid color-mix(in srgb,var(--tone) 26%,var(--auralis-border)); border-radius:18px; background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 10%,transparent),transparent 65%),color-mix(in srgb,var(--auralis-layer) calc(var(--machine-glass-alpha,.84) * 100%),transparent); color:var(--auralis-text); cursor:pointer; text-align:start; backdrop-filter:blur(12px); touch-action:manipulation; user-select:none; -webkit-user-select:none; transition:border-color .15s ease, background .2s ease, transform .1s ease; }
     .act:hover { border-color:color-mix(in srgb,var(--tone) 70%,transparent); }
     .act:active { transform:scale(.98); }
@@ -12348,7 +12362,9 @@ var fs = class {
     @keyframes spin { to { transform:rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .act-icon .spinner { animation-duration:2.4s; } .act { transition:none; } }
     @container (max-width:360px) {
-      .act-grid, .act-grid.fixed { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+      .act-grid { --act-gap:8px; }
+      .act-grid:not(.fixed) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .act-grid.fixed { grid-template-columns:repeat(auto-fill,minmax(max(120px,calc((100% - (var(--act-columns) - 1) * var(--act-gap)) / var(--act-columns) - 0.1px)),1fr)); }
       .act-grid .act { min-height:0; flex-direction:column; align-items:flex-start; gap:9px; padding:11px; }
       .act-grid .act-icon { width:36px; height:36px; border-radius:12px; }
     }
@@ -12370,7 +12386,7 @@ var fs = class {
 			theme: "Thème",
 			actions: "Actions",
 			layout: "Présentation",
-			columns: "Colonnes (vide = automatique)",
+			columns: "Colonnes au maximum (vide = automatique)",
 			show_header: "Afficher l’en-tête (par défaut si un titre est saisi)",
 			accent_color: "Couleur d’accent (couleur des tuiles sans color)",
 			card_background: "Fond de la carte"
@@ -13294,7 +13310,8 @@ var ec = class {
     .media-shell .header { margin-bottom:0; }
     .backdrop { position:absolute; z-index:0; inset:-30px; background:var(--art) center / cover no-repeat; filter:blur(34px) saturate(1.5) brightness(.55); opacity:.75; pointer-events:none; transform:scale(1.1); transition:opacity .5s ease; }
     .backdrop.empty { background:radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--tone) 34%,transparent),transparent 46%),radial-gradient(circle at 88% 90%,color-mix(in srgb,var(--tone) 18%,transparent),transparent 50%); filter:none; opacity:1; transform:none; inset:0; }
-    .media-content { display:grid; gap:14px; }
+    /* minmax(0,1fr) : le curseur de volume et les rangées défilantes ne doivent pas élargir la carte. */
+    .media-content { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
     .players { display:flex; gap:7px; margin:0 -2px; padding:2px; overflow-x:auto; scrollbar-width:none; }
     .players::-webkit-scrollbar { display:none; }
     .player { --t:var(--chip-tone); display:inline-flex; flex:0 0 auto; min-height:var(--auralis-target); align-items:center; gap:7px; padding:6px 12px 6px 9px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,.62); color:#d6dee8; cursor:pointer; font:inherit; font-size:var(--auralis-text-sm); font-weight:680; backdrop-filter:blur(10px); }
@@ -17059,7 +17076,7 @@ var ed = class extends N {
       <div class="zones">${t.map((e) => this.renderZone(e))}</div>
     </div></ha-card>${this.renderStandaloneConfirmation()}`;
 	}
-}, td = "0.24.0";
+}, td = "0.24.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", $n), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", rn), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", qr), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", Qr), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", ai), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Ii), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", gn), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", zi), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", On), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", Xi), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", ka), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", eo), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", Ho), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", hs), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", Ms), customElements.get("auralis-media-card") || customElements.define("auralis-media-card", tc), customElements.get("auralis-tabs-card") || customElements.define("auralis-tabs-card", Oc), customElements.get("auralis-screensaver-card") || customElements.define("auralis-screensaver-card", cl), customElements.get("auralis-batteries-card") || customElements.define("auralis-batteries-card", eu), customElements.get("auralis-irrigation-card") || customElements.define("auralis-irrigation-card", ed), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends $n {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends qr {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends Qr {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends ai {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Ii {}), window.customCards = window.customCards || [];
 var nd = [
 	{
