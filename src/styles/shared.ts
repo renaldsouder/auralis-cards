@@ -1100,10 +1100,62 @@ export const sharedStyles = css`
     to { transform: rotate(360deg); }
   }
 
+  /*
+   * Commande envoyée, en attente de l'appareil : l'élément montre déjà l'état demandé, reste net
+   * (pas grisé) et pulse doucement jusqu'à la confirmation.
+   */
+  button[aria-busy="true"],
+  input[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  button[aria-busy="true"][disabled] {
+    opacity: 1;
+  }
+
+  button[aria-busy="true"]:not(.device-toggle):not(.switch-toggle) {
+    animation: auralis-pending 1.1s ease-in-out infinite;
+  }
+
+  .device-toggle[aria-busy="true"]::after,
+  .switch-toggle[aria-busy="true"]::after {
+    animation: auralis-pending-knob 0.8s ease-in-out infinite alternate;
+  }
+
+  .list-row:has(.device-toggle[aria-busy="true"]),
+  .switch-row:has(.switch-toggle[aria-busy="true"]) {
+    animation: auralis-pending-row 1.1s ease-in-out infinite;
+  }
+
+  @keyframes auralis-pending {
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--auralis-active, #79d6f2) 32%, transparent); }
+  }
+
+  @keyframes auralis-pending-knob {
+    from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--auralis-active, #79d6f2) 0%, transparent); }
+    to { box-shadow: 0 0 0 6px color-mix(in srgb, var(--auralis-active, #79d6f2) 45%, transparent); }
+  }
+
+  @keyframes auralis-pending-row {
+    50% { border-color: color-mix(in srgb, var(--auralis-active, #79d6f2) 60%, var(--auralis-border)); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auralis-feedback,
-    [aria-busy="true"] ha-icon {
+    [aria-busy="true"] ha-icon,
+    button[aria-busy="true"],
+    .device-toggle[aria-busy="true"]::after,
+    .switch-toggle[aria-busy="true"]::after,
+    .list-row:has(.device-toggle[aria-busy="true"]),
+    .switch-row:has(.switch-toggle[aria-busy="true"]) {
       animation: none;
+    }
+
+    /* Sans animation, un anneau fixe signale l'attente. */
+    button[aria-busy="true"]:not(.device-toggle):not(.switch-toggle),
+    .device-toggle[aria-busy="true"]::after,
+    .switch-toggle[aria-busy="true"]::after {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--auralis-active, #79d6f2) 45%, transparent);
     }
   }
 `;

@@ -208,6 +208,9 @@ describe("Auralis covers groups", () => {
     expect(host.dragValue("cover:position:cover.baie")).toBe(70);
     await host.command("cover:position:cover.baie", () => card.hass!.callService("cover", "set_cover_position", { position: 70 }, { entity_id: "cover.baie" }), "échec");
     expect(callService).toHaveBeenCalledWith("cover", "set_cover_position", { position: 70 }, { entity_id: "cover.baie" });
-    expect(module.coverStateLabel(card.hass, "cover.baie")).toBe("Ouvert à 30 %");
+    // La position demandée s'affiche jusqu'à ce que le volet confirme.
+    expect(module.coverStateLabel(card.hass, "cover.baie")).toBe("Ouvert à 70 %");
+    card.hass = { states: { "cover.baie": { ...state("cover.baie", "open"), attributes: { supported_features: 15, current_position: 55 } } }, callService };
+    expect(module.coverStateLabel(card.hass, "cover.baie")).toBe("Ouvert à 55 %");
   });
 });

@@ -92,7 +92,8 @@ describe("Auralis fridge card", () => {
     expect(callService).toHaveBeenCalledWith("button", "press", {}, { entity_id: "button.quick_freeze" });
     await actions.quickAction("lock.fridge");
     expect(callService).toHaveBeenCalledWith("lock", "unlock", {}, { entity_id: "lock.fridge" });
-    hass.states["switch.quick_cool"].state = "unavailable";
+    // Home Assistant envoie un nouvel objet hass à chaque changement d'état.
+    card.hass = { ...hass, states: { ...hass.states, "switch.quick_cool": { ...hass.states["switch.quick_cool"], state: "unavailable" } } };
     await actions.quickAction("switch.quick_cool");
     expect(callService).toHaveBeenCalledTimes(4);
   });

@@ -39,6 +39,9 @@ describe("Proxmox isolated popups and configurable storage", () => {
     };
     return card;
   };
+  /** La carte montre un `hass` dont `callService` suit les commandes : on lit l'appel réel. */
+  const realCallService = (card: InstanceType<typeof proxmoxCard.AuralisProxmoxCard>) =>
+    (card as unknown as { realHass: { callService: unknown } }).realHass.callService;
 
   it("clears selections across popups and cannot start the other workload type", async () => {
     const card = makeCard();
@@ -56,8 +59,8 @@ describe("Proxmox isolated popups and configurable storage", () => {
     // A stale selection from the other popup must not dispatch a command.
     internals.selected = new Map([[vm.entity, "stopped"], [lxc.entity, "stopped"]]);
     await internals.startSelected();
-    expect(card.hass!.callService).toHaveBeenCalledTimes(1);
-    expect(card.hass!.callService).toHaveBeenCalledWith("homeassistant", "turn_on", {}, { entity_id: lxc.entity });
+    expect(realCallService(card)).toHaveBeenCalledTimes(1);
+    expect(realCallService(card)).toHaveBeenCalledWith("homeassistant", "turn_on", {}, { entity_id: lxc.entity });
   });
 
   it("rechecks running and unavailable states before a selected start command", async () => {
@@ -73,7 +76,7 @@ describe("Proxmox isolated popups and configurable storage", () => {
       card.hass!.states[vm.entity] = state(vm.entity, current);
       await internals.startSelected();
     }
-    expect(card.hass!.callService).not.toHaveBeenCalled();
+    expect(realCallService(card)).not.toHaveBeenCalled();
   });
 
   it("does not send turn_on to a read-only status sensor", async () => {
@@ -82,7 +85,7 @@ describe("Proxmox isolated popups and configurable storage", () => {
     card.hass!.states[item.entity] = state(item.entity, "off");
     const internals = card as unknown as { runWorkloadAction(item: ManagedProxmoxWorkload, action: "start"): Promise<void> };
     await internals.runWorkloadAction(item, "start");
-    expect(card.hass!.callService).not.toHaveBeenCalled();
+    expect(realCallService(card)).not.toHaveBeenCalled();
   });
 
   it("keeps any number of named storages and preserves legacy fallback", () => {

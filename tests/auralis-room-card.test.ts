@@ -117,8 +117,8 @@ describe("Auralis room photo", () => {
     await internals.toggleLights(ids);
     expect(callService).toHaveBeenLastCalledWith("homeassistant", "turn_off", {}, { entity_id: ids });
     await internals.setGlobalBrightness(60, ids);
-    // Seules les lampes allumées changent d'intensité, pour ne pas rallumer toute la pièce.
-    expect(callService).toHaveBeenLastCalledWith("light", "turn_on", { brightness_pct: 60 }, { entity_id: ["light.lampadaire"] });
+    // Tout est désormais éteint (en attente de confirmation) : l'intensité vise toutes les lampes.
+    expect(callService).toHaveBeenLastCalledWith("light", "turn_on", { brightness_pct: 60 }, { entity_id: ["light.plafond", "light.lampadaire"] });
   });
 
   it("puts the settings hint in the first corner left free by the thermostat and the ambiance button", () => {

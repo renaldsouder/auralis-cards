@@ -6,6 +6,7 @@ import { setAuralisDialogOpen } from "../utils/dialog-visibility";
 import { activateEntity, fireMoreInfo } from "../utils/actions";
 import { entity, isCommandable } from "../utils/entities";
 import { collectEntityIds, hassChangeMatters } from "../utils/watch";
+import { CONFIRM_TIMEOUT, expectedChanges, isConfirmed, shownState, type PendingExpectation } from "../utils/optimistic";
 import { alertLevel, severity, severityClass } from "../utils/severity";
 
 /** Durée pendant laquelle un réveil demandé reste affiché « en cours ». */
@@ -61,18 +62,19 @@ function deepActiveElement(): HTMLElement | undefined {
 
 export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends LitElement {
   static properties = {
-    hass: { attribute: false },
+    // Accesseur écrit à la main : la carte voit l'état visé par ses commandes en attente.
+    hass: { attribute: false, noAccessor: true },
     config: { state: true },
     dialog: { state: true },
     confirmState: { state: true },
     wakeRequestedAt: { state: true },
     pendingActions: { state: true },
     feedback: { state: true },
+    expectations: { state: true },
   };
 
   static styles: CSSResultGroup = sharedStyles;
 
-  hass?: HomeAssistant;
   config?: TConfig;
   protected dialog: string | null = null;
   protected confirmState: ConfirmState | null = null;
@@ -89,6 +91,142 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
   private dialogOpener?: HTMLElement;
   private confirmShown = false;
   private confirmOpener?: HTMLElement;
+  /** `hass` reçu de Home Assistant, et celui montré à la carte (états visés, appels suivis). */
+  private realHass?: HomeAssistant;
+  private shownHass?: HomeAssistant;
+  /** Commandes envoyées dont l'appareil n'a pas encore confirmé l'effet, par entité. */
+  protected expectations: ReadonlyMap<string, PendingExpectation> = new Map();
+  /** Clé de la commande en cours d'envoi, rattachée aux états attendus qu'elle produit. */
+  private commandKey?: string;
+  private expectationTimer?: number;
+
+  /**
+   * `hass` vu par la carte : l'état réel de la maison, où chaque commande en attente affiche
+   * déjà l'état visé (lampe allumée, curseur à sa nouvelle valeur), et dont `callService`
+   * enregistre l'état attendu de chaque appel.
+   */
+  get hass(): HomeAssistant | undefined {
+    return this.shownHass;
+  }
+
+  set hass(value: HomeAssistant | undefined) {
+    const old = this.shownHass;
+    // Un `hass` déjà montré par cette carte, renvoyé tel quel : on garde le vrai `callService`.
+    if (value && value.callService === this.trackedCallService) {
+      value = { ...value, callService: this.realHass?.callService ?? (() => Promise.reject(new Error("Home Assistant n'est pas disponible."))) };
+    }
+    this.realHass = value;
+    this.settleExpectations();
+    this.shownHass = this.buildShownHass();
+    this.requestUpdate("hass", old);
+  }
+
+  private buildShownHass(): HomeAssistant | undefined {
+    const real = this.realHass;
+    if (!real) return undefined;
+    let states = real.states;
+    if (this.expectations.size) {
+      states = { ...real.states };
+      for (const [id, pending] of this.expectations) {
+        const shown = shownState(pending, real.states[id]);
+        if (shown) states[id] = shown;
+      }
+    }
+    return { ...real, states, callService: this.trackedCallService };
+  }
+
+  private refreshShownHass(): void {
+    const old = this.shownHass;
+    this.shownHass = this.buildShownHass();
+    this.requestUpdate("hass", old);
+  }
+
+  /** Appel de service suivi : l'état visé s'affiche aussitôt et attend la confirmation de l'appareil. */
+  private trackedCallService = (...args: Parameters<HomeAssistant["callService"]>): Promise<unknown> => {
+    const real = this.realHass;
+    if (!real) return Promise.reject(new Error("Home Assistant n'est pas disponible."));
+    const [domain, service, data, target] = args;
+    const ids = expectedChanges(real, domain, service, data, target);
+    const touched = new Set([...ids.map((item) => item.entityId), ...this.targetsOf(data, target)]);
+    // Une nouvelle commande remplace l'attente précédente des mêmes entités.
+    const next = new Map([...this.expectations].filter(([id]) => !touched.has(id)));
+    const deadline = Date.now() + CONFIRM_TIMEOUT;
+    const created: PendingExpectation[] = ids.map((item) => ({ ...item, key: this.commandKey, sent: real.states[item.entityId], deadline }));
+    for (const item of created) next.set(item.entityId, item);
+    if (created.length || next.size !== this.expectations.size) {
+      this.expectations = next;
+      this.scheduleExpectationCheck();
+      this.refreshShownHass();
+    }
+    const result = real.callService(...args);
+    // Refusée par Home Assistant : l'état réel revient tout de suite. L'appelant reçoit l'erreur
+    // par la promesse d'origine, sans délai supplémentaire.
+    Promise.resolve(result).catch(() => {
+      const remaining = new Map([...this.expectations].filter(([, item]) => !created.includes(item)));
+      if (remaining.size !== this.expectations.size) {
+        this.expectations = remaining;
+        this.refreshShownHass();
+      }
+    });
+    return result;
+  };
+
+  private targetsOf(data?: Record<string, unknown>, target?: Record<string, unknown>): string[] {
+    const raw = target?.entity_id ?? data?.entity_id;
+    return (Array.isArray(raw) ? raw : [raw]).filter((id): id is string => typeof id === "string");
+  }
+
+  /** Retire les attentes confirmées ; celles restées sans réponse reviennent à l'état réel, avec un message. */
+  private settleExpectations(now = Date.now()): void {
+    if (!this.expectations.size) return;
+    const states = this.realHass?.states ?? {};
+    const next = new Map<string, PendingExpectation>();
+    const late: string[] = [];
+    for (const [id, pending] of this.expectations) {
+      if (isConfirmed(pending, states[id])) continue;
+      if (now >= pending.deadline) {
+        late.push(id);
+        continue;
+      }
+      next.set(id, pending);
+    }
+    if (next.size === this.expectations.size) return;
+    this.expectations = next;
+    this.scheduleExpectationCheck();
+    if (late.length) {
+      const names = late.map((id) => {
+        const name = states[id]?.attributes.friendly_name;
+        return `« ${typeof name === "string" && name ? name : id} »`;
+      });
+      this.showFeedback("error", late.length === 1
+        ? `${names[0]} n’a pas confirmé la commande.`
+        : `${names.join(", ")} n’ont pas confirmé la commande.`);
+    }
+  }
+
+  private scheduleExpectationCheck(): void {
+    if (typeof window === "undefined") return;
+    window.clearTimeout(this.expectationTimer);
+    if (!this.expectations.size) return;
+    const next = Math.min(...[...this.expectations.values()].map((item) => item.deadline));
+    this.expectationTimer = window.setTimeout(() => {
+      this.settleExpectations();
+      this.refreshShownHass();
+    }, Math.max(0, next - Date.now()) + 50);
+  }
+
+  /** Vrai pendant qu'une entité attend la confirmation d'une commande. */
+  protected isAwaiting(entityId: string): boolean {
+    return this.expectations.has(entityId);
+  }
+
+  /** Vrai si l'une des entités attend la confirmation d'un marche/arrêt (vers `state` s'il est donné). */
+  protected awaitingAny(ids: string[], state?: string): boolean {
+    return ids.some((id) => {
+      const wanted = this.expectations.get(id)?.state;
+      return wanted !== undefined && (state === undefined || wanted === state);
+    });
+  }
 
   /**
    * Ne redessine la carte que si une entité qu'elle cite a changé. Home Assistant envoie un
@@ -115,8 +253,14 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     return [];
   }
 
+  /**
+   * Commande en cours d'envoi, ou marche/arrêt envoyé et pas encore confirmé par l'appareil : un
+   * second appui est ignoré. Un réglage (intensité, position, volume) reste modifiable aussitôt.
+   */
   protected isPending(key: string): boolean {
-    return this.pendingActions.has(key);
+    if (this.pendingActions.has(key)) return true;
+    for (const item of this.expectations.values()) if (item.key === key && item.state !== undefined) return true;
+    return false;
   }
 
   /**
@@ -132,7 +276,16 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     if (this.pendingActions.has(key)) return false;
     this.pendingActions = new Set([...this.pendingActions, key]);
     try {
-      await action();
+      // Les appels de service lancés ici rattachent leur état attendu à cette commande.
+      const previousKey = this.commandKey;
+      this.commandKey = key;
+      let running: Promise<unknown> | unknown;
+      try {
+        running = action();
+      } finally {
+        this.commandKey = previousKey;
+      }
+      await running;
       if (options.successMessage) this.showFeedback("success", options.successMessage);
       return true;
     } catch (error) {
@@ -321,6 +474,7 @@ export abstract class AuralisBaseCard<TConfig extends BaseCardConfig> extends Li
     setAuralisDialogOpen(this, false);
     window.clearTimeout(this.wakeTimer);
     window.clearTimeout(this.feedbackTimer);
+    window.clearTimeout(this.expectationTimer);
     super.disconnectedCallback();
   }
 
