@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.28.1
+
+- **Pièce** : le groupe Éclairage de la fenêtre de la photo commence par une ligne « Toutes les lumières » : marche/arrêt, intensité et couleur de toutes les lumières en une seule commande. Comme dans la carte Lumières, l'intensité et la couleur ne changent que les lampes allumées (toutes si aucune ne l'est), pour ne pas rallumer toute la pièce.
+- **Pièce** : les capteurs de la pièce s'appellent « Température » et « Humidité » dans la fenêtre de la photo et sur les courbes, au lieu du nom technique de l'appareil. Un nom donné dans `entity_labels` reste prioritaire.
+
 ## 0.28.0
 
 - **Pièce** : la fenêtre de la photo est rangée par groupes, **Éclairage**, **Volets**, **Multimédia**, **Température et humidité** et **Autres**, avec les réglages directement dans chaque ligne, comme dans la fenêtre de la carte Lumières : intensité, couleur et marche/arrêt ; position et ouvrir/stop/fermer ; marche/arrêt, lecture et volume ; consigne −/+ et mode du thermostat ; interrupteur, bouton, liste, curseur ou aperçu de caméra. « Tout allumer / Tout éteindre » en tête de l'éclairage, commande groupée des volets, bouton « Historique » pour les courbes de température. Un appui long sur une ligne ouvre toujours la fiche Home Assistant.

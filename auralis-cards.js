@@ -4045,12 +4045,7 @@ var tr = {
 				return r ? this.runCommand(`setpoint:${e}:${n}`, () => r.callService("climate", "set_temperature", t, { entity_id: e }), { errorMessage: "La consigne n’a pas pu être modifiée." }) : Promise.resolve(!1);
 			},
 			changed: () => this.requestUpdate()
-		}), this.toggleAllLights = async () => {
-			let e = this.hass, t = (this.room?.lights || []).filter((t) => O(E(e, t)));
-			if (!e || !t.length) return !1;
-			let n = t.some((t) => k(E(e, t)));
-			return this.runCommand("lights:all", () => e.callService(er(t), n ? "turn_off" : "turn_on", {}, { entity_id: t }), { errorMessage: n ? "L’extinction a échoué." : "L’allumage a échoué." });
-		};
+		}), this.toggleAllLights = () => this.toggleLights(this.room?.lights || []);
 	}
 	static {
 		this.properties = {
@@ -4969,6 +4964,12 @@ var tr = {
         margin-top: 18px;
       }
 
+      /* Ligne « Toutes les lumières » : mise en avant par une bordure à la couleur d'accent. */
+      .all-lights-row {
+        border-color: color-mix(in srgb, var(--auralis-active) 38%, var(--auralis-border));
+        background: color-mix(in srgb, var(--auralis-active) 7%, var(--auralis-layer));
+      }
+
       .details-group-head {
         display: flex;
         align-items: center;
@@ -5487,6 +5488,10 @@ var tr = {
 		let n = this.room?.entity_labels?.[e] ?? this.room?.cover_labels?.[e];
 		return typeof n == "string" && n.trim() ? n.trim() : A(E(this.hass, e), t);
 	}
+	sensorLabel(e) {
+		let t = this.room?.entity_labels?.[e];
+		return typeof t == "string" && t.trim() ? t.trim() : e === this.room?.temperature_entity ? "Température" : e === this.room?.humidity_entity ? "Humidité" : this.entityLabel(e, e);
+	}
 	popupTitle(e, t) {
 		let n = this.room?.popup_titles?.[e];
 		return typeof n == "string" && n.trim() ? n.trim() : t;
@@ -5768,13 +5773,19 @@ var tr = {
       ${this.dialog === "details" ? this.renderDetailsDialog() : w}
     `;
 	}
+	async toggleLights(e) {
+		let t = this.hass, n = e.filter((e) => O(E(t, e)));
+		if (!t || !n.length) return !1;
+		let r = n.some((e) => k(E(t, e)));
+		return this.runCommand("lights:all", () => t.callService(er(n), r ? "turn_off" : "turn_on", {}, { entity_id: n }), { errorMessage: r ? "L’extinction a échoué." : "L’allumage a échoué." });
+	}
 	toggleLight(e, t) {
 		let n = this.hass;
 		return n ? this.runCommand(`light:${e}`, () => n.callService(er([e]), t ? "turn_on" : "turn_off", {}, { entity_id: e }), { errorMessage: t ? "L’allumage a échoué." : "L’extinction a échoué." }) : Promise.resolve(!1);
 	}
-	setGlobalBrightness(e) {
-		let t = this.hass, n = mn(t, this.room?.lights || []);
-		return !t || !n.length ? Promise.resolve(!1) : this.runCommand("lights:brightness", () => t.callService("light", "turn_on", { brightness_pct: Math.round(e) }, { entity_id: n }), { errorMessage: "L’intensité n’a pas pu être modifiée." });
+	setGlobalBrightness(e, t = this.room?.lights || []) {
+		let n = this.hass, r = mn(n, t);
+		return !n || !r.length ? Promise.resolve(!1) : this.runCommand("lights:brightness", () => n.callService("light", "turn_on", { brightness_pct: Math.round(e) }, { entity_id: r }), { errorMessage: "L’intensité n’a pas pu être modifiée." });
 	}
 	setLightsColor(e, t, n) {
 		let r = this.hass, i = mt(t);
@@ -5889,28 +5900,47 @@ var tr = {
       `);
 	}
 	renderDetailsDialog() {
-		let { lights: e, covers: t, media: n, thermostats: r, sensors: i, others: a } = this.detailGroups(), o = e.length + t.length + n.length + r.length + i.length + a.length, s = e.filter((e) => k(E(this.hass, e))).length, c = e.filter((e) => O(E(this.hass, e))), l = t.filter((e) => k(E(this.hass, e))).length, u = n.filter(({ id: e }) => {
+		let { lights: e, covers: t, media: n, thermostats: r, sensors: i, others: a } = this.detailGroups(), o = e.length + t.length + n.length + r.length + i.length + a.length, s = e.filter((e) => k(E(this.hass, e))).length, c = t.filter((e) => k(E(this.hass, e))).length, l = n.filter(({ id: e }) => {
 			let t = E(this.hass, e);
 			return D(t) && t?.state !== "off" && t?.state !== "standby";
-		}).length, d = M(this.hass, this.room?.temperature_entity), f = M(this.hass, this.room?.humidity_entity), p = !!(this.room?.temperature_entity || this.room?.humidity_entity), m = this.roomName(), h = (e, t) => `${e} ${t}${e > 1 ? "s" : ""}`;
-		return this.renderDialog(this.popupTitle("details", m), this.room?.icon || "mdi:sofa-outline", C`
+		}).length, u = M(this.hass, this.room?.temperature_entity), d = M(this.hass, this.room?.humidity_entity), f = !!(this.room?.temperature_entity || this.room?.humidity_entity), p = this.roomName(), m = (e, t) => `${e} ${t}${e > 1 ? "s" : ""}`;
+		return this.renderDialog(this.popupTitle("details", p), this.room?.icon || "mdi:sofa-outline", C`
         <div class="dialog-body details-body">
           <div class="dialog-overview">
-            <div><span class="eyebrow">Vue d'ensemble</span><strong>${m}</strong><span class="muted">${h(o, "appareil")} · appui long sur une ligne : fiche Home Assistant</span></div>
-            ${p ? C`<div class="dialog-stat"><strong>${d}</strong><small>${f} humidité</small></div>` : w}
+            <div><span class="eyebrow">Vue d'ensemble</span><strong>${p}</strong><span class="muted">${m(o, "appareil")} · appui long sur une ligne : fiche Home Assistant</span></div>
+            ${f ? C`<div class="dialog-stat"><strong>${u}</strong><small>${d} humidité</small></div>` : w}
           </div>
-          ${e.length ? this.renderDetailsGroup("Éclairage", "mdi:lightbulb-group-outline", `${s}/${e.length} allumée${s > 1 ? "s" : ""}`, C`<div class="list">${e.map((e) => this.renderLightRow(e))}</div>`, C`<button class="details-group-action ${s ? "" : "primary"}" type="button" ?disabled=${!c.length || this.isPending("lights:all")}
-              aria-busy=${this.isPending("lights:all") ? "true" : "false"} @click=${this.toggleAllLights}>
-              <ha-icon icon=${s ? "mdi:lightbulb-group-off-outline" : "mdi:lightbulb-group-outline"}></ha-icon>${s ? "Tout éteindre" : "Tout allumer"}</button>`) : w}
-          ${t.length ? this.renderDetailsGroup("Volets", "mdi:blinds-horizontal", `${l}/${t.length} ouvert${l > 1 ? "s" : ""}`, C`${t.length > 1 ? $t(this.coverHost, t, "details:covers", null) : w}
+          ${e.length ? this.renderDetailsGroup("Éclairage", "mdi:lightbulb-group-outline", `${s}/${e.length} allumée${s > 1 ? "s" : ""}`, C`<div class="list">
+              ${e.length > 1 ? this.renderAllLightsRow(e) : w}
+              ${e.map((e) => this.renderLightRow(e))}
+            </div>`) : w}
+          ${t.length ? this.renderDetailsGroup("Volets", "mdi:blinds-horizontal", `${c}/${t.length} ouvert${c > 1 ? "s" : ""}`, C`${t.length > 1 ? $t(this.coverHost, t, "details:covers", null) : w}
               <div class="list">${t.map((e) => en(this.coverHost, e))}</div>`) : w}
-          ${n.length ? this.renderDetailsGroup("Multimédia", "mdi:music-note", u ? `${h(u, "appareil")} allumé${u > 1 ? "s" : ""}` : "Tout est éteint", C`<div class="list">${n.map(({ id: e, kind: t }) => this.renderMediaRow(e, t))}</div>`) : w}
-          ${r.length || i.length ? this.renderDetailsGroup("Température et humidité", "mdi:thermometer", p ? `${d} · ${f}` : h(r.length, "thermostat"), C`${r.length ? C`<div class="list">${r.map((e) => this.renderThermostatRow(e))}</div>` : w}
-              ${i.length ? C`<div class="details-sensors">${i.map((e) => this.renderSensorRow(e))}</div>` : w}`, p ? C`<button class="details-group-action" type="button" @click=${() => this.openDialog("climate")}><ha-icon icon="mdi:chart-line"></ha-icon>Historique</button>` : void 0) : w}
-          ${a.length ? this.renderDetailsGroup("Autres", "mdi:dots-grid", h(a.length, "appareil"), C`<div class="list">${a.map((e) => this.renderOtherRow(e))}</div>`) : w}
+          ${n.length ? this.renderDetailsGroup("Multimédia", "mdi:music-note", l ? `${m(l, "appareil")} allumé${l > 1 ? "s" : ""}` : "Tout est éteint", C`<div class="list">${n.map(({ id: e, kind: t }) => this.renderMediaRow(e, t))}</div>`) : w}
+          ${r.length || i.length ? this.renderDetailsGroup("Température et humidité", "mdi:thermometer", f ? `${u} · ${d}` : m(r.length, "thermostat"), C`${r.length ? C`<div class="list">${r.map((e) => this.renderThermostatRow(e))}</div>` : w}
+              ${i.length ? C`<div class="details-sensors">${i.map((e) => this.renderSensorRow(e))}</div>` : w}`, f ? C`<button class="details-group-action" type="button" @click=${() => this.openDialog("climate")}><ha-icon icon="mdi:chart-line"></ha-icon>Historique</button>` : void 0) : w}
+          ${a.length ? this.renderDetailsGroup("Autres", "mdi:dots-grid", m(a.length, "appareil"), C`<div class="list">${a.map((e) => this.renderOtherRow(e))}</div>`) : w}
           ${o ? w : C`<p class="muted">Aucun appareil configuré dans cette pièce.</p>`}
         </div>
       `);
+	}
+	renderAllLightsRow(e) {
+		let t = e.filter((e) => O(E(this.hass, e))), n = e.filter((e) => k(E(this.hass, e))), r = t.filter((e) => dn(e, E(this.hass, e))), i = t.filter((e) => ln(e) && ft(E(this.hass, e))), a = n.filter((e) => ln(e)).map((e) => ut(E(this.hass, e))), o = a.length ? Math.round(a.reduce((e, t) => e + t, 0) / a.length) : 0, s = "details:lights:brightness", c = this.dragValues.get(s) ?? o, l = pt(dt(i.map((e) => E(this.hass, e)).find((e) => k(e) && dt(e)) ?? E(this.hass, i[0]))), u = this.isPending("lights:all"), d = n.length > 0, f = t.length ? r.length && d ? `${c} %` : `${n.length}/${e.length} allumée${n.length > 1 ? "s" : ""}` : "Indisponible";
+		return C`
+      <div class="list-row light-row all-lights-row">
+        <span class="tile-icon light-status-icon ${d ? "on" : ""}" style=${`--light-status-color:${l}`}><ha-icon .icon=${d ? "mdi:lightbulb-group" : "mdi:lightbulb-group-outline"}></ha-icon></span>
+        <div class="meta">
+          <div class="row-between"><span class="name">Toutes les lumières</span><span class="state">${f}</span></div>
+          ${r.length || i.length ? C`<div class="light-setting-row">
+            ${r.length ? this.renderLightSlider(s, o, "Luminosité de toutes les lumières", !1, (t) => this.setGlobalBrightness(t, e)) : C`<span></span>`}
+            ${i.length ? C`<input class="color-picker" type="color" .value=${l} title="Couleur de toutes les lumières" aria-label="Couleur de toutes les lumières"
+                  @change=${(t) => this.setLightsColor(pn(this.hass, e, (e, t) => ft(t)), t.target.value, "details:lights:color")} />` : w}
+          </div>` : w}
+        </div>
+        <button class="device-toggle" type="button" role="switch" aria-checked=${d ? "true" : "false"} aria-label=${d ? "Éteindre toutes les lumières" : "Allumer toutes les lumières"}
+          ?disabled=${!t.length || u} aria-busy=${u ? "true" : "false"} @click=${() => this.toggleLights(e)}></button>
+      </div>
+    `;
 	}
 	renderDetailsGroup(e, t, n, r, i) {
 		return C`
@@ -5976,7 +6006,7 @@ var tr = {
 		return C`
       <div class="list-row details-sensor" ${Kt(e)}>
         <span class="tile-icon"><ha-icon .icon=${r}></ha-icon></span>
-        <div class="meta"><span class="name">${this.entityLabel(e, e)}</span><strong class="details-value">${D(t) ? M(this.hass, e) : "Indisponible"}</strong></div>
+        <div class="meta"><span class="name">${this.sensorLabel(e)}</span><strong class="details-value">${D(t) ? M(this.hass, e) : "Indisponible"}</strong></div>
       </div>
     `;
 	}
@@ -6050,7 +6080,7 @@ var tr = {
                 <div class="dialog-section-title">Valeurs actuelles</div>
                 <div class="grid two">
                   ${o.map((e) => {
-			let t = e === this.room?.temperature_entity, n = e === this.room?.humidity_entity, r = this.entityLabel(e, t ? "Température" : n ? "Humidité" : e);
+			let t = e === this.room?.temperature_entity, n = e === this.room?.humidity_entity, r = this.sensorLabel(e);
 			return C`<div class="tile"><div class="tile-head"><span class="tile-icon"><ha-icon .icon=${E(this.hass, e)?.attributes.icon || (t ? "mdi:thermometer" : n ? "mdi:water-percent" : "mdi:chart-line")}></ha-icon></span><strong>${M(this.hass, e)}</strong></div><div style="margin-top:10px;">${r}</div></div>`;
 		})}
                 </div>
@@ -6058,8 +6088,8 @@ var tr = {
           ${o.length ? C`
                 <div class="history-graphs">
                   ${o.map((e) => {
-			let t = e === this.room?.temperature_entity ? "Température" : e === this.room?.humidity_entity ? "Humidité" : e, n = this.entityLabel(e, t);
-			return C`<hui-card class="history-graph" .hass=${this.hass} .config=${this.historyGraphConfig(e, n, f)}></hui-card>`;
+			let t = this.sensorLabel(e);
+			return C`<hui-card class="history-graph" .hass=${this.hass} .config=${this.historyGraphConfig(e, t, f)}></hui-card>`;
 		})}
                 </div>
               ` : w}
@@ -18794,7 +18824,7 @@ var Pd = class extends I {
       <div class="zones">${t.map((e) => this.renderZone(e))}</div>
     </div></ha-card>${this.renderStandaloneConfirmation()}`;
 	}
-}, Fd = "0.28.0";
+}, Fd = "0.28.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", ar), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", rn), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", ei), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ai), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", fi), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", Wi), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", _n), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", qi), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", kn), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", ia), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", La), customElements.get("auralis-consumption-card") || customElements.define("auralis-consumption-card", Fo), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", vo), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", Ss), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", Ys), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", fc), customElements.get("auralis-media-card") || customElements.define("auralis-media-card", Fc), customElements.get("auralis-tabs-card") || customElements.define("auralis-tabs-card", cl), customElements.get("auralis-screensaver-card") || customElements.define("auralis-screensaver-card", Hl), customElements.get("auralis-batteries-card") || customElements.define("auralis-batteries-card", Pu), customElements.get("auralis-irrigation-card") || customElements.define("auralis-irrigation-card", Pd), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends ar {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends ei {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ai {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends fi {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends Wi {}), window.customCards = window.customCards || [];
 var Id = [
 	{
