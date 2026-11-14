@@ -344,8 +344,9 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       :host([data-portal][data-position="left"]) { left: var(--auralis-navbar-inset-left, 0px); }
       :host([data-portal][data-position="right"]) { right: var(--auralis-navbar-inset-right, 0px); }
       /* Barre flottante : détachée du bord, largeur ajustée aux onglets, coins arrondis tous visibles. */
-      :host([data-portal][data-floating][data-position="top"]),
-      :host([data-portal][data-floating][data-position="bottom"]) {
+      /* Barre flottante ou d'icônes seules : largeur ajustée aux onglets au lieu de 720 px. */
+      :host([data-portal][data-fit][data-position="top"]),
+      :host([data-portal][data-fit][data-position="bottom"]) {
         /* Un conteneur de requêtes n'a pas de largeur intrinsèque : fit-content donnerait 0. */
         container-type: normal;
         width: fit-content;
@@ -366,8 +367,10 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       :host([data-floating][data-position="top"]) nav,
       :host([data-floating][data-position="bottom"]) nav { padding-top: 0; padding-bottom: 0; }
-      :host([data-floating][data-position="top"]) .nav-item,
-      :host([data-floating][data-position="bottom"]) .nav-item { flex: 0 0 auto; min-width: 64px; }
+      :host([data-fit][data-position="top"]) .nav-item,
+      :host([data-fit][data-position="bottom"]) .nav-item { flex: 0 0 auto; min-width: 64px; }
+      :host([data-fit][data-position="top"]) .labels-hidden .nav-item,
+      :host([data-fit][data-position="bottom"]) .labels-hidden .nav-item { min-width: 56px; padding-inline: 8px; }
       ha-card {
         height: var(--navbar-height-desktop, 76px);
         box-sizing: border-box;
@@ -383,7 +386,9 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         box-sizing: border-box;
         overflow: hidden;
         padding: 8px;
-        border-radius: inherit;
+        /* Pas « inherit » : placé dans le slot de ha-card, le fond hériterait du slot (0 px)
+           et dessinerait un rectangle à coins carrés par-dessus la carte arrondie. */
+        border-radius: var(--auralis-radius-xl);
         background: color-mix(in srgb, var(--auralis-card) 92%, transparent);
         backdrop-filter: blur(18px);
       }
@@ -531,8 +536,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         .compact .nav-item { min-height: 0; padding: 2px 6px; }
         ha-icon { --mdc-icon-size: 20px; }
         /* La barre flottante n'est pas un conteneur de requêtes : même empilement icône / libellé ici. */
-        :host([data-floating]) .nav-item { min-width: 56px; flex-direction: column; gap: 2px; }
-        :host([data-floating]) .label { max-width: 74px; font-size: var(--auralis-text-xs); }
+        :host([data-fit]) .nav-item { min-width: 56px; flex-direction: column; gap: 2px; }
+        :host([data-fit]) .label { max-width: 74px; font-size: var(--auralis-text-xs); }
       }
     `,
   ];
@@ -768,6 +773,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
     this.toggleAttribute("data-edit-mode", this.editing);
     // Seule la barre posée sur l'écran flotte ; la carte affichée dans l'éditeur garde sa place.
     this.toggleAttribute("data-floating", this.isPortal && this.config?.floating === true);
+    // Sans libellés, des onglets de 76 px étirés sur 720 px laisseraient de grands vides.
+    this.toggleAttribute("data-fit", this.isPortal && (this.config?.floating === true || this.config?.show_labels === false));
   }
 
   protected updated(): void {

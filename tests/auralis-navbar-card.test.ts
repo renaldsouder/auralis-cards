@@ -224,10 +224,30 @@ describe("Auralis navbar configuration", () => {
     expect(toggleAttribute).toHaveBeenCalledWith("data-floating", false);
     card.isPortal = true;
     internals.willUpdate();
-    expect(toggleAttribute).toHaveBeenLastCalledWith("data-floating", true);
+    expect(toggleAttribute).toHaveBeenCalledWith("data-floating", true);
     card.setConfig(config({}));
     internals.willUpdate();
-    expect(toggleAttribute).toHaveBeenLastCalledWith("data-floating", false);
+    expect(toggleAttribute).toHaveBeenCalledWith("data-floating", false);
+  });
+
+  it("fits an icon-only bar to its buttons instead of stretching them", () => {
+    const card = new navbar.AuralisNavbarCard();
+    const toggleAttribute = vi.fn();
+    const internals = card as unknown as { toggleAttribute: typeof toggleAttribute; willUpdate: () => void };
+    internals.toggleAttribute = toggleAttribute;
+    card.isPortal = true;
+    card.setConfig(config({}));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenCalledWith("data-fit", false);
+    card.setConfig(config({ show_labels: false }));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", true);
+    card.setConfig(config({ floating: true }));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", true);
+    card.isPortal = false;
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", false);
   });
 
   it("labels its editor fields in French", () => {

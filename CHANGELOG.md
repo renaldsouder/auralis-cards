@@ -3,6 +3,8 @@
 ## 0.24.2
 
 - **Navigation** : nouvelle option `floating`. La barre se détache de 12 px du bord de l'écran, ses quatre coins arrondis restent visibles et une ombre la pose au-dessus des cartes. En haut ou en bas, sa largeur s'ajuste aux onglets (une barre d'icônes seules devient une pastille compacte) ; elle défile si les onglets ne tiennent pas. L'espace laissé sous les cartes inclut cet écart. Réglable dans l'éditeur visuel (« Barre flottante »). La carte affichée dans l'éditeur ne flotte pas.
+- **Navigation** : les quatre coins de la barre sont bien arrondis. Le fond intérieur restait carré (il héritait l'arrondi du slot de `ha-card`, à 0 px) et dessinait un rectangle par-dessus la carte arrondie, comme une seconde barre dessous.
+- **Navigation** : avec `show_labels: false`, la barre en haut ou en bas s'ajuste à ses boutons (56 px chacun) au lieu de les étirer sur 720 px.
 
 ## 0.24.1
 
