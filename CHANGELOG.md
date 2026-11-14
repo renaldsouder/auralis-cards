@@ -2,6 +2,7 @@
 
 ## 0.26.1
 
+- **Volets** : deux groupes restent côte à côte dans une colonne de tableau de bord sur tablette (environ 350 px de contenu) ; la carte ne passe sur une colonne qu'en dessous de 330 px, comme sur un téléphone.
 - **Pièce** : un appui sur la photo ouvre la vue d'ensemble de la pièce, comme sur les autres cartes ; la petite icône de réglages le signale, dans le premier coin laissé libre par le thermostat et le bouton Ambiance. Les commandes posées sur la photo gardent leur propre action.
 - **Pièce** : la vue d'ensemble liste toutes les entités de la carte (lumières, volets, thermostat, température, humidité, lecteur, commandes latérales), chacune ouvrant sa fiche Home Assistant.
 

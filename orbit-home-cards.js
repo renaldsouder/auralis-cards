@@ -2645,8 +2645,8 @@ var nn = o`
         }
       }
 
-      /* Même seuil que la carte Prises : une colonne sous 360 px. */
-      @container (max-width: 360px) {
+      /* Une colonne sous 330 px de contenu (téléphone) ; une colonne de tableau sur tablette (~350 px) garde deux groupes côte à côte. */
+      @container (max-width: 330px) {
         .groups-grid:not(.single-column),
         .groups-grid.single-column {
           grid-template-columns: 1fr;
