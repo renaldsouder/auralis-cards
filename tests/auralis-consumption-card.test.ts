@@ -103,6 +103,42 @@ describe("Auralis consumption card", () => {
     expect(internals.history?.totals["sensor.serveur_energie"]).toBeCloseTo(0.5);
   });
 
+  it("compares the last seven days with the seven before, by local day", () => {
+    const day = 86_400_000;
+    const today = Date.UTC(2026, 10, 14);
+    const now = today + 15 * HOUR;
+    const rows = [
+      ...Array.from({ length: 7 }, (_, index) => ({ start: today - (6 - index) * day, change: 1 })),
+      ...Array.from({ length: 7 }, (_, index) => ({ start: today - (13 - index) * day, change: 0.5 })),
+      { start: today - 20 * day, change: 99 },
+    ];
+    const week = consumption.weekComparison(rows, now, "UTC");
+    expect(week.days).toHaveLength(7);
+    expect(week.days[6]).toEqual({ date: today, current: 1, previous: 0.5 });
+    expect(week.current).toBe(7);
+    expect(week.previous).toBe(3.5);
+    expect(consumption.weekComparison([], now, "UTC").current).toBeUndefined();
+  });
+
+  it("loads daily statistics of the selected device for the weekly comparison", async () => {
+    const callWS = vi.fn(async () => ({}));
+    const card = new consumption.AuralisConsumptionCard();
+    card.setConfig(config());
+    card.hass = { states: {}, callService: async () => undefined, callWS: callWS as never };
+    const internals = card as unknown as { refreshWeek(): Promise<void>; toggleFocus(index: number): void };
+    await internals.refreshWeek();
+    expect(callWS).not.toHaveBeenCalled();
+    internals.toggleFocus(0);
+    await internals.refreshWeek();
+    expect(callWS).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: "recorder/statistics_during_period", statistic_ids: ["sensor.serveur_energie"], period: "day",
+    }));
+    internals.toggleFocus(0);
+    internals.toggleFocus(-1);
+    await internals.refreshWeek();
+    expect(callWS).toHaveBeenLastCalledWith(expect.objectContaining({ statistic_ids: ["sensor.maison_energie"] }));
+  });
+
   it("labels every editor field in French", () => {
     const form = consumption.AuralisConsumptionCard.getConfigForm() as {
       schema: Array<{ name: string }>; computeLabel: (field: { name: string }) => string | undefined;

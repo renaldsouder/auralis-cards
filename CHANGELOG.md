@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0
+
+- **Volets** : nouvelle option `compact: true`, des tuiles carrées plus petites (nom, état et les trois commandes sur la photo) pour une colonne étroite comme l'accueil d'une tablette. Deux groupes restent côte à côte même sur un téléphone.
+- **Consommation par appareil** : un appareil choisi (ou la maison) affiche sous son graphe « 7 jours comparés » : une paire de barres par jour, semaine en cours et semaine précédente, les deux totaux et l'écart en %. Survol ou toucher d'un jour pour lire ses valeurs. Il faut un compteur d'énergie (`energy_entity`, ou `total_energy_entity` pour la maison).
+
 ## 0.26.1
 
 - **Volets** : deux groupes restent côte à côte dans une colonne de tableau de bord sur tablette (environ 350 px de contenu) ; la carte ne passe sur une colonne qu'en dessous de 330 px, comme sur un téléphone.
