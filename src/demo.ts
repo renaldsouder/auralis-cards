@@ -35,7 +35,7 @@ const e = (entity_id: string, state: string, attributes: Record<string, unknown>
 const states = [
   e("sensor.salon_temperature", "21.5", { unit_of_measurement: "°C" }),
   e("sensor.salon_humidity", "46", { unit_of_measurement: "%" }),
-  e("climate.salon", "heat", { friendly_name: "Climat Salon", temperature: 20.5, current_temperature: 21.5, target_temp_step: 0.5, min_temp: 7, max_temp: 28 }),
+  e("climate.salon", "heat", { friendly_name: "Climat Salon", hvac_modes: ["off", "heat", "auto"], temperature: 20.5, current_temperature: 21.5, target_temp_step: 0.5, min_temp: 7, max_temp: 28 }),
   e("media_player.salon", "playing", {
     friendly_name: "Enceinte du salon", device_class: "speaker", media_title: "So What", media_artist: "Miles Davis", media_album_name: "Kind of Blue",
     entity_picture: "/images/lumieres-ambiance.jpg", media_duration: 562, media_position: 148, media_position_updated_at: new Date().toISOString(),
@@ -241,6 +241,8 @@ const states = [
   e("sensor.caisson_puissance", "13", { friendly_name: "Caisson de basse", unit_of_measurement: "W", device_class: "power" }),
   e("script.wake_skynet_demo", "off", { friendly_name: "Réveiller le serveur" }),
   // Arrosage et piles : cartes Arrosage et Batteries.
+  e("fan.salon", "on", { friendly_name: "Ventilateur", percentage: 40 }),
+  e("binary_sensor.baie_ouverte", "off", { friendly_name: "Baie vitrée", device_class: "door" }),
   e("switch.vanne_jardiniere", "off", { friendly_name: "Vanne jardinière" }),
   e("number.vanne_jardiniere_countdown", "10", { friendly_name: "Minuterie jardinière", unit_of_measurement: "min", min: 0, max: 255, step: 1 }),
   e("sensor.vanne_jardiniere_battery_state", "low", { friendly_name: "Vanne jardinière Batterie", device_class: "battery" }),
@@ -531,6 +533,7 @@ const room: RoomCardConfig = {
   },
   lights: ["light.plafonnier", "light.lampadaire", "light.bibliotheque", "light.ambiance_tv"],
   covers: ["cover.baie", "cover.fenetre"],
+  extra_entities: ["switch.meuble_tv", "fan.salon", "camera.jardin", "binary_sensor.baie_ouverte"],
 };
 
 const switches: SwitchesCardConfig = {

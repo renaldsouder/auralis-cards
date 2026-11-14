@@ -262,6 +262,18 @@ Une entité appartient à la zone quand elle y est rattachée directement, ou, �
 | `climate_entity` | premier thermostat `climate.*` |
 | `media_player_entity` | premier lecteur `media_player.*` qui n'est pas une télévision |
 | `right_controls` | si la zone contient une télévision (`device_class: tv`) et que `right_controls` n'est pas défini : le lecteur puis une commande `tv` |
+| `extra_entities` | les autres appareils de la zone (prises et interrupteurs non repris comme lumières, ventilateurs, boutons, scripts, listes, curseurs, détecteurs, caméras…), rangés dans le groupe « Autres » de la fenêtre de la photo |
+
+### Fenêtre de la photo
+
+Un appui sur la photo ouvre la vue d'ensemble de la pièce, rangée par groupes : **Éclairage**, **Volets**, **Multimédia**, **Température et humidité** et **Autres**. Chaque ligne porte directement ses réglages, sans ouvrir d'autre fenêtre : intensité, couleur et marche/arrêt des lumières ; position et ouvrir/stop/fermer des volets ; marche/arrêt, lecture et volume des lecteurs et télévisions ; consigne et mode des thermostats ; interrupteur, bouton, liste, curseur ou aperçu de caméra pour les autres appareils. Un appui long sur une ligne ouvre la fiche Home Assistant. `extra_entities` ajoute des appareils à la fenêtre ; chacun rejoint le groupe de son type (une lumière dans Éclairage, un capteur de température dans Température et humidité, le reste dans Autres). Les entités des commandes latérales y figurent aussi.
+
+```yaml
+extra_entities:
+  - switch.prise_lampe
+  - fan.plafond
+  - camera.salon
+```
 
 Une option renseignée l'emporte toujours sur la zone ; pour ne retirer que certains appareils, utilisez `area_exclude` (par exemple `light.*` pour n'afficher aucune lumière). Si la zone n'existe pas, ou si elle ne contient ni lumière, ni volet, ni capteur, ni thermostat, ni lecteur, la carte affiche un message explicite à la place de la pièce. Un thermostat, un lecteur ou une télévision seuls suffisent à afficher la pièce. Les zones nécessitent Home Assistant 2023.x ou plus récent. Toutes les autres options (photo, ambiances, thermostat, libellés…) restent disponibles.
 

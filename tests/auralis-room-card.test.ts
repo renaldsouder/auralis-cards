@@ -38,10 +38,44 @@ describe("Auralis room photo", () => {
       ],
     }));
     expect(card.roomEntities()).toEqual([
-      "light.plafond", "light.ruban", "cover.baie", "climate.salon", "sensor.salon_temperature",
-      "sensor.salon_humidity", "media_player.salon", "switch.enceintes",
+      "light.plafond", "light.ruban", "cover.baie", "media_player.salon", "climate.salon",
+      "sensor.salon_temperature", "sensor.salon_humidity", "switch.enceintes",
     ]);
   });
+
+  it("sorts the room entities into the groups of the photo window", () => {
+    const card = new roomCard.AuralisRoomCard();
+    card.setConfig(config({
+      humidity_entity: "sensor.salon_humidity",
+      media_player_entity: "media_player.freebox",
+      lights: ["light.plafond"],
+      right_controls: [
+        { type: "tv", entity: "media_player.freebox" },
+        { type: "entity", entity: "camera.salon", action: "more-info" },
+      ],
+      extra_entities: [
+        "light.lampadaire", "light.plafond", "cover.baie", "media_player.tv", "climate.salon",
+        "sensor.salon_co2", "sensor.chambre_temperature", "switch.prise", "fan.plafond",
+      ],
+    }));
+    card.hass = {
+      states: {
+        "media_player.tv": { entity_id: "media_player.tv", state: "off", attributes: { device_class: "tv" } },
+        "sensor.chambre_temperature": { entity_id: "sensor.chambre_temperature", state: "19", attributes: { device_class: "temperature" } },
+      },
+      callService: async () => undefined,
+    } as HomeAssistant;
+    expect(card.detailGroups()).toEqual({
+      lights: ["light.plafond", "light.lampadaire"],
+      covers: ["cover.baie"],
+      // La télévision déclarée à droite garde ses commandes TV, même si c'est aussi le lecteur de la pièce.
+      media: [{ id: "media_player.freebox", kind: "tv" }, { id: "media_player.tv", kind: "tv" }],
+      thermostats: ["climate.salon"],
+      sensors: ["sensor.salon_temperature", "sensor.salon_humidity", "sensor.chambre_temperature"],
+      others: ["camera.salon", "sensor.salon_co2", "switch.prise", "fan.plafond"],
+    });
+  });
+
 
   it("puts the settings hint in the first corner left free by the thermostat and the ambiance button", () => {
     const card = new roomCard.AuralisRoomCard();

@@ -136,6 +136,8 @@ export interface RoomCardConfig extends BaseCardConfig {
   area_include_switches?: boolean;
   lights?: string[];
   covers?: string[];
+  /** Autres entités de la pièce (prises, ventilateurs, capteurs…) : rangées par type dans la fenêtre de la photo. */
+  extra_entities?: string[];
   left_controls?: RoomSideControlConfig[];
   right_controls?: RoomSideControlConfig[];
   thermostat?: RoomThermostatConfig;
