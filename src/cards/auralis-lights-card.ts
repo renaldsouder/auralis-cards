@@ -355,9 +355,9 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
           <span class="group-title"><strong>${group.name}</strong><small>${active}/${group.lights.length} allumée${group.lights.length > 1 ? "s" : ""}${unavailable ? ` · ${unavailable} indisponible${unavailable > 1 ? "s" : ""}` : ""}</small></span>
           <span class="group-power">
             <button class="control on" type="button" title=${`Allumer ${group.name}`} aria-label=${`Allumer ${group.name}`}
-              ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
+              aria-busy=${this.awaitingAny(ids, "on") ? "true" : "false"} ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
             <button class="control" type="button" title=${`Éteindre ${group.name}`} aria-label=${`Éteindre ${group.name}`}
-              ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
+              aria-busy=${this.awaitingAny(ids, "off") ? "true" : "false"} ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
           </span>
         </div>
         ${showColors ? html`<div class="group-actions">
@@ -379,7 +379,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
           return html`<div class="inline-light" ${holdMoreInfo(id)}><ha-icon .icon=${on ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon>
             <span class="label">${label}</span>${commandable ? nothing : html`<span class="unavailable">Indisponible</span>`}
             <button class="control" type="button" title=${`${on ? "Éteindre" : "Allumer"} ${label}`} aria-label=${`${on ? "Éteindre" : "Allumer"} ${label}`}
-              ?disabled=${!commandable} @click=${() => this.power([id], !on)}><ha-icon .icon=${on ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button></div>`;
+              aria-busy=${this.isAwaiting(id) ? "true" : "false"} ?disabled=${!commandable} @click=${() => this.power([id], !on)}><ha-icon .icon=${on ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button></div>`;
         })}</div>` : nothing}
       </div>
     </section>`;
@@ -398,7 +398,7 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
         <button class="control" type="button" title=${`Plus d’informations sur ${label}`} aria-label=${`Plus d’informations sur ${label}`}
           @click=${() => this.moreInfo(id)}><ha-icon icon="mdi:information-outline"></ha-icon></button>
         <button class="control ${on ? "on" : ""}" type="button" title=${`${on ? "Éteindre" : "Allumer"} ${label}`} aria-label=${`${on ? "Éteindre" : "Allumer"} ${label}`}
-          ?disabled=${!commandable} @click=${() => this.power([id], !on)}><ha-icon .icon=${on ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
+          aria-busy=${this.isAwaiting(id) ? "true" : "false"} ?disabled=${!commandable} @click=${() => this.power([id], !on)}><ha-icon .icon=${on ? "mdi:power" : "mdi:lightbulb-outline"}></ha-icon></button>
       </div>
       ${supportsBrightness(id, state) ? html`<div class="light-tools">
         ${this.renderDimmer(`light:${id}`, lightBrightness(state), `Intensité de ${label}`, [id], !commandable)}
@@ -433,8 +433,8 @@ export class AuralisLightsCard extends AuralisBaseCard<LightsCardConfig> {
         ${this.onOffOnly(group) ? nothing : html`<div class="dialog-stat"><strong>${this.average(group)}%</strong><small>intensité</small></div>`}</div>
       <div class="dialog-section-title">Groupe</div>
       <div class="group-actions">
-        <button class="control on" type="button" title="Tout allumer" aria-label="Tout allumer" ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
-        <button class="control" type="button" title="Tout éteindre" aria-label="Tout éteindre" ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
+        <button class="control on" type="button" title="Tout allumer" aria-label="Tout allumer" aria-busy=${this.awaitingAny(ids, "on") ? "true" : "false"} ?disabled=${!ids.length} @click=${() => this.power(ids, true)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
+        <button class="control" type="button" title="Tout éteindre" aria-label="Tout éteindre" aria-busy=${this.awaitingAny(ids, "off") ? "true" : "false"} ?disabled=${!ids.length} @click=${() => this.power(ids, false)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
         ${this.onOffOnly(group) ? nothing : html`<input class="color-input" type="color" .value=${this.color(group)} title="Couleur du groupe" aria-label="Couleur du groupe"
           ?disabled=${!colorIds.length} @change=${(event: Event) => this.colorize(this.colorTargets(group), (event.target as HTMLInputElement).value)} />`}
       </div>

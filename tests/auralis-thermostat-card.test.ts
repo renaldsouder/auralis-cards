@@ -80,7 +80,7 @@ describe("Auralis thermostat card", () => {
     await actions.setMode("climate.salon", "dry");
     expect(callService).toHaveBeenNthCalledWith(2, "climate", "set_hvac_mode", { hvac_mode: "cool" }, { entity_id: "climate.salon" });
     expect(callService).toHaveBeenCalledTimes(2);
-    hass.states["climate.salon"].state = "unavailable";
+    card.hass = { ...hass, states: { ...hass.states, "climate.salon": climate("unavailable", hass.states["climate.salon"].attributes) } };
     expect(actions.adjustTemperature("climate.salon", -1)).toBe(false);
     await actions.setMode("climate.salon", "off");
     expect(callService).toHaveBeenCalledTimes(2);

@@ -2115,7 +2115,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const color = rgbToHex(lightRgbColor(state));
     const key = `brightness:${id}`;
     const brightness = this.dragValues.get(key) ?? lightBrightness(state);
-    const status = !commandable ? "Indisponible" : dimmable ? `${brightness} %` : active ? "Allumée" : "Éteinte";
+    const status = !commandable ? "Indisponible" : this.awaitingPower(id) ?? (dimmable ? `${brightness} %` : active ? "Allumée" : "Éteinte");
     const busy = this.isPending(`light:${id}`);
     return html`
       <div class="list-row light-row" ${holdMoreInfo(id)}>
@@ -2250,6 +2250,19 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     );
   }
 
+  /** « Allumage… », « Extinction… » : marche/arrêt envoyé, pas encore confirmé par l'appareil. */
+  private awaitingPower(id: string): string | undefined {
+    const wanted = this.expectations.get(id)?.state;
+    if (wanted === undefined) return undefined;
+    if (wanted === "locked") return "Verrouillage…";
+    if (wanted === "unlocked") return "Déverrouillage…";
+    if (wanted === "open") return "Ouverture…";
+    if (wanted === "closed") return "Fermeture…";
+    if (wanted === "on") return "Allumage…";
+    if (wanted === "off") return "Extinction…";
+    return "Commande en cours…";
+  }
+
   /** Première ligne de l'éclairage : intensité, couleur et marche/arrêt de toutes les lumières en une fois. */
   private renderAllLightsRow(ids: string[]): TemplateResult {
     const commandable = ids.filter((id) => isCommandable(entity(this.hass, id)));
@@ -2267,7 +2280,10 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const color = rgbToHex(lightRgbColor(reference));
     const busy = this.isPending("lights:all");
     const on = active.length > 0;
-    const status = !commandable.length ? "Indisponible" : dimmable.length && on ? `${shown} %` : `${active.length}/${ids.length} allumée${active.length > 1 ? "s" : ""}`;
+    const waiting = ids.map((id) => this.expectations.get(id)?.state).filter((wanted) => wanted === "on" || wanted === "off");
+    const status = !commandable.length ? "Indisponible"
+      : waiting.length ? (waiting.includes("on") ? "Allumage…" : "Extinction…")
+      : dimmable.length && on ? `${shown} %` : `${active.length}/${ids.length} allumée${active.length > 1 ? "s" : ""}`;
     return html`
       <div class="list-row light-row all-lights-row">
         <span class="tile-icon light-status-icon ${on ? "on" : ""}" style=${`--light-status-color:${color}`}><ha-icon .icon=${on ? "mdi:lightbulb-group" : "mdi:lightbulb-group-outline"}></ha-icon></span>
@@ -2311,7 +2327,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     const artist = typeof media?.attributes.media_artist === "string" ? media.attributes.media_artist : "";
     const status = !commandable
       ? "Indisponible"
-      : title && powered ? [title, artist].filter(Boolean).join(" · ") : capitalize(mediaStatusLabel(media));
+      : this.awaitingPower(id) ?? (title && powered ? [title, artist].filter(Boolean).join(" · ") : capitalize(mediaStatusLabel(media)));
     const rawVolume = media?.attributes.volume_level;
     const volumeKey = `volume:${id}`;
     const volume = typeof rawVolume === "number" ? Math.round(rawVolume * 100) : undefined;
@@ -2413,7 +2429,8 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     if (TOGGLE_DOMAINS.has(domain)) {
       if (domain === "lock") active = state?.state === "locked";
       if (isAvailable(state)) {
-        subtitle = domain === "lock" ? (active ? "Verrouillé" : "Déverrouillé") : domain === "valve" ? (active ? "Ouverte" : "Fermée") : active ? "Allumé" : "Éteint";
+        subtitle = this.awaitingPower(id)
+          ?? (domain === "lock" ? (active ? "Verrouillé" : "Déverrouillé") : domain === "valve" ? (active ? "Ouverte" : "Fermée") : active ? "Allumé" : "Éteint");
       }
       const service = domain === "lock" ? (active ? "unlock" : "lock") : active ? "turn_off" : "turn_on";
       control = html`<button class="device-toggle" type="button" role="switch" aria-checked=${active ? "true" : "false"}

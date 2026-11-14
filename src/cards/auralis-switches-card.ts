@@ -1,4 +1,4 @@
-import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, nothing, type TemplateResult } from "lit";
 import { AuralisBaseCard } from "./auralis-base-card";
 import { holdMoreInfo } from "./auralis-covers-card";
 import type { SwitchesCardConfig, SwitchesGroupConfig } from "../types/config";
@@ -14,20 +14,11 @@ interface GroupStats {
   availableIds: string[];
 }
 
-/** État attendu après une commande, affiché jusqu'à confirmation par Home Assistant. */
-interface Expectation {
-  on: boolean;
-  until: number;
-}
-
-/** Durée maximale d'affichage d'un état attendu que Home Assistant ne confirme pas. */
-export const CONFIRM_WINDOW = 5_000;
 const SWITCH_ID = /^switch\.[a-z0-9_]+$/;
 
 export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
   static properties = {
     ...AuralisBaseCard.properties,
-    expected: { state: true },
   };
 
   static styles = [AuralisBaseCard.styles, css`
@@ -93,9 +84,6 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     @container (max-width:360px) { .groups-grid, .groups-grid:not(.single-column) { grid-template-columns:1fr; } .switches-count { display:none; } }
   `];
 
-  /** États attendus après une commande, par interrupteur. */
-  protected expected: ReadonlyMap<string, Expectation> = new Map();
-  private expiryTimer?: number;
 
   public setConfig(config: SwitchesCardConfig): void {
     const groups = config.groups ?? (config.switches?.length ? [{ name: config.name || "Prises", switches: config.switches }] : []);
@@ -152,33 +140,18 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
     ], computeLabel: ({ name }: { name: string }) => labels[name] };
   }
 
-  public disconnectedCallback(): void {
-    clearTimeout(this.expiryTimer);
-    super.disconnectedCallback();
-  }
-
-  /** Oublie les états attendus confirmés par Home Assistant ou expirés. */
-  protected willUpdate(changed: PropertyValues): void {
-    super.willUpdate(changed);
-    if (!this.expected.size) return;
-    const now = Date.now();
-    const next = new Map([...this.expected].filter(([id, wanted]) => now < wanted.until && this.realState(id) !== (wanted.on ? "on" : "off")));
-    if (next.size !== this.expected.size) this.expected = next;
-  }
 
   private groups(): SwitchesGroupConfig[] { return this.config?.groups || []; }
   private ids(group: SwitchesGroupConfig): string[] { return [...new Set(group.switches)]; }
-  private realState(id: string): string | undefined { return entity(this.hass, id)?.state; }
+  private stateOf(id: string): string | undefined { return entity(this.hass, id)?.state; }
   private operational(id: string): boolean { return isCommandable(entity(this.hass, id)); }
-  /** Commande envoyée, en attente de confirmation par Home Assistant. */
+  /** Commande envoyée, en attente de confirmation par l'appareil (suivi commun à toutes les cartes). */
   private awaiting(id: string): boolean {
-    const wanted = this.expected.get(id);
-    return Boolean(wanted && Date.now() < wanted.until && this.realState(id) !== (wanted.on ? "on" : "off"));
+    return this.isAwaiting(id);
   }
-  /** Allumé, ou allumé d'après la dernière commande tant que Home Assistant ne l'a pas confirmé. */
+  /** Allumé, ou allumé d'après la dernière commande tant que l'appareil ne l'a pas confirmé. */
   private active(id: string): boolean {
-    if (this.awaiting(id) && this.operational(id)) return this.expected.get(id)!.on;
-    return this.realState(id) === "on";
+    return this.stateOf(id) === "on";
   }
   private groupStats(group: SwitchesGroupConfig): GroupStats {
     const ids = this.ids(group);
@@ -187,34 +160,17 @@ export class AuralisSwitchesCard extends AuralisBaseCard<SwitchesCardConfig> {
   }
   private label(id: string): string { return this.config?.entity_labels?.[id] || friendlyName(entity(this.hass, id), id); }
 
-  private expect(ids: string[], on: boolean | undefined): void {
-    const next = new Map(this.expected);
-    const until = Date.now() + CONFIRM_WINDOW;
-    for (const id of ids) {
-      if (on === undefined) next.delete(id);
-      else next.set(id, { on, until });
-    }
-    this.expected = next;
-    if (on !== undefined) {
-      clearTimeout(this.expiryTimer);
-      this.expiryTimer = setTimeout(() => this.requestUpdate(), CONFIRM_WINDOW + 50);
-    }
-  }
-
   /**
    * Allume ou éteint les interrupteurs qui en ont besoin. L'état demandé s'affiche aussitôt et
-   * reste affiché jusqu'à la confirmation de Home Assistant (5 s au plus) : pas de clignotement.
+   * reste affiché jusqu'à la confirmation de l'appareil (suivi commun de la carte de base).
    */
   private async power(ids: string[], on: boolean, key = `power:${[...new Set(ids)].sort().join(",")}`): Promise<boolean> {
     const target = [...new Set(ids)].filter((id) => this.operational(id) && this.active(id) !== on);
     if (!this.hass || !target.length || this.isPending(key)) return false;
     const hass = this.hass;
-    this.expect(target, on);
-    const ok = await this.runCommand(key, () => hass.callService("switch", on ? "turn_on" : "turn_off", {}, { entity_id: target }), {
+    return this.runCommand(key, () => hass.callService("switch", on ? "turn_on" : "turn_off", {}, { entity_id: target }), {
       errorMessage: on ? "L’allumage a échoué." : "L’extinction a échoué.",
     });
-    if (!ok) this.expect(target, undefined);
-    return ok;
   }
 
   private renderGroup(group: SwitchesGroupConfig, index: number): TemplateResult {

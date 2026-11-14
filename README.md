@@ -61,7 +61,7 @@ Le [cahier des charges](docs/CAHIER_DES_CHARGES.md) décrit le périmètre et le
 
 Toutes les cartes partagent les mêmes règles :
 
-- **Commandes** : un bouton montre l'état « en cours » pendant l'appel. Si Home Assistant refuse la commande, un message l'indique quelques secondes en haut de l'écran. Un bouton jamais pressé (état `unknown`) reste utilisable ; seule une entité `unavailable` désactive la commande.
+- **Commandes** : dès l'appui, la carte affiche l'état demandé (interrupteur basculé, lampe allumée, curseur à sa nouvelle valeur) et le marque « en attente » : l'élément pulse doucement, et la fenêtre d'une pièce écrit « Allumage… » ou « Extinction… », jusqu'à ce que l'appareil confirme. Un second appui sur le même marche/arrêt est ignoré pendant l'attente ; un réglage (intensité, position, volume) reste modifiable. Sans confirmation de l'appareil dans les 10 secondes, l'état réel revient et un message l'indique. Si Home Assistant refuse la commande, l'état réel revient aussitôt et un message l'indique quelques secondes en haut de l'écran. Avec « Réduire les animations », un anneau fixe remplace la pulsation. Un bouton jamais pressé (état `unknown`) reste utilisable ; seule une entité `unavailable` désactive la commande.
 - **Fiche de l'entité** : un appui long ou un clic droit sur une ligne ouvre la fiche Home Assistant de l'entité.
 - **Fenêtres de détail** : Échap ou le geste retour les ferment, et le focus revient au bouton qui les a ouvertes.
 - **Mises à jour** : une carte ne se redessine que lorsqu'une entité qu'elle affiche change, ce qui ménage les tablettes allumées en permanence.

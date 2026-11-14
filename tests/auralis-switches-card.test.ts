@@ -51,7 +51,8 @@ describe("Auralis switches card", () => {
     expect(handlers).toHaveLength(2);
     await handlers[1]();
     expect(callService).toHaveBeenNthCalledWith(1, "switch", "turn_on", {}, { entity_id: ["switch.tv"] });
-    hass.states["switch.tv"].state = "on";
+    // Home Assistant envoie un nouvel objet hass à chaque changement d'état.
+    card.hass = { ...hass, states: { ...hass.states, "switch.tv": state("switch.tv", "on") } };
     const offHandlers = internals.renderGroup(group, 0).values.filter((value): value is () => Promise<void> => typeof value === "function");
     await offHandlers[1]();
     expect(callService).toHaveBeenNthCalledWith(2, "switch", "turn_off", {}, { entity_id: ["switch.lampe", "switch.tv"] });
@@ -114,7 +115,7 @@ describe("Auralis switches card", () => {
     expect(await internals.power(["switch.tv"], true)).toBe(true);
     expect(internals.active("switch.tv")).toBe(true);
     expect(internals.awaiting("switch.tv")).toBe(true);
-    hass.states["switch.tv"] = state("switch.tv", "on");
+    card.hass = { ...hass, states: { ...hass.states, "switch.tv": state("switch.tv", "on") } };
     expect(internals.awaiting("switch.tv")).toBe(false);
 
     fail = true;

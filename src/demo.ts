@@ -255,14 +255,20 @@ const states = [
   { ...e("sensor.sonde_cave_humidity", "unavailable", { friendly_name: "Sonde cave Humidité", unit_of_measurement: "%" }), last_changed: new Date(Date.now() - 3 * 86_400_000).toISOString() },
 ].reduce<Record<string, HassEntity>>((map, item) => ({ ...map, [item.entity_id]: item }), {});
 
+/** Délai de réponse simulé des appareils (Zigbee, Wi-Fi…). */
+const DEVICE_DELAY = 1_500;
+
 const hass: HomeAssistant = {
   states,
   themes: { darkMode: false },
   formatEntityState: (state) => `${state.state}${state.attributes.unit_of_measurement ? ` ${state.attributes.unit_of_measurement}` : ""}`,
   callService: async (domain, service, data, target) => {
     console.info("Service Home Assistant simulé", { domain, service, data, target });
-    if (domain === "media_player") simulateMedia(String((target as { entity_id?: string } | undefined)?.entity_id ?? ""), service, data ?? {});
-    else simulateDevices(domain, service, data ?? {}, (target as { entity_id?: string | string[] } | undefined)?.entity_id);
+    // Les appareils réels mettent un instant à répondre : la carte affiche l'état demandé en attendant.
+    window.setTimeout(() => {
+      if (domain === "media_player") simulateMedia(String((target as { entity_id?: string } | undefined)?.entity_id ?? ""), service, data ?? {});
+      else simulateDevices(domain, service, data ?? {}, (target as { entity_id?: string | string[] } | undefined)?.entity_id);
+    }, DEVICE_DELAY);
   },
   // Historique simulé : une oscillation journalière qui se termine sur la valeur actuelle du capteur.
   callWS: async <T>(message: Record<string, unknown>): Promise<T> => {

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.29.0
+
+- **Toutes les cartes** : retour immédiat après un appui. L'état demandé s'affiche aussitôt (interrupteur basculé, lampe allumée, curseur à sa nouvelle valeur, volet à sa position, volume, mode du thermostat, verrou…) et l'élément pulse doucement jusqu'à ce que l'appareil confirme. Plus d'attente sans réaction pendant qu'une lampe Zigbee ou un volet répond.
+- **Toutes les cartes** : un second appui sur le même marche/arrêt est ignoré tant que l'appareil n'a pas répondu, pour éviter d'allumer puis d'éteindre par erreur. Les réglages (intensité, position, volume) restent modifiables aussitôt.
+- **Toutes les cartes** : sans confirmation de l'appareil dans les 10 secondes, l'état réel revient et un message nomme l'appareil (« « Plafond » n'a pas confirmé la commande. »). Une commande refusée par Home Assistant revient tout de suite à l'état réel.
+- **Pièce** : dans la fenêtre de la photo, les lignes indiquent « Allumage… », « Extinction… », « Verrouillage… » pendant l'attente.
+- **Lumières** : les boutons allumer et éteindre (groupe et lampe) signalent l'attente de la même façon.
+- **Prises et interrupteurs** : la carte utilise désormais ce suivi commun (10 s au lieu de 5 s).
+
 ## 0.28.1
 
 - **Pièce** : le groupe Éclairage de la fenêtre de la photo commence par une ligne « Toutes les lumières » : marche/arrêt, intensité et couleur de toutes les lumières en une seule commande. Comme dans la carte Lumières, l'intensité et la couleur ne changent que les lampes allumées (toutes si aucune ne l'est), pour ne pas rallumer toute la pièce.
