@@ -326,8 +326,9 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     .act-shell:not(.has-image)::before { display:none; }
     .act-shell.compact { padding:12px; }
     .act-content { min-height:0; }
-    .act-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-    .act-grid.fixed { grid-template-columns:repeat(var(--act-columns),minmax(0,1fr)); }
+    .act-grid { --act-gap:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:var(--act-gap); }
+    /* « columns » est un maximum : une tuile ne descend jamais sous 150 px, la grille passe à moins de colonnes. */
+    .act-grid.fixed { grid-template-columns:repeat(auto-fill,minmax(max(150px,calc((100% - (var(--act-columns) - 1) * var(--act-gap)) / var(--act-columns) - 0.1px)),1fr)); }
     .act { --tone:var(--item-tone,var(--auralis-info)); position:relative; display:flex; min-width:0; min-height:74px; align-items:center; gap:11px; padding:12px; overflow:hidden; border:1px solid color-mix(in srgb,var(--tone) 26%,var(--auralis-border)); border-radius:18px; background:linear-gradient(150deg,color-mix(in srgb,var(--tone) 10%,transparent),transparent 65%),color-mix(in srgb,var(--auralis-layer) calc(var(--machine-glass-alpha,.84) * 100%),transparent); color:var(--auralis-text); cursor:pointer; text-align:start; backdrop-filter:blur(12px); touch-action:manipulation; user-select:none; -webkit-user-select:none; transition:border-color .15s ease, background .2s ease, transform .1s ease; }
     .act:hover { border-color:color-mix(in srgb,var(--tone) 70%,transparent); }
     .act:active { transform:scale(.98); }
@@ -356,7 +357,9 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
     @keyframes spin { to { transform:rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .act-icon .spinner { animation-duration:2.4s; } .act { transition:none; } }
     @container (max-width:360px) {
-      .act-grid, .act-grid.fixed { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+      .act-grid { --act-gap:8px; }
+      .act-grid:not(.fixed) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .act-grid.fixed { grid-template-columns:repeat(auto-fill,minmax(max(120px,calc((100% - (var(--act-columns) - 1) * var(--act-gap)) / var(--act-columns) - 0.1px)),1fr)); }
       .act-grid .act { min-height:0; flex-direction:column; align-items:flex-start; gap:9px; padding:11px; }
       .act-grid .act-icon { width:36px; height:36px; border-radius:12px; }
     }
@@ -378,7 +381,7 @@ export class AuralisActionsCard extends AuralisBaseCard<ActionsCardConfig> {
   static getConfigForm(): Record<string, unknown> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", theme: "Thème", actions: "Actions",
-      layout: "Présentation", columns: "Colonnes (vide = automatique)", show_header: "Afficher l’en-tête (par défaut si un titre est saisi)",
+      layout: "Présentation", columns: "Colonnes au maximum (vide = automatique)", show_header: "Afficher l’en-tête (par défaut si un titre est saisi)",
       accent_color: "Couleur d’accent (couleur des tuiles sans color)", card_background: "Fond de la carte",
     };
     return {

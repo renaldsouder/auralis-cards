@@ -35,7 +35,7 @@ Options de la carte :
 | `name` | — | Titre de la carte. L'en-tête n'apparaît que si un titre est défini. |
 | `icon` | `mdi:gesture-tap-button` | Icône de l'en-tête. |
 | `layout` | `tiles` | `tiles` (tuiles avec état) ou `compact` (pastilles en ligne, l'état est dans l'infobulle). |
-| `columns` | automatique | Nombre de colonnes des tuiles, de 1 à 6. La carte repasse à deux colonnes sur un téléphone. |
+| `columns` | automatique | Nombre maximal de colonnes des tuiles, de 1 à 6. Une tuile garde au moins 150 px de large : sur un téléphone, quatre colonnes deviennent deux rangées de deux. |
 | `show_header` | si `name` est défini | Force l'affichage ou le masquage de l'en-tête. |
 
 Les options visuelles communes `theme`, `accent_color`, `card_background`, `background_image`, `show_grid` et `glass_opacity` sont acceptées. La carte suit les couleurs du thème choisi (clair avec `halo` et `aurora`, sombre avec `carbon` et `mono`) ; `accent_color` colore l'en-tête et devient la couleur des tuiles sans `color`.

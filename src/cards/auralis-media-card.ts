@@ -301,7 +301,8 @@ export class AuralisMediaCard extends AuralisBaseCard<MediaCardConfig> {
     .media-shell .header { margin-bottom:0; }
     .backdrop { position:absolute; z-index:0; inset:-30px; background:var(--art) center / cover no-repeat; filter:blur(34px) saturate(1.5) brightness(.55); opacity:.75; pointer-events:none; transform:scale(1.1); transition:opacity .5s ease; }
     .backdrop.empty { background:radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--tone) 34%,transparent),transparent 46%),radial-gradient(circle at 88% 90%,color-mix(in srgb,var(--tone) 18%,transparent),transparent 50%); filter:none; opacity:1; transform:none; inset:0; }
-    .media-content { display:grid; gap:14px; }
+    /* minmax(0,1fr) : le curseur de volume et les rangées défilantes ne doivent pas élargir la carte. */
+    .media-content { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
     .players { display:flex; gap:7px; margin:0 -2px; padding:2px; overflow-x:auto; scrollbar-width:none; }
     .players::-webkit-scrollbar { display:none; }
     .player { --t:var(--chip-tone); display:inline-flex; flex:0 0 auto; min-height:var(--auralis-target); align-items:center; gap:7px; padding:6px 12px 6px 9px; border:1px solid rgba(195,211,229,.16); border-radius:999px; background:rgba(9,14,20,.62); color:#d6dee8; cursor:pointer; font:inherit; font-size:var(--auralis-text-sm); font-weight:680; backdrop-filter:blur(10px); }

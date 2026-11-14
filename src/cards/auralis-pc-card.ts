@@ -187,7 +187,7 @@ export class AuralisPcCard extends AuralisBaseCard<PcCardConfig> {
       .machine-panel { max-height: 285px; overflow: auto; }
       .machine-bar { grid-template-columns: 72px minmax(0, 1fr) 46px; }
       .machine-bar > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pc-foot-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pc-foot-item { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pc-foot-item .sev-text.sev-warning, .pc-foot-item .sev-text.sev-critical { color: var(--sev-color); }
       .pc-dialog { max-width: 820px; }
       .pc-detail-section + .pc-detail-section { margin-top: 22px; }

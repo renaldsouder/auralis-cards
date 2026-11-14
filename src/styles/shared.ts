@@ -940,10 +940,12 @@ export const sharedStyles = css`
     text-align: right;
   }
 
+  /* Passe à la ligne sur une carte étroite au lieu de tronquer chaque information. */
   .machine-foot {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px 14px;
     margin-top: 18px;
     color: #9ba8b7;
     font-size: var(--auralis-text-xs);

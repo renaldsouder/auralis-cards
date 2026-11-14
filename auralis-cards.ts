@@ -20,7 +20,7 @@ import { AuralisScreensaverCard } from "./src/cards/auralis-screensaver-card";
 import { AuralisBatteriesCard } from "./src/cards/auralis-batteries-card";
 import { AuralisIrrigationCard } from "./src/cards/auralis-irrigation-card";
 
-const VERSION = "0.24.0";
+const VERSION = "0.24.1";
 
 if (!customElements.get("auralis-room-card")) customElements.define("auralis-room-card", AuralisRoomCard);
 if (!customElements.get("auralis-covers-card")) customElements.define("auralis-covers-card", AuralisCoversCard);

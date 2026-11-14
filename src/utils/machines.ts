@@ -557,7 +557,10 @@ export const machineStyles = css`
     margin: -6px 0;
     border: 0;
     background: transparent;
-    font: inherit;
+    /* Pas de « font: inherit » : il écraserait la petite taille de texte de .machine-bar. */
+    font-family: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
     text-align: left;
     cursor: pointer;
   }

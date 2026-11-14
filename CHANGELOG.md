@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.24.1
+
+Affichage sur téléphone.
+
+- **Pièce** : la photo garde sa taille et reste centrée même quand rien n'est affiché à gauche ou à droite ; le bandeau des volets est centré sous la photo et n'est plus rogné sur une carte étroite.
+- **Pièce** : sur un téléphone d'environ 360 px de large, la carte garde sa disposition habituelle (commandes de part et d'autre de la photo) ; seules les pastilles de climat passent sous le titre. La disposition empilée est réservée aux cartes très étroites, et quand un seul côté a des commandes, elles occupent toute la largeur au lieu d'être tronquées dans une moitié.
+- **Actions** : `columns` est désormais un maximum. Une tuile ne descend plus sous 150 px : quatre colonnes deviennent deux rangées de deux sur un téléphone, au lieu de quatre tuiles illisibles.
+- **Multimédia** : la carte ne déborde plus sur un écran étroit (le curseur de volume l'élargissait).
+- **PC** : les libellés des jauges retrouvent leur petite taille de texte et ne sont plus tronqués ; la ligne d'informations du bas passe à la ligne au lieu de couper chaque valeur (aussi pour Unraid).
+- **Thermostat** : le libellé de la consigne passe sur deux lignes au lieu d'être tronqué à côté des boutons − / +.
+
 ## 0.24.0
 
 - **Onglets** : nouvel éditeur visuel. Chaque onglet reçoit ses cartes avec le sélecteur de cartes de Home Assistant, comme une pile : « + Carte » pour en ajouter une, puis la carte se règle dans son propre formulaire (ou en YAML). Les cartes se déplacent, se dupliquent et se suppriment depuis l'éditeur ; les onglets se déplacent et se suppriment. Si le sélecteur de Home Assistant n'est pas disponible, les cartes de l'onglet restent modifiables en YAML.
