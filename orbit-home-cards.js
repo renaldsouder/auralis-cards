@@ -2979,8 +2979,13 @@ var gn = class extends N {
     .lights-header .tile-icon ha-icon { --mdc-icon-size:25px; color:inherit; }
     .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:12px; }
     .group { overflow:hidden; border:1px solid var(--auralis-border); border-radius:20px; background:var(--auralis-layer); }
-    .group-photo { position:relative; height:90px; overflow:hidden; background:radial-gradient(circle at 22% 35%,color-mix(in srgb,var(--auralis-active) 32%,transparent),transparent 45%),linear-gradient(125deg,#1a2633,#0c1520); background-size:cover; background-position:center; }
+    .group-photo { position:relative; display:block; width:100%; height:90px; padding:0; overflow:hidden; border:0; color:#fff; cursor:pointer; -webkit-tap-highlight-color:transparent; background:radial-gradient(circle at 22% 35%,color-mix(in srgb,var(--auralis-active) 32%,transparent),transparent 45%),linear-gradient(125deg,#1a2633,#0c1520); background-size:cover; background-position:center; }
     .group-photo::after { position:absolute; inset:0; background:linear-gradient(0deg,rgba(7,13,20,.28),transparent 70%); content:""; pointer-events:none; }
+    .group-photo:focus-visible { outline:2px solid var(--auralis-active); outline-offset:-2px; }
+    /* Indice discret : un appui sur la photo ouvre tous les réglages du groupe. */
+    .photo-hint { position:absolute; right:10px; bottom:10px; z-index:1; display:grid; width:30px; height:30px; place-items:center; border-radius:50%;
+      background:rgba(7,13,20,.55); backdrop-filter:blur(6px); }
+    .photo-hint ha-icon { --mdc-icon-size:17px; }
     .group-body { padding:14px; }
     .group-top { display:flex; align-items:center; gap:9px; }
     .group-top .tile-icon { flex:0 0 auto; color:var(--auralis-active-ink); background:color-mix(in srgb,var(--auralis-active) 16%,var(--auralis-layer)); }
@@ -3067,7 +3072,8 @@ var gn = class extends N {
 			entity_labels: "Noms personnalisés",
 			background_image: "Image des groupes (https, /local/, /hacsfiles/, /api/)",
 			accent_color: "Couleur d’accent",
-			card_background: "Fond de la carte"
+			card_background: "Fond de la carte",
+			show_colors: "Couleurs et ambiances sur la carte (sinon dans la fenêtre)"
 		};
 		return {
 			schema: [
@@ -3081,6 +3087,10 @@ var gn = class extends N {
 				},
 				{
 					name: "show_header",
+					selector: { boolean: {} }
+				},
+				{
+					name: "show_colors",
 					selector: { boolean: {} }
 				},
 				{
@@ -3122,7 +3132,7 @@ var gn = class extends N {
 							selector: P
 						},
 						show_lights: {
-							label: "Afficher les lumières du groupe",
+							label: "Lister aussi les lumières sur la carte",
 							selector: Vt
 						},
 						scenes: {
@@ -3267,9 +3277,11 @@ var gn = class extends N {
     </div>` : y``;
 	}
 	renderGroup(e, t) {
-		let n = this.available(e), r = this.dimmableIds(e), i = this.colorIds(e), a = n.filter((e) => T(S(this.hass, e))).length, o = e.lights.length - n.length, s = this.scenes(e);
+		let n = this.available(e), r = this.dimmableIds(e), i = this.colorIds(e), a = n.filter((e) => T(S(this.hass, e))).length, o = e.lights.length - n.length, s = this.scenes(e), c = this.config?.show_colors === !0;
 		return y`<section class="group">
-      <div class="group-photo" style=${hn(e, this.config?.background_image)}></div>
+      <button class="group-photo" type="button" style=${hn(e, this.config?.background_image)}
+        title=${`Réglages de ${e.name}`} aria-label=${`Réglages de ${e.name}`} aria-haspopup="dialog"
+        @click=${() => this.openDialog(`group:${t}`)}><span class="photo-hint" aria-hidden="true"><ha-icon icon="mdi:tune-variant"></ha-icon></span></button>
       <div class="group-body">
         <div class="group-top">
           <span class="tile-icon"><ha-icon .icon=${e.icon || "mdi:lightbulb-group-outline"}></ha-icon></span>
@@ -3282,15 +3294,15 @@ var gn = class extends N {
             ?disabled=${!n.length} @click=${() => this.power(n, !0)}><ha-icon icon="mdi:lightbulb-group"></ha-icon></button>
           <button class="control" type="button" title=${`Éteindre ${e.name}`} aria-label=${`Éteindre ${e.name}`}
             ?disabled=${!n.length} @click=${() => this.power(n, !1)}><ha-icon icon="mdi:lightbulb-group-off-outline"></ha-icon></button>
-          ${s.length ? y`<button class="control" type="button" title=${`Ambiances de ${e.name}`} aria-label=${`Ambiances de ${e.name}`}
+          ${s.length && c ? y`<button class="control" type="button" title=${`Ambiances de ${e.name}`} aria-label=${`Ambiances de ${e.name}`}
             aria-haspopup="dialog" @click=${() => this.openDialog(`scenes:${t}`)}><ha-icon icon="mdi:creation-outline"></ha-icon></button>` : b}
           <span class="spacer"></span>
-          ${this.onOffOnly(e) ? b : y`<input class="color-input" type="color" .value=${this.color(e)} title=${`Couleur de ${e.name}`}
+          ${this.onOffOnly(e) || !c ? b : y`<input class="color-input" type="color" .value=${this.color(e)} title=${`Couleur de ${e.name}`}
             aria-label=${`Couleur de ${e.name}`} ?disabled=${!i.length}
             @change=${(t) => this.colorize(this.colorTargets(e), t.target.value)} />`}
         </div>
         ${this.onOffOnly(e) ? b : this.renderDimmer(`group:${t}`, this.average(e), `Intensité de ${e.name}`, pn(this.hass, e.lights), !r.length)}
-        ${this.renderSwatches(this.colorTargets(e), e.name)}
+        ${c ? this.renderSwatches(this.colorTargets(e), e.name) : b}
         ${e.show_lights ? y`<div class="inline-lights">${e.lights.map((e) => {
 			let t = S(this.hass, e), n = T(t), r = w(t), i = this.label(e);
 			return y`<div class="inline-light" ${qt(e)}><ha-icon .icon=${n ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}></ha-icon>

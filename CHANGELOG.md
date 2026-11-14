@@ -2,6 +2,7 @@
 
 ## 0.24.2
 
+- **Lumières** : chaque groupe ne garde sur la carte que l'essentiel (allumer, éteindre, intensité). Un appui sur la photo ouvre la fenêtre du groupe avec la couleur, les couleurs prédéfinies, les ambiances et chaque lampe, comme pour les autres cartes. Une petite icône sur la photo l'indique. `show_colors: true` remet couleurs et ambiances sur la carte ; `show_lights: true` liste toujours les lampes sur la carte.
 - **Navigation** : nouvelle option `floating`. La barre se détache de 12 px du bord de l'écran, ses quatre coins arrondis restent visibles et une ombre la pose au-dessus des cartes. En haut ou en bas, sa largeur s'ajuste aux onglets (une barre d'icônes seules devient une pastille compacte) ; elle défile si les onglets ne tiennent pas. L'espace laissé sous les cartes inclut cet écart. Réglable dans l'éditeur visuel (« Barre flottante »). La carte affichée dans l'éditeur ne flotte pas.
 - **Navigation** : les quatre coins de la barre sont bien arrondis. Le fond intérieur restait carré (il héritait l'arrondi du slot de `ha-card`, à 0 px) et dessinait un rectangle par-dessus la carte arrondie, comme une seconde barre dessous.
 - **Navigation** : avec `show_labels: false`, la barre en haut ou en bas s'ajuste à ses boutons (56 px chacun) au lieu de les étirer sur 720 px.

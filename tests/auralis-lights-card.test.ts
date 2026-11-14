@@ -150,4 +150,38 @@ describe("Auralis lights card targets and options", () => {
     vi.unstubAllGlobals();
     vi.stubGlobal("HTMLElement", class {});
   });
+  it("keeps on, off and brightness on the card and opens the rest from the photo", () => {
+    // Texte statique d'un gabarit Lit, sous-gabarits compris.
+    const text = (value: unknown): string => {
+      if (Array.isArray(value)) return value.map(text).join("");
+      if (value && typeof value === "object" && "strings" in value && "values" in value) {
+        const result = value as { strings: readonly string[]; values: unknown[] };
+        return result.strings.join("") + result.values.map(text).join("");
+      }
+      return "";
+    };
+    const card = new LightsCard();
+    const group = { name: "Salon", lights: ["light.rgb"], scenes: [{ entity: "scene.soiree", label: "Soirée" }] };
+    card.hass = {
+      states: { "light.rgb": { entity_id: "light.rgb", state: "on", attributes: { brightness: 128, supported_color_modes: ["rgb"] } } },
+      callService: vi.fn(async () => undefined),
+    };
+    const internals = card as unknown as { renderGroup(group: unknown, index: number): unknown; renderGroupDialog(group: unknown, index: number): unknown };
+    card.setConfig({ type: "custom:auralis-lights-card", groups: [group] });
+    const face = text(internals.renderGroup(group, 0));
+    expect(face).toContain('class="group-photo"');
+    expect(face).toContain('aria-haspopup="dialog"');
+    expect(face).toContain('class="dimmer"');
+    expect(face).not.toContain('class="swatches"');
+    expect(face).not.toContain('type="color"');
+    const dialog = text(internals.renderGroupDialog(group, 0));
+    expect(dialog).toContain('class="swatches"');
+    expect(dialog).toContain('type="color"');
+    expect(dialog).toContain("scene-grid");
+
+    card.setConfig({ type: "custom:auralis-lights-card", show_colors: true, groups: [group] });
+    const full = text(internals.renderGroup(group, 0));
+    expect(full).toContain('class="swatches"');
+    expect(full).toContain('type="color"');
+  });
 });

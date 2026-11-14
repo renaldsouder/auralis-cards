@@ -1,6 +1,6 @@
 # Carte Lumières Auralis
 
-La carte dédiée `custom:auralis-lights-card` complète la carte Pièce. Elle affiche un ou plusieurs groupes. Chaque groupe a, dès la façade, les commandes par icônes pour allumer, éteindre, régler l'intensité, choisir une couleur et appliquer une couleur prédéfinie. Le bouton chevron ouvre la pop-up avec les mêmes commandes pour chaque lampe. Le bouton étoile ouvre les ambiances Home Assistant configurées pour le groupe.
+La carte dédiée `custom:auralis-lights-card` complète la carte Pièce. Elle affiche un ou plusieurs groupes. Comme les autres cartes Auralis, chaque groupe ne montre sur la carte que l'essentiel : allumer, éteindre et régler l'intensité. Un appui sur la photo du groupe (ou sur le chevron) ouvre la fenêtre qui réunit tout le reste : couleur, couleurs prédéfinies, ambiances Home Assistant et les mêmes commandes pour chaque lampe. `show_colors: true` remet la couleur, les couleurs prédéfinies et le bouton des ambiances sur la carte.
 
 ## Installation manuelle
 
@@ -11,6 +11,7 @@ La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette
 - `groups` : groupes de lumières. Chaque groupe comporte `name` et une liste `lights` d'entités `light.*` ou `switch.*`.
 - `lights` : liste simple, utilisée comme groupe unique si `groups` est absent.
 - `show_lights: true` : affiche aussi les noms et boutons marche/arrêt individuels sur la façade du groupe.
+- `show_colors: true` : affiche aussi sur la carte le sélecteur de couleur, les couleurs prédéfinies et le bouton des ambiances. Par défaut, ils ne sont que dans la fenêtre du groupe, ouverte par un appui sur la photo.
 - `background_image` : image de la tuile d'un groupe (`image` reste accepté). Placée au niveau de la carte, elle sert à tous les groupes qui n'ont pas leur propre image. Adresses acceptées : `https://…`, `/local/…`, `/hacsfiles/…` et les images servies par Home Assistant (`/api/…`, par exemple `/api/image/serve/…`). Les adresses `media-source://` ne sont pas lisibles directement par le navigateur : utilisez l'adresse `/local/` correspondante. Une adresse refusée laisse le dégradé par défaut.
 - `scenes` : scènes Home Assistant de la carte, ou par groupe pour les remplacer. Les scènes pilotent les entités définies dans Home Assistant, selon leur propre configuration. La fenêtre des ambiances ne se ferme que si l'activation a réussi ; sinon, un message d'erreur apparaît.
 - `preset_colors` : liste facultative de `{ name, color, kelvin }`, avec couleur au format `#RRGGBB`. `kelvin` (1000 à 12000) est facultatif. Sans option, huit couleurs sont proposées, dont trois blancs (chaud 2700 K, neutre 4000 K, froid 6000 K).
