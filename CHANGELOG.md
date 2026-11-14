@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.0
+
+- **Onglets** : nouvel éditeur visuel. Chaque onglet reçoit ses cartes avec le sélecteur de cartes de Home Assistant, comme une pile : « + Carte » pour en ajouter une, puis la carte se règle dans son propre formulaire (ou en YAML). Les cartes se déplacent, se dupliquent et se suppriment depuis l'éditeur ; les onglets se déplacent et se suppriment. Si le sélecteur de Home Assistant n'est pas disponible, les cartes de l'onglet restent modifiables en YAML.
+- **Onglets** : un onglet sans carte n'est plus une erreur ; il affiche « Cet onglet n'a pas encore de carte. » le temps d'en ajouter une.
+- **Onglets** : dans l'éditeur, « Afficher les noms » apparaît activé par défaut, comme sur la carte.
+
 ## 0.23.1
 
 - **Pièce** : avec `area`, une zone qui ne contient qu'un thermostat, un lecteur ou une télévision s'affiche au lieu du message « zone vide ».

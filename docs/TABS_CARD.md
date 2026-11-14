@@ -8,7 +8,17 @@ Elle évite les vues trop longues sur une tablette : une seule zone de l'écran,
 
 La carte est incluse dans le bundle standard `auralis-cards.js`. Installez cette ressource comme indiqué dans le [README](../README.md), puis adaptez [l'exemple YAML](../examples/tabs-card.yaml).
 
-Dans l'éditeur visuel, le champ « Onglets » liste les onglets : chacun se nomme, reçoit une icône, une pastille et un nombre de colonnes, et ses cartes s'écrivent en YAML dans le champ « Cartes de l’onglet ».
+## Éditeur visuel
+
+L'éditeur se lit de haut en bas :
+
+1. **Apparence et comportement** (section repliable) : style des onglets, mémorisation, cadre, glissement, thème…
+2. **Onglets** : une pastille par onglet, et « + Onglet » pour en ajouter un. L'onglet choisi se nomme, reçoit une icône, une entité de pastille et un nombre de colonnes ; les flèches le déplacent, la corbeille le supprime (le dernier onglet ne peut pas l'être).
+3. **Cartes de l'onglet** : une pastille par carte (« 1 · Lumières », « 2 · Tile »…) et « + Carte ». « + Carte » ouvre le sélecteur de cartes de Home Assistant, avec toutes les cartes, Auralis ou non. La carte choisie se règle ensuite dans son propre formulaire ; le bouton `{ }` passe en YAML. Les flèches la déplacent dans l'onglet, les autres boutons la dupliquent ou la suppriment.
+
+Comme dans une pile de Home Assistant, ce sélecteur est un élément de Home Assistant chargé à la demande. S'il n'est pas disponible, les cartes de l'onglet se modifient en YAML dans le champ « Cartes de l'onglet ».
+
+Un onglet tout juste créé est vide : il affiche « Cet onglet n'a pas encore de carte. » jusqu'à ce qu'on lui en ajoute une.
 
 ## Configuration
 

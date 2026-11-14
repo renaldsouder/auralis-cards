@@ -5,6 +5,7 @@ import { AuralisBaseCard } from "./auralis-base-card";
 import { sharedStyles } from "../styles/shared";
 import { entity } from "../utils/entities";
 import { ENTITY, ICON, listSelector, numberSelector, TEXT, YAML } from "../utils/form";
+import { defineTabsEditor, TABS_EDITOR_TAG, type AuralisTabsCardEditor, type EditorForm } from "../editors/auralis-tabs-card-editor";
 
 export interface TabConfig {
   /** Nom de l'onglet. `name` est accepté comme alias. */
@@ -284,8 +285,8 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
     }
     config.tabs.forEach((tab, index) => {
       if (!tab || typeof tab !== "object") throw new Error(`L'onglet ${index + 1} est invalide.`);
+      // Un onglet sans carte reste valide : l'éditeur visuel le crée vide avant qu'on y ajoute une carte.
       const cards = tabCards(tab);
-      if (!cards.length) throw new Error(`L'onglet « ${tabLabel(tab, index)} » ne contient aucune carte.`);
       if (cards.some((card) => !card || typeof card.type !== "string")) {
         throw new Error(`L'onglet « ${tabLabel(tab, index)} » contient une carte sans type.`);
       }
@@ -310,6 +311,18 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
     };
   }
 
+  /**
+   * Éditeur visuel : options de la carte, onglets, et cartes de chaque onglet ajoutées avec le
+   * sélecteur de cartes de Home Assistant. `getConfigForm` reste la description des options.
+   */
+  public static getConfigElement(): HTMLElement {
+    defineTabsEditor();
+    const editor = document.createElement(TABS_EDITOR_TAG) as AuralisTabsCardEditor;
+    const form = AuralisTabsCard.getConfigForm() as unknown as EditorForm;
+    editor.optionsForm = { ...form, schema: form.schema.filter((field) => field.name !== "tabs") };
+    return editor;
+  }
+
   public static getConfigForm(): Record<string, unknown> {
     return {
       schema: [
@@ -320,7 +333,7 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
           { value: "pills", label: "Pastilles" },
           { value: "underline", label: "Soulignés" },
         ], mode: "dropdown" } } },
-        { name: "show_labels", selector: { boolean: {} } },
+        { name: "show_labels", default: true, selector: { boolean: {} } },
         { name: "framed", selector: { boolean: {} } },
         { name: "swipe", selector: { boolean: {} } },
         { name: "theme", selector: { select: { options: ["auto", "halo", "carbon", "mono", "aurora"] } } },
@@ -504,7 +517,9 @@ export class AuralisTabsCard extends AuralisBaseCard<TabsCardConfig> {
       <div class="tab-panel" id="tab-panel" role="tabpanel" aria-labelledby=${`tab-${this.active}`} tabindex="0"
         style=${`--tab-columns:${columns}`}
         @pointerdown=${this.onPointerDown} @pointerup=${this.onPointerUp} @pointercancel=${() => (this.swipeStart = undefined)}>
-        ${cards ?? html`<div class="loading">Chargement…</div>`}
+        ${!tab || !tabCards(tab).length
+          ? html`<div class="loading">Cet onglet n'a pas encore de carte.</div>`
+          : cards ?? html`<div class="loading">Chargement…</div>`}
       </div>
     </div>`;
   }

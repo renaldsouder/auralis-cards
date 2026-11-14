@@ -56,14 +56,15 @@ describe("Auralis tabs", () => {
     expect(tabs.tabBadge("unavailable")).toBeUndefined();
   });
 
-  it("rejects empty tabs and cards without type", () => {
+  it("rejects a card without tabs and cards without type, but accepts a tab not filled yet", () => {
     const card = new tabs.AuralisTabsCard();
     expect(() => card.setConfig({ type: "custom:auralis-tabs-card", tabs: [] })).toThrow("au moins un onglet");
-    expect(() => card.setConfig(config({ tabs: [{ label: "Vide", cards: [] }] }))).toThrow("ne contient aucune carte");
+    expect(() => card.setConfig(config({ tabs: [{ label: "Vide", cards: [] }] }))).not.toThrow();
     expect(() => card.setConfig(config({ tabs: [{ label: "Cassé", cards: [{} as never] }] }))).toThrow("carte sans type");
     expect(() => card.setConfig(config({ tab_style: "bulles" as never }))).toThrow("tab_style");
-    card.setConfig(config({ default_tab: 3 }));
-    expect((card as unknown as { active: number }).active).toBe(2);
-    expect(card.getGridOptions()).toEqual({ columns: 12, min_columns: 6, rows: "auto" });
+    const fresh = new tabs.AuralisTabsCard();
+    fresh.setConfig(config({ default_tab: 3 }));
+    expect((fresh as unknown as { active: number }).active).toBe(2);
+    expect(fresh.getGridOptions()).toEqual({ columns: 12, min_columns: 6, rows: "auto" });
   });
 });
