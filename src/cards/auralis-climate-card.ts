@@ -28,7 +28,12 @@ export interface ClimateRoomConfig {
   battery_entity?: string;
   /** Capteur extérieur : utilise l'échelle extérieure et reste hors de la moyenne. */
   outdoor?: boolean;
+  /** Couleur de la courbe dans le graphe global (sinon la couleur de sa position dans la liste). */
+  color?: string;
 }
+
+export type ClimateLayout = "tiles" | "chart";
+export type ChartMetric = "temperature" | "humidity";
 
 export interface ClimateCardConfig extends BaseCardConfig {
   type: "custom:auralis-climate-card";
@@ -41,6 +46,10 @@ export interface ClimateCardConfig extends BaseCardConfig {
   show_header?: boolean;
   thresholds?: ClimateThreshold[];
   outdoor_thresholds?: ClimateThreshold[];
+  /** `tiles` (une tuile par pièce) ou `chart` (toutes les courbes dans un seul graphe). */
+  layout?: ClimateLayout;
+  /** Mesure affichée à l'ouverture du graphe global. */
+  chart_metric?: ChartMetric;
 }
 
 export interface HistoryPoint {
@@ -76,7 +85,14 @@ export const OUTDOOR_THRESHOLDS: ClimateThreshold[] = [
 
 const HOUR = 3_600_000;
 const REFRESH_INTERVAL = 300_000;
+/** Au-delà de 48 h, l'historique est plus lourd et bouge peu : il est renouvelé toutes les 30 minutes. */
+const LONG_REFRESH_INTERVAL = 1_800_000;
+const MEAN = "mean";
 const TILE_BUCKETS = 48;
+const CHART_BUCKETS = 96;
+/** Nombre de couleurs de courbe ; au-delà, les mêmes couleurs reviennent en tirets puis en pointillés. */
+export const SERIES_SLOTS = 8;
+const DASHES = ["", "6 4", "1.5 4"];
 const DETAIL_BUCKETS = 96;
 const DETAIL_PERIODS = [{ hours: 24, label: "24 h" }, { hours: 168, label: "7 jours" }];
 const HUMIDITY_COLOR = "#63bbff";
@@ -226,6 +242,68 @@ export function gradientStops(thresholds: ClimateThreshold[], min: number, max: 
   return stops;
 }
 
+/** Couleur et trait d'une courbe : la couleur suit la position de la pièce dans la liste, pas son rang. */
+export function seriesStyle(index: number): { slot: number; dash: string } {
+  const safe = Math.max(0, Math.floor(index));
+  return { slot: (safe % SERIES_SLOTS) + 1, dash: DASHES[Math.min(DASHES.length - 1, Math.floor(safe / SERIES_SLOTS))] };
+}
+
+/** Graduations « rondes » (pas de 1, 2, 2,5 ou 5 × 10^n) qui couvrent l'étendue, avec au moins `minimumSpan`. */
+export function niceTicks(min: number, max: number, minimumSpan = 2, target = 4): { min: number; max: number; ticks: number[] } {
+  if (!isNumber(min) || !isNumber(max)) return { min: 0, max: minimumSpan, ticks: [0, minimumSpan] };
+  let low = Math.min(min, max);
+  let high = Math.max(min, max);
+  if (high - low < minimumSpan) {
+    const middle = (high + low) / 2;
+    low = middle - minimumSpan / 2;
+    high = middle + minimumSpan / 2;
+  }
+  const rough = (high - low) / Math.max(1, target - 1);
+  const power = 10 ** Math.floor(Math.log10(rough));
+  const step = [1, 2, 2.5, 5, 10].map((factor) => factor * power).find((candidate) => candidate >= rough) ?? 10 * power;
+  const start = Math.floor(low / step) * step;
+  const end = Math.ceil(high / step) * step;
+  const ticks: number[] = [];
+  for (let value = start; value <= end + step / 2; value += step) ticks.push(round(value));
+  return { min: round(start), max: round(end), ticks };
+}
+
+/** Valeurs de chaque courbe à un instant du graphe, de la plus haute à la plus basse. */
+export function valuesAt<T extends { values: Series }>(series: T[], index: number): Array<T & { value: number }> {
+  return series.flatMap((item) => {
+    const value = item.values[index];
+    return isNumber(value) ? [{ ...item, value }] : [];
+  }).sort((a, b) => b.value - a.value);
+}
+
+/** Moyenne point par point de plusieurs courbes ; un point sans aucune valeur reste vide. */
+export function meanSeries(list: Series[]): Series {
+  const length = Math.max(0, ...list.map((values) => values.length));
+  return Array.from({ length }, (_, index) => {
+    const defined = list.map((values) => values[index]).filter(isNumber);
+    return defined.length ? defined.reduce((sum, value) => sum + value, 0) / defined.length : undefined;
+  });
+}
+
+/** Moyenne des valeurs connues, ou rien. */
+export function meanOf(values: Array<number | undefined>): number | undefined {
+  const defined = values.filter(isNumber);
+  return defined.length ? defined.reduce((sum, value) => sum + value, 0) / defined.length : undefined;
+}
+
+/** Périodes proposées dans le graphe global : 24 h, 3 jours et 7 jours, plus la durée configurée si elle diffère. */
+export function chartPeriods(configured = 24): number[] {
+  return [...new Set([configured, 24, 72, 168])].filter((hours) => hours >= 1 && hours <= 168).sort((a, b) => a - b);
+}
+
+interface ChartSeries {
+  index: number;
+  label: string;
+  color: string;
+  dash: string;
+  values: Series;
+}
+
 interface RoomView {
   index: number;
   room: ClimateRoomConfig;
@@ -259,6 +337,10 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     detailHours: { state: true },
     detail: { state: true },
     detailError: { state: true },
+    chartMetric: { state: true },
+    focusedRoom: { state: true },
+    chartHours: { state: true },
+    hoverIndex: { state: true },
   };
 
   static styles = [AuralisBaseCard.styles, css`
@@ -314,6 +396,64 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     .chart-empty { display:grid; min-height:132px; margin:0; place-items:center; color:var(--auralis-muted); font-size:var(--auralis-text-sm); text-align:center; }
     .tabs button { min-height:var(--auralis-target); color:var(--auralis-muted); }
     .tabs button.active { color:var(--auralis-text); }
+    /* Graphe global. Couleurs des courbes : palette catégorielle validée (daltonisme compris), claire par défaut, sombre sur les thèmes sombres. */
+    .climate-shell { --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4; --series-6:#008300; --series-7:#6250d6; --series-8:#e34948; }
+    :host([data-theme="carbon"]) .climate-shell, :host([data-theme="mono"]) .climate-shell, .climate-shell.has-image {
+      --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70; --series-4:#c98500; --series-5:#d55181; --series-6:#0ca30c; --series-7:#9085e9; --series-8:#e66767;
+    }
+    .chart-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(236px,272px); gap:12px; margin-top:14px; }
+    .global { display:flex; min-width:0; flex-direction:column; padding:14px 14px 10px; border:1px solid var(--auralis-border); border-radius:18px; background:var(--auralis-layer); backdrop-filter:blur(12px); }
+    .global-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; min-height:var(--auralis-target); }
+    .global-title { min-width:140px; flex:1; }
+    .global-title strong { display:block; overflow:hidden; font-size:var(--auralis-text-lg); font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+    .global-title small { color:var(--auralis-muted); font-size:var(--auralis-text-sm); }
+    .chart-tools { display:flex; flex:0 1 auto; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:6px; }
+    .chart-tools .segmented { display:flex; gap:2px; padding:3px; border:1px solid var(--auralis-border); border-radius:999px; background:color-mix(in srgb,var(--auralis-text) 4%,transparent); }
+    .icon-button { display:inline-grid; width:var(--auralis-target); height:var(--auralis-target); place-items:center; padding:0; border:0; border-radius:999px; background:transparent; color:var(--auralis-muted); cursor:pointer; }
+    .chart-tools > .icon-button { border:1px solid var(--auralis-border); }
+    .icon-button.text { width:auto; min-width:var(--auralis-target); padding:0 10px; font:inherit; font-size:var(--auralis-text-md); font-weight:700; white-space:nowrap; }
+    .icon-button ha-icon { --mdc-icon-size:24px; }
+    .icon-button:hover { color:var(--auralis-text); }
+    .icon-button.active { background:color-mix(in srgb,var(--auralis-text) 12%,transparent); color:var(--auralis-text); }
+    .icon-button:focus-visible, .legend-row:focus-visible, .gplot:focus-visible { outline:2px solid var(--auralis-info); outline-offset:2px; }
+    .gplot { position:relative; flex:1; min-height:200px; margin:10px 0 0 34px; touch-action:pan-y; }
+    .gplot svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+    .gplot .gridline { position:absolute; inset-inline:0; border-top:1px dashed var(--auralis-border); pointer-events:none; }
+    .gplot .tick { position:absolute; inset-inline-end:calc(100% + 6px); color:var(--auralis-muted); font-size:var(--auralis-text-xs); line-height:1; transform:translateY(-50%); white-space:nowrap; }
+    .gplot .cross { position:absolute; top:0; bottom:0; width:0; border-inline-start:1px solid color-mix(in srgb,var(--auralis-text) 45%,transparent); pointer-events:none; }
+    .gplot .dot { position:absolute; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border:2px solid var(--auralis-surface); border-radius:50%; background:var(--color); pointer-events:none; }
+    .gplot .tip { position:absolute; top:6px; z-index:2; display:grid; min-width:150px; max-width:220px; gap:3px; padding:8px 10px; border:1px solid var(--auralis-border); border-radius:12px; background:color-mix(in srgb,var(--auralis-surface) 94%,transparent); box-shadow:0 10px 26px rgba(0,0,0,.25); font-size:var(--auralis-text-xs); pointer-events:none; }
+    .gplot .tip.left { right:calc(100% - var(--x) + 12px); }
+    .gplot .tip.right { left:calc(var(--x) + 12px); }
+    .tip .tip-time { color:var(--auralis-muted); font-weight:650; }
+    .tip .tip-row { display:flex; align-items:center; gap:6px; }
+    .tip .tip-row span:nth-child(2) { overflow:hidden; flex:1; color:var(--auralis-muted); text-overflow:ellipsis; white-space:nowrap; }
+    .tip .tip-row strong { color:var(--auralis-text); font-weight:700; }
+    .key { width:16px; height:0; flex:0 0 auto; border-top:3px solid var(--color); border-radius:2px; }
+    .key.dashed { border-top-style:dashed; }
+    .key.dotted { border-top-style:dotted; }
+    .key.mean { border-top-width:4px; }
+    .tip .tip-row.mean span:nth-child(2) { color:var(--auralis-text); font-weight:650; }
+    .global .time-axis { margin-left:34px; }
+    .global .chart-empty { flex:1; min-height:200px; }
+    /* Pièces : deux colonnes de boutons compacts ; la bordure suit le palier de température, comme les tuiles. */
+    .legend { display:grid; min-width:0; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:6px; margin:0; padding:0; list-style:none; }
+    .legend li { display:flex; min-width:0; }
+    .legend li.wide { grid-column:1 / -1; }
+    .legend-row { --band:var(--auralis-muted); display:flex; width:100%; min-width:0; min-height:56px; flex-direction:column; justify-content:center; gap:5px; padding:7px 9px; border:1px solid color-mix(in srgb,var(--band) 55%,var(--auralis-border)); border-radius:14px; background:linear-gradient(160deg,color-mix(in srgb,var(--band) 14%,transparent),transparent 65%),var(--auralis-layer); color:inherit; cursor:pointer; font:inherit; text-align:start; backdrop-filter:blur(12px); transition:border-color .15s ease, opacity .15s ease, box-shadow .15s ease; }
+    .legend-row:hover { border-color:var(--band); }
+    .legend-row.active { border-color:var(--band); box-shadow:0 0 0 2px var(--color); }
+    .legend-row.muted { opacity:.5; }
+    .legend-row .line { display:flex; min-width:0; align-items:center; gap:6px; }
+    .legend-row .key { width:12px; }
+    .legend-row .name { overflow:hidden; color:var(--auralis-muted); font-size:var(--auralis-text-xs); font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+    .legend-row .values { display:flex; align-items:baseline; gap:7px; color:var(--auralis-muted); font-size:var(--auralis-text-xs); white-space:nowrap; }
+    .legend-row .values strong { color:var(--auralis-text); font-size:17px; font-weight:740; letter-spacing:-.03em; line-height:1; }
+    .legend-row .values strong.band { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); }
+    @container (max-width:640px) {
+      .chart-layout { grid-template-columns:1fr; }
+      .legend { grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); }
+    }
     @container (max-width:520px) { .rooms.fixed { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @container (max-width:330px) {
       .room { padding:11px 10px 9px; }
@@ -333,6 +473,13 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
   private timer?: number;
   private historyRequest?: { key: string; time: number };
   private detailRequest?: { key: string; time: number };
+  private chartMetric: ChartMetric = "temperature";
+  /** Pièce affichée seule dans le graphe global, ou la moyenne intérieure. */
+  private focusedRoom?: number | typeof MEAN;
+  private chartHours = 24;
+  private configuredHours?: number;
+  private hoverIndex?: number;
+  private configuredMetric?: ChartMetric;
 
   static getStubConfig(hass?: HomeAssistant): Partial<ClimateCardConfig> {
     const temperatures = Object.values(hass?.states ?? {})
@@ -352,7 +499,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const labels: Record<string, string> = {
       name: "Titre", icon: "Icône", show_header: "Afficher l’en-tête", theme: "Thème", rooms: "Pièces",
       columns: "Colonnes (vide = automatique)", graph_hours: "Durée des courbes (heures)", low_battery: "Seuil de batterie faible (%)",
-      show_summary: "Afficher le résumé", thresholds: "Paliers de couleur intérieurs", outdoor_thresholds: "Paliers de couleur extérieurs",
+      show_summary: "Afficher le résumé", layout: "Disposition", chart_metric: "Mesure affichée au départ (graphe global)", thresholds: "Paliers de couleur intérieurs", outdoor_thresholds: "Paliers de couleur extérieurs",
       accent_color: "Couleur d’accent", background_image: "Image de fond", background_position: "Cadrage de l’image",
       image_opacity: "Opacité de l’image", card_background: "Fond de la carte", show_grid: "Afficher la trame",
     };
@@ -366,7 +513,16 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
           battery_entity: { label: "Pile du capteur", selector: entitySelector("sensor", { deviceClass: "battery" }) },
           icon: { label: "Icône", selector: ICON },
           outdoor: { label: "Capteur extérieur (hors de la moyenne)", selector: BOOLEAN },
+          color: { label: "Couleur de la courbe (graphe global, #RRGGBB)", selector: TEXT },
         }, { label: "name", description: "temperature_entity" }) },
+        { name: "layout", selector: { select: { mode: "dropdown", options: [
+          { value: "tiles", label: "Tuiles (une par pièce)" },
+          { value: "chart", label: "Graphe global (toutes les pièces)" },
+        ] } } },
+        { name: "chart_metric", selector: { select: { mode: "dropdown", options: [
+          { value: "temperature", label: "Température" },
+          { value: "humidity", label: "Humidité" },
+        ] } } },
         { name: "columns", selector: { number: { min: 1, max: 6, step: 1, mode: "box" } } },
         { name: "graph_hours", selector: { number: { min: 1, max: 168, step: 1, mode: "box" } } },
         { name: "low_battery", selector: { number: { min: 0, max: 100, step: 1, mode: "slider" } } },
@@ -398,6 +554,12 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
       const number = Number(value);
       return value !== undefined && value !== null && value !== "" && Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : undefined;
     };
+    if (config.layout !== undefined && config.layout !== "tiles" && config.layout !== "chart") {
+      throw new Error("layout doit valoir tiles ou chart.");
+    }
+    if (config.chart_metric !== undefined && config.chart_metric !== "temperature" && config.chart_metric !== "humidity") {
+      throw new Error("chart_metric doit valoir temperature ou humidity.");
+    }
     const columns = bounded(config.columns, 1, 6);
     this.config = {
       ...config,
@@ -411,6 +573,18 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
       outdoor_thresholds: normalizeThresholds(config.outdoor_thresholds, OUTDOOR_THRESHOLDS),
     };
     if (this.selectedRoom !== undefined && this.selectedRoom >= rooms.length) this.closeDialog();
+    if (typeof this.focusedRoom === "number" && this.focusedRoom >= rooms.length) this.focusedRoom = undefined;
+    // La mesure et la période choisies à l'écran restent en place, sauf si la configuration en demande d'autres.
+    const metric = config.chart_metric ?? "temperature";
+    if (metric !== this.configuredMetric) {
+      this.configuredMetric = metric;
+      this.chartMetric = metric;
+    }
+    const hours = this.config.graph_hours ?? 24;
+    if (hours !== this.configuredHours) {
+      this.configuredHours = hours;
+      this.chartHours = hours;
+    }
   }
 
   public connectedCallback(): void {
@@ -459,15 +633,20 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     };
   }
 
-  /** Courbes des tuiles : un seul appel pour toutes les températures, rafraîchi toutes les cinq minutes. */
+  /** Courbes des tuiles (températures) ou du graphe global (températures et humidités) : un seul appel, rafraîchi toutes les cinq minutes. */
   private async refreshHistory(): Promise<void> {
     const config = this.config;
     if (!this.hass?.callWS || !config) return;
-    const ids = [...new Set(config.rooms.map((room) => room.temperature_entity))];
-    const hours = config.graph_hours ?? 24;
-    const key = `${ids.join(",")}/${hours}`;
+    const chart = config.layout === "chart";
+    const ids = [...new Set(config.rooms.flatMap((room) => chart
+      ? [room.temperature_entity, room.humidity_entity].filter((id): id is string => Boolean(id))
+      : [room.temperature_entity]))];
+    const hours = chart ? this.chartHours : config.graph_hours ?? 24;
+    const buckets = chart ? CHART_BUCKETS : TILE_BUCKETS;
+    const key = `${ids.join(",")}/${hours}/${buckets}`;
     const time = Date.now();
-    if (this.historyRequest?.key === key && time - this.historyRequest.time < REFRESH_INTERVAL) return;
+    const interval = hours > 48 ? LONG_REFRESH_INTERVAL : REFRESH_INTERVAL;
+    if (this.historyRequest?.key === key && time - this.historyRequest.time < interval) return;
     if (this.historyRequest?.key !== key) {
       this.history = undefined;
       this.historyError = false;
@@ -475,7 +654,7 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     const request = { key, time };
     this.historyRequest = request;
     try {
-      const loaded = await this.fetchSeries(ids, hours, TILE_BUCKETS, time);
+      const loaded = await this.fetchSeries(ids, hours, buckets, time);
       if (this.historyRequest !== request) return;
       this.history = { key, time, hours, ...loaded };
       this.historyError = false;
@@ -581,7 +760,13 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
       const coldest = indoor.reduce((a, b) => (b.temperature! < a.temperature! ? b : a));
       const warmest = indoor.reduce((a, b) => (b.temperature! > a.temperature! ? b : a));
       const meanView: RoomView = { ...indoor[0], temperature: mean, band: temperatureBand(mean, indoor[0].thresholds) };
-      chips.push(chip("Moyenne", meanView), chip("Plus frais", coldest, coldest.label), chip("Plus chaud", warmest, warmest.label));
+      chips.push(chip("Moyenne", meanView));
+      // Humidité moyenne des pièces intérieures équipées d'un capteur d'humidité.
+      const humidity = meanOf(indoor.map((view) => view.humidity));
+      if (humidity !== undefined) {
+        chips.push(html`<span class="chip" style=${`--band:${HUMIDITY_COLOR}`}><span class="swatch"></span>Humidité moyenne<strong>${formatNumber(humidity)} %</strong></span>`);
+      }
+      chips.push(chip("Plus frais", coldest, coldest.label), chip("Plus chaud", warmest, warmest.label));
     }
     for (const view of outdoor) chips.push(chip(outdoor.length > 1 ? view.label : "Extérieur", view));
     const lowBatteries = views.filter((view) => view.lowBattery).length;
@@ -701,12 +886,226 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
     </div>`);
   }
 
+  private seriesColor(room: ClimateRoomConfig, index: number): { color: string; dash: string } {
+    const { slot, dash } = seriesStyle(index);
+    const custom = room.color?.trim();
+    return { color: custom && SAFE_COLOR.test(custom) ? custom : `var(--series-${slot})`, dash };
+  }
+
+  /** Touche une pièce : sa courbe s'affiche seule ; la toucher à nouveau revient à toutes les pièces. */
+  private toggleFocus(index: number | typeof MEAN): void {
+    this.focusedRoom = this.focusedRoom === index ? undefined : index;
+    this.hoverIndex = undefined;
+  }
+
+  private setHours(hours: number): void {
+    this.chartHours = hours;
+    this.hoverIndex = undefined;
+  }
+
+  private shortPeriod(hours: number): string {
+    return hours % 24 === 0 && hours >= 48 ? `${hours / 24} j` : `${hours} h`;
+  }
+
+  /** Heure d'un point du graphe ; au-delà de 48 h, le jour aussi. */
+  private pointLabel(time: number, hours: number): string {
+    const options: Intl.DateTimeFormatOptions = hours <= 48 ? { hour: "2-digit", minute: "2-digit" } : { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" };
+    return new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: this.hass?.config?.time_zone }).format(time);
+  }
+
+  private setMetric(metric: ChartMetric): void {
+    this.chartMetric = metric;
+    this.hoverIndex = undefined;
+  }
+
+  private onPlotPointer(event: PointerEvent, length: number): void {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!rect.width || length < 2) return;
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    this.hoverIndex = Math.round(ratio * (length - 1));
+  }
+
+  /** Clavier : les flèches parcourent le graphe (Maj pour aller plus vite), Début et Fin vont aux extrémités. */
+  private onPlotKey(event: KeyboardEvent, length: number): void {
+    if (length < 2) return;
+    if (event.key === "Escape") {
+      this.hoverIndex = undefined;
+      return;
+    }
+    const current = this.hoverIndex ?? length - 1;
+    const step = event.shiftKey ? 8 : 1;
+    const next = event.key === "ArrowLeft" ? current - step
+      : event.key === "ArrowRight" ? current + step
+        : event.key === "Home" ? 0
+          : event.key === "End" ? length - 1 : undefined;
+    if (next === undefined) return;
+    event.preventDefault();
+    this.hoverIndex = Math.min(length - 1, Math.max(0, next));
+  }
+
+  private metricText(value: number | undefined, metric: ChartMetric, unit: string): string {
+    if (value === undefined) return "—";
+    return metric === "temperature" ? `${formatNumber(value, 1)} ${unit}` : `${formatNumber(value)} %`;
+  }
+
+  /** Courbes de la mesure affichée : une par pièce intérieure, la moyenne intérieure, et la pièce isolée le cas échéant. */
+  private chartSeries(views: RoomView[], metric: ChartMetric, history?: HistoryState): { rooms: ChartSeries[]; mean?: ChartSeries } {
+    const rooms = views.flatMap((view): ChartSeries[] => {
+      const id = metric === "temperature" ? view.room.temperature_entity : view.room.humidity_entity;
+      if (!id) return [];
+      const values = this.withCurrent(history?.series[id], metric === "temperature" ? view.temperature : view.humidity);
+      return values.some(isNumber) ? [{ index: view.index, label: view.label, ...this.seriesColor(view.room, view.index), values }] : [];
+    });
+    const indoor = rooms.filter((item) => !views[item.index]?.room.outdoor);
+    if (indoor.length < 2) return { rooms };
+    const values = meanSeries(indoor.map((item) => item.values));
+    return { rooms, mean: { index: -1, label: "Moyenne intérieure", color: "var(--auralis-text)", dash: "", values } };
+  }
+
+  private renderGlobalChart(views: RoomView[]): TemplateResult {
+    const metric = this.chartMetric;
+    const hours = this.chartHours;
+    const history = this.history?.hours === hours ? this.history : undefined;
+    const end = history?.time ?? Date.now();
+    const start = end - hours * HOUR;
+    const focusMean = this.focusedRoom === MEAN;
+    const focused = typeof this.focusedRoom === "number" ? views[this.focusedRoom] : undefined;
+    const unit = metric === "temperature" ? (focused ?? views.find((view) => !view.room.outdoor) ?? views[0]).unit : "%";
+    const metricLabel = metric === "temperature" ? "Température" : "Humidité";
+    const { rooms, mean } = this.chartSeries(views, metric, history);
+    // Toutes les pièces : l'extérieur reste hors du graphe pour ne pas écraser les courbes intérieures ; la moyenne passe au-dessus.
+    const series: ChartSeries[] = focused ? rooms.filter((item) => item.index === focused.index)
+      : focusMean ? (mean ? [mean] : [])
+        : [...rooms.filter((item) => !views[item.index]?.room.outdoor), ...(mean ? [mean] : [])];
+    const title = focused ? focused.label : focusMean ? "Moyenne intérieure" : "Toutes les pièces";
+    const periods = chartPeriods(this.config?.graph_hours ?? 24);
+    const tools = html`<div class="chart-tools">
+      ${focused || focusMean ? html`<button type="button" class="icon-button" title="Toutes les pièces" aria-label="Revenir à toutes les pièces"
+          @click=${() => this.toggleFocus(this.focusedRoom!)}><ha-icon icon="mdi:chart-multiline"></ha-icon></button>` : nothing}
+      ${focused ? html`<button type="button" class="icon-button" title=${`Détails : ${focused.label}`} aria-label=${`Détails de ${focused.label}`}
+          @click=${() => this.openRoom(focused.index)}><ha-icon icon="mdi:information-outline"></ha-icon></button>` : nothing}
+      <div class="segmented" role="group" aria-label="Période affichée">
+        ${periods.map((item) => html`<button type="button" class="icon-button text ${hours === item ? "active" : ""}" aria-pressed=${hours === item ? "true" : "false"}
+          title=${this.periodLabel(item)} @click=${() => this.setHours(item)}>${this.shortPeriod(item)}</button>`)}
+      </div>
+      <div class="segmented" role="group" aria-label="Mesure affichée">
+        ${(["temperature", "humidity"] as const).map((item) => {
+          const label = item === "temperature" ? "Température" : "Humidité";
+          return html`<button type="button" class="icon-button ${metric === item ? "active" : ""}" aria-pressed=${metric === item ? "true" : "false"}
+            title=${label} aria-label=${label} @click=${() => this.setMetric(item)}>
+            <ha-icon icon=${item === "temperature" ? "mdi:thermometer" : "mdi:water-percent"}></ha-icon></button>`;
+        })}
+      </div>
+    </div>`;
+    const head = html`<div class="global-head">
+      <div class="global-title"><strong>${title}</strong><small>${metricLabel} · ${this.periodLabel(hours)}</small></div>
+      ${tools}
+    </div>`;
+    if (!series.length) {
+      const message = focused && metric === "humidity" && !focused.room.humidity_entity
+        ? "Pas de capteur d’humidité pour cette pièce."
+        : this.historyError ? "Historique indisponible" : history || !this.hass?.callWS ? "Aucun historique sur cette période" : "Chargement de l’historique…";
+      return html`<section class="global">${head}<p class="chart chart-empty" role="status">${message}</p></section>`;
+    }
+    const values = series.flatMap((item) => item.values.filter(isNumber));
+    const scale = niceTicks(Math.min(...values), Math.max(...values), metric === "temperature" ? 2 : 10);
+    const span = scale.max - scale.min || 1;
+    const length = Math.max(...series.map((item) => item.values.length));
+    const top = (value: number): number => round(((scale.max - value) / span) * 100);
+    const hover = this.hoverIndex !== undefined && this.hoverIndex < length ? this.hoverIndex : undefined;
+    const x = hover === undefined ? 0 : round((hover / Math.max(1, length - 1)) * 100);
+    const time = hover === undefined || hover === length - 1 ? end : start + (end - start) * (hover / Math.max(1, length - 1));
+    const digits = metric === "temperature" ? 1 : 0;
+    const single = series.length === 1 ? series[0] : undefined;
+    const area = single ? chartPaths(single.values, 100, 100, scale.min, scale.max).area : "";
+    const keyClass = (item: ChartSeries): string => item.index < 0 ? "key mean" : item.dash ? (item.dash.startsWith("6") ? "key dashed" : "key dotted") : "key";
+    const subject = focused ? focused.label : focusMean ? "la moyenne intérieure" : `${series.length - (mean ? 1 : 0)} pièces et leur moyenne`;
+    return html`<section class="global">
+      ${head}
+      <div class="gplot" role="img" tabindex="0"
+        aria-label=${`${metricLabel} de ${subject} sur ${this.periodLabel(hours)}, de ${formatNumber(scale.min, digits)} à ${formatNumber(scale.max, digits)} ${unit}. Flèches gauche et droite pour lire les valeurs.`}
+        @pointermove=${(event: PointerEvent) => this.onPlotPointer(event, length)}
+        @pointerdown=${(event: PointerEvent) => this.onPlotPointer(event, length)}
+        @pointerleave=${() => { this.hoverIndex = undefined; }}
+        @keydown=${(event: KeyboardEvent) => this.onPlotKey(event, length)}
+        @blur=${() => { this.hoverIndex = undefined; }}>
+        ${scale.ticks.map((tick) => html`<span class="gridline" style=${`top:${top(tick)}%`}></span>
+          <span class="tick" style=${`top:${top(tick)}%`}>${formatNumber(tick, Number.isInteger(tick) ? 0 : 1)}${metric === "temperature" ? "°" : " %"}</span>`)}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          ${single ? svg`<path d=${area} style=${`fill:${single.color}`} opacity=".12"></path>` : nothing}
+          ${series.map((item) => svg`<path d=${chartPaths(item.values, 100, 100, scale.min, scale.max).line} fill="none" style=${`stroke:${item.color}`}
+            stroke-width=${single ? 2.6 : item.index < 0 ? 3.2 : 1.8} stroke-dasharray=${item.dash || nothing} opacity=${item.index < 0 || single ? 1 : 0.9}
+            stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>`)}
+        </svg>
+        ${hover === undefined ? nothing : html`
+          <span class="cross" style=${`left:${x}%`}></span>
+          ${valuesAt(series, hover).map((item) => html`<span class="dot" style=${`left:${x}%;top:${top(item.value)}%;--color:${item.color}`}></span>`)}
+          <div class="tip ${x > 55 ? "left" : "right"}" style=${`--x:${x}%`}>
+            <span class="tip-time">${hover === length - 1 ? "Maintenant" : this.pointLabel(time, hours)}</span>
+            ${valuesAt(series, hover).map((item) => html`<span class="tip-row ${item.index < 0 ? "mean" : ""}"><span class=${keyClass(item)} style=${`--color:${item.color}`}></span>
+              <span>${item.label}</span><strong>${this.metricText(item.value, metric, unit)}</strong></span>`)}
+          </div>`}
+      </div>
+      <div class="time-axis" aria-hidden="true">
+        <span>${this.timeLabel(start, hours)}</span><span>${this.timeLabel((start + end) / 2, hours)}</span><span>Maintenant</span>
+      </div>
+    </section>`;
+  }
+
+  /** Liste à droite du graphe : la moyenne intérieure puis chaque pièce, avec ses valeurs actuelles ; un appui affiche une courbe seule. */
+  private renderLegend(views: RoomView[]): TemplateResult {
+    const metric = this.chartMetric;
+    const keyClass = (dash: string): string => (dash ? (dash.startsWith("6") ? "key dashed" : "key dotted") : "key");
+    const short = (value: number | undefined): string => (value === undefined ? "—" : `${formatNumber(value, 1)}°`);
+    const button = (options: {
+      focus: number | typeof MEAN; name: string; color: string; key: string; band?: ClimateThreshold;
+      temperature?: number; humidity?: number; hasHumidity: boolean; unit: string; outdoor?: boolean; extra?: string;
+    }) => {
+      const active = this.focusedRoom === options.focus;
+      const missing = metric === "humidity" && !options.hasHumidity;
+      const muted = missing || (this.focusedRoom === undefined ? Boolean(options.outdoor) : !active);
+      const temperature = this.metricText(options.temperature, "temperature", options.unit);
+      const humidity = options.hasHumidity ? this.metricText(options.humidity, "humidity", "%") : undefined;
+      const label = [`${options.name}${options.outdoor ? " (extérieur)" : ""}`, `température ${temperature}`, options.band?.label,
+        humidity ? `humidité ${humidity}` : undefined].filter(Boolean).join(", ");
+      const values = metric === "temperature"
+        ? html`<strong class="band">${short(options.temperature)}</strong>${humidity ? html`<span>${humidity}</span>` : nothing}`
+        : html`<strong>${humidity ?? "—"}</strong><span>${short(options.temperature)}</span>`;
+      return html`<li class=${options.extra ?? ""}><button type="button" class="legend-row ${active ? "active" : ""} ${muted ? "muted" : ""}"
+        style=${`--color:${options.color};--band:${options.band?.color ?? NEUTRAL_COLOR}`}
+        aria-pressed=${active ? "true" : "false"} aria-label=${label} title=${active ? "Revenir à toutes les pièces" : "Afficher seule cette courbe"}
+        @click=${() => this.toggleFocus(options.focus)}>
+        <span class="line"><span class=${options.key}></span><span class="name">${options.name}</span></span>
+        <span class="values">${values}</span>
+      </button></li>`;
+    };
+    // Moyenne intérieure : capteurs disponibles hors extérieur, comme le résumé.
+    const indoor = views.filter((view) => !view.room.outdoor);
+    const meanTemperature = meanOf(indoor.map((view) => view.temperature));
+    const meanHumidity = meanOf(indoor.map((view) => view.humidity));
+    const reference = indoor[0];
+    return html`<ul class="legend" aria-label="Pièces du graphe">
+      ${indoor.length >= 2 && reference ? button({
+        focus: MEAN, name: "Moyenne intérieure", color: "var(--auralis-text)", key: "key mean", extra: "wide",
+        band: temperatureBand(meanTemperature, reference.thresholds), temperature: meanTemperature, humidity: meanHumidity,
+        hasHumidity: meanHumidity !== undefined, unit: reference.unit,
+      }) : nothing}
+      ${views.map((view) => {
+        const { color, dash } = this.seriesColor(view.room, view.index);
+        return button({
+          focus: view.index, name: view.label, color, key: keyClass(dash), band: view.band, temperature: view.temperature,
+          humidity: view.humidity, hasHumidity: Boolean(view.room.humidity_entity), unit: view.unit, outdoor: view.room.outdoor,
+        });
+      })}
+    </ul>`;
+  }
+
   protected render(): TemplateResult | typeof nothing {
     const config = this.config;
     if (!config) return nothing;
     const views = config.rooms.map((room, index) => this.view(room, index));
     const available = views.filter((view) => view.available).length;
-    const hours = config.graph_hours ?? 24;
+    const hours = config.layout === "chart" ? this.chartHours : config.graph_hours ?? 24;
     const selected = this.dialog === "room" && this.selectedRoom !== undefined ? views[this.selectedRoom] : undefined;
     const status = available === views.length
       ? `${views.length} pièce${views.length > 1 ? "s" : ""} · courbes sur ${this.periodLabel(hours)}`
@@ -721,15 +1120,18 @@ export class AuralisClimateCard extends AuralisBaseCard<ClimateCardConfig> {
           </div>
         </header>` : nothing}
         ${this.renderSummary(views)}
-        <div class="rooms ${config.columns ? "fixed" : ""}" style=${config.columns ? `--climate-columns:${config.columns}` : ""}>
-          ${views.map((view) => this.renderRoom(view))}
-        </div>
+        ${config.layout === "chart"
+          ? html`<div class="chart-layout">${this.renderGlobalChart(views)}${this.renderLegend(views)}</div>`
+          : html`<div class="rooms ${config.columns ? "fixed" : ""}" style=${config.columns ? `--climate-columns:${config.columns}` : ""}>
+            ${views.map((view) => this.renderRoom(view))}
+          </div>`}
       </div>
     </div></ha-card>
     ${selected ? this.renderRoomDialog(selected) : nothing}`;
   }
 
   public getCardSize(): number {
+    if (this.config?.layout === "chart") return 7;
     return 3 + Math.ceil((this.config?.rooms.length ?? 1) / 3) * 2;
   }
 

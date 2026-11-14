@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.0
+
+- **Températures** : nouvelle disposition `layout: chart`, un graphe global avec une courbe par pièce et, à droite, la liste des pièces sur deux colonnes (valeurs actuelles, légende, bordure à la couleur du palier de température). Deux boutons passent de la température à l'humidité, trois autres changent la période (24 h, 3 jours, 7 jours) ; la moyenne intérieure (hors capteurs `outdoor`) est tracée en trait épais et placée en tête de la liste ; un appui sur une pièce n'affiche que sa courbe, un nouvel appui revient à toutes. Survol ou toucher pour lire l'heure et la valeur de chaque courbe, aussi au clavier. L'extérieur n'est tracé que seul, pour ne pas écraser les courbes intérieures. Couleurs validées pour le daltonisme, en version claire et sombre ; `color` par pièce pour en imposer une. Options `layout` et `chart_metric` dans l'éditeur visuel. Voir [docs/CLIMATE_CARD.md](docs/CLIMATE_CARD.md#graphe-global).
+- **Températures** : le résumé affiche aussi l'humidité moyenne des pièces intérieures.
+
 ## 0.24.2
 
 - **Lumières** : chaque groupe ne garde sur la carte que l'essentiel (allumer, éteindre, intensité). Un appui sur la photo ouvre la fenêtre du groupe avec la couleur, les couleurs prédéfinies, les ambiances et chaque lampe, comme pour les autres cartes. Une petite icône sur la photo l'indique. `show_colors: true` remet couleurs et ambiances sur la carte ; `show_lights: true` liste toujours les lampes sur la carte.

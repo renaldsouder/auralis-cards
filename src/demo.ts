@@ -779,6 +779,7 @@ mount("auralis-fridge-card", fridgeCard);
 mount("auralis-energy-card", gasCard);
 mount("auralis-room-card", room);
 mount("auralis-climate-card", climate);
+mount("auralis-climate-card", { ...climate, name: "Graphe global", layout: "chart" });
 mount("auralis-covers-card", covers);
 mount("auralis-switches-card", switches);
 mount("auralis-thermostat-card", thermostat);
