@@ -207,10 +207,54 @@ describe("Auralis navbar configuration", () => {
     expect(placement).toMatchObject({ insetLeft: 256, insetRight: 80 });
   });
 
+  it("lifts a floating bar off the screen edge and reserves that gap", () => {
+    expect(navbar.navbarReservedHeight(config({ height_tablet: 64 }), 900)).toBe(64);
+    expect(navbar.navbarReservedHeight(config({ height_tablet: 64, floating: true }), 900)).toBe(64 + navbar.FLOATING_GAP);
+    expect(navbar.navbarReservedHeight(config({ floating: true }), 1280)).toBe(76 + navbar.FLOATING_GAP);
+    expect(navbar.navbarReservedHeight(config({ height_mobile: 56 }), 400)).toBe(56);
+  });
+
+  it("floats only the bar placed on the screen, never the card shown in the editor", () => {
+    const card = new navbar.AuralisNavbarCard();
+    const toggleAttribute = vi.fn();
+    const internals = card as unknown as { toggleAttribute: typeof toggleAttribute; willUpdate: () => void };
+    internals.toggleAttribute = toggleAttribute;
+    card.setConfig(config({ floating: true }));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenCalledWith("data-floating", false);
+    card.isPortal = true;
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenCalledWith("data-floating", true);
+    card.setConfig(config({}));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenCalledWith("data-floating", false);
+  });
+
+  it("fits an icon-only bar to its buttons instead of stretching them", () => {
+    const card = new navbar.AuralisNavbarCard();
+    const toggleAttribute = vi.fn();
+    const internals = card as unknown as { toggleAttribute: typeof toggleAttribute; willUpdate: () => void };
+    internals.toggleAttribute = toggleAttribute;
+    card.isPortal = true;
+    card.setConfig(config({}));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenCalledWith("data-fit", false);
+    card.setConfig(config({ show_labels: false }));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", true);
+    card.setConfig(config({ floating: true }));
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", true);
+    card.isPortal = false;
+    internals.willUpdate();
+    expect(toggleAttribute).toHaveBeenLastCalledWith("data-fit", false);
+  });
+
   it("labels its editor fields in French", () => {
     const form = navbar.AuralisNavbarCard.getConfigForm() as { computeLabel: (field: { name: string }) => string };
     expect(form.computeLabel({ name: "position" })).toBe("Position");
     expect(form.computeLabel({ name: "hide_native_header" })).toContain("en-tête");
+    expect(form.computeLabel({ name: "floating" })).toContain("flottante");
   });
 
   it("returns to an editable card footprint while dashboard editing is active", () => {
