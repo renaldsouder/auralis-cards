@@ -2200,8 +2200,8 @@ function U(e, t = {}) {
 }
 //#endregion
 //#region src/utils/photo-hint.ts
-function Wt(e = !1) {
-	return C`<span class="photo-hint ${e ? "inline" : ""}" aria-hidden="true"><ha-icon icon="mdi:tune-variant"></ha-icon></span>`;
+function Wt(e = !1, t = "") {
+	return C`<span class="photo-hint ${e ? "inline" : ""} ${t}" aria-hidden="true"><ha-icon icon="mdi:tune-variant"></ha-icon></span>`;
 }
 var Gt = 10, Kt = It(class extends Lt {
 	constructor(e) {
@@ -4211,6 +4211,29 @@ var er = class extends I {
         box-shadow: inset 0 -45px 70px rgba(0, 0, 0, 0.24);
       }
 
+      /* Toute la photo ouvre la vue d'ensemble ; les commandes posées dessus restent au-dessus. */
+      .photo-open {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        padding: 0;
+        border: 0;
+        border-radius: inherit;
+        background: transparent;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .photo-open:focus-visible {
+        outline: 2px solid var(--room-accent, var(--auralis-info));
+        outline-offset: -2px;
+      }
+
+      .room-photo .photo-hint.top-left { right: auto; left: 12px; top: 12px; }
+      .room-photo .photo-hint.top-right { top: 12px; right: 12px; }
+      .room-photo .photo-hint.bottom-left { top: auto; right: auto; bottom: 12px; left: 12px; }
+      .room-photo .photo-hint.bottom-right { top: auto; right: 12px; bottom: 12px; }
+
       .room-photo::before {
         position: absolute;
         inset: 0;
@@ -4274,6 +4297,11 @@ var er = class extends I {
         right: 12px;
         bottom: 12px;
         align-items: flex-end;
+      }
+
+      /* Carte étroite : le bouton Ambiance remonte en haut à droite, l'indice passe en haut à gauche. */
+      @container (max-width: 420px) {
+        .room-photo.split-bottom-controls .photo-hint.top-right { right: auto; left: 12px; }
       }
 
       @container (max-width: 420px) {
@@ -5276,6 +5304,34 @@ var er = class extends I {
       </button>
     `;
 	}
+	occupiedCorners(e) {
+		let t = /* @__PURE__ */ new Set();
+		return this.room?.thermostat?.show !== !1 && this.thermostatEntityId() && t.add(this.overlayPosition(this.room?.thermostat?.position, "bottom-left")), e.length && t.add(this.ambiancePosition(e)), t;
+	}
+	renderPhotoHint(e) {
+		let t = this.occupiedCorners(e);
+		return Wt(!1, [
+			"top-right",
+			"top-left",
+			"bottom-right",
+			"bottom-left"
+		].find((e) => !t.has(e)) ?? "top-right");
+	}
+	roomEntities() {
+		let e = this.room;
+		if (!e) return [];
+		let t = [...this.sideControls("left"), ...this.sideControls("right")].map((e) => e.entity);
+		return [...new Set([
+			...e.lights || [],
+			...e.covers || [],
+			this.thermostatEntityId(),
+			e.climate_entity,
+			e.temperature_entity,
+			e.humidity_entity,
+			e.media_player_entity,
+			...t
+		].filter((e) => typeof e == "string" && e.includes(".")))];
+	}
 	renderOverlaySlot(e, t) {
 		let n = this.overlayPosition(this.room?.thermostat?.position, "bottom-left"), r = this.room?.thermostat?.show !== !1 && !!this.thermostatEntityId() && n === e, i = t.length > 0 && this.ambiancePosition(t) === e;
 		return !r && !i ? w : C`
@@ -5333,6 +5389,9 @@ var er = class extends I {
           <div class="cinema-body ${_}">
             ${this.renderSideColumn("left", i)}
             <div class="room-photo ${s ? "split-bottom-controls" : ""}" style=${h}>
+              <button class="photo-open" type="button" aria-haspopup="dialog" aria-label=${`Tous les appareils de ${g}`}
+                title=${`Tous les appareils de ${g}`} @click=${() => this.openDialog("details")}></button>
+              ${this.renderPhotoHint(o)}
               ${this.renderOverlaySlot("top-left", o)}
               ${this.renderOverlaySlot("top-right", o)}
               ${this.renderOverlaySlot("bottom-left", o)}
@@ -5472,7 +5531,7 @@ var er = class extends I {
       `);
 	}
 	renderDetailsDialog() {
-		let e = this.room?.lights || [], t = this.room?.covers || [], n = [...e, ...t], r = e.filter((e) => k(E(this.hass, e))).length, i = M(this.hass, this.room?.temperature_entity), a = M(this.hass, this.room?.humidity_entity), o = !!(this.room?.temperature_entity || this.room?.humidity_entity || this.room?.climate_entity), s = this.room?.media_player_entity, c = this.roomName();
+		let e = this.room?.lights || [], t = this.room?.covers || [], n = this.roomEntities(), r = e.filter((e) => k(E(this.hass, e))).length, i = M(this.hass, this.room?.temperature_entity), a = M(this.hass, this.room?.humidity_entity), o = !!(this.room?.temperature_entity || this.room?.humidity_entity || this.room?.climate_entity), s = this.room?.media_player_entity, c = this.roomName();
 		return this.renderDialog(this.popupTitle("details", c), this.room?.icon || "mdi:sofa-outline", C`
         <div class="dialog-body">
           <div class="dialog-overview">
@@ -18109,7 +18168,7 @@ var Td = class extends I {
       <div class="zones">${t.map((e) => this.renderZone(e))}</div>
     </div></ha-card>${this.renderStandaloneConfirmation()}`;
 	}
-}, Ed = "0.26.0";
+}, Ed = "0.26.1";
 customElements.get("auralis-room-card") || customElements.define("auralis-room-card", er), customElements.get("auralis-covers-card") || customElements.define("auralis-covers-card", rn), customElements.get("auralis-pc-card") || customElements.define("auralis-pc-card", Yr), customElements.get("auralis-unraid-card") || customElements.define("auralis-unraid-card", ei), customElements.get("auralis-proxmox-card") || customElements.define("auralis-proxmox-card", si), customElements.get("auralis-navbar-card") || customElements.define("auralis-navbar-card", zi), customElements.get("auralis-lights-card") || customElements.define("auralis-lights-card", _n), customElements.get("auralis-switches-card") || customElements.define("auralis-switches-card", Hi), customElements.get("auralis-thermostat-card") || customElements.define("auralis-thermostat-card", kn), customElements.get("auralis-fridge-card") || customElements.define("auralis-fridge-card", $i), customElements.get("auralis-energy-card") || customElements.define("auralis-energy-card", Ma), customElements.get("auralis-consumption-card") || customElements.define("auralis-consumption-card", Eo), customElements.get("auralis-climate-card") || customElements.define("auralis-climate-card", po), customElements.get("auralis-weather-card") || customElements.define("auralis-weather-card", ps), customElements.get("auralis-actions-card") || customElements.define("auralis-actions-card", Bs), customElements.get("auralis-cameras-card") || customElements.define("auralis-cameras-card", rc), customElements.get("auralis-media-card") || customElements.define("auralis-media-card", Ec), customElements.get("auralis-tabs-card") || customElements.define("auralis-tabs-card", $c), customElements.get("auralis-screensaver-card") || customElements.define("auralis-screensaver-card", Nl), customElements.get("auralis-batteries-card") || customElements.define("auralis-batteries-card", Tu), customElements.get("auralis-irrigation-card") || customElements.define("auralis-irrigation-card", Td), customElements.get("orbit-room-card") || customElements.define("orbit-room-card", class extends er {}), customElements.get("orbit-pc-card") || customElements.define("orbit-pc-card", class extends Yr {}), customElements.get("orbit-unraid-card") || customElements.define("orbit-unraid-card", class extends ei {}), customElements.get("orbit-proxmox-card") || customElements.define("orbit-proxmox-card", class extends si {}), customElements.get("orbit-navbar-card") || customElements.define("orbit-navbar-card", class extends zi {}), window.customCards = window.customCards || [];
 var Dd = [
 	{
