@@ -13,6 +13,8 @@ type NavbarDevice = "phone" | "tablet" | "desktop";
 type DockSide = "left" | "right";
 /** Largeur réservée à côté d'une barre latérale : 160 px de barre et 16 px d'air. */
 const SIDE_DOCK_WIDTH = 176;
+/** Écart entre une barre flottante (`floating`) et le bord de l'écran. */
+export const FLOATING_GAP = 12;
 const SIDE_DOCK_STYLE = `
   :host([data-auralis-navbar-reserve-right]) hui-view-container {
     box-sizing: border-box !important;
@@ -59,9 +61,7 @@ function refreshLayout(root: ShadowRoot): void {
   const cards = [...entry.owners].filter(([card]) => card.isConnected && !card.preview && !card.editMode);
   const host = root.host as HTMLElement;
   const width = window.innerWidth;
-  const height = (card: AuralisNavbarCard): number => width <= 600
-    ? card.config?.height_mobile ?? 72 : width <= 1024
-      ? card.config?.height_tablet ?? 72 : card.config?.height_desktop ?? 76;
+  const height = (card: AuralisNavbarCard): number => navbarReservedHeight(card.config, width);
   const bottom = cards.filter(([, position]) => position === "bottom").map(([card]) => card);
   const top = cards.filter(([, position]) => position === "top").map(([card]) => card);
   host.toggleAttribute("data-auralis-navbar-hide-header", cards.some(([card]) => hidesNativeHeader(card.config, card.hass)));
@@ -247,6 +247,14 @@ export function navbarBadge(state: string | undefined): string | undefined {
   return undefined;
 }
 
+/** Hauteur à libérer sous (ou sur) le contenu : la barre, plus l'écart au bord si elle flotte. */
+export function navbarReservedHeight(config: NavbarCardConfig | undefined, viewportWidth: number): number {
+  const height = viewportWidth <= 600
+    ? config?.height_mobile ?? 72 : viewportWidth <= 1024
+      ? config?.height_tablet ?? 72 : config?.height_desktop ?? 76;
+  return height + (config?.floating ? FLOATING_GAP : 0);
+}
+
 export function navbarTarget(item: NavbarItemConfig): string | undefined {
   const candidate = (item.path || item.navigation_path || "").trim();
   if (!candidate || candidate.startsWith("//") || candidate.includes("\\") || /^[a-z][a-z\d+.-]*:/i.test(candidate)) return undefined;
@@ -335,6 +343,31 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       :host([data-portal][data-position="left"]) { left: var(--auralis-navbar-inset-left, 0px); }
       :host([data-portal][data-position="right"]) { right: var(--auralis-navbar-inset-right, 0px); }
+      /* Barre flottante : détachée du bord, largeur ajustée aux onglets, coins arrondis tous visibles. */
+      :host([data-portal][data-floating][data-position="top"]),
+      :host([data-portal][data-floating][data-position="bottom"]) {
+        /* Un conteneur de requêtes n'a pas de largeur intrinsèque : fit-content donnerait 0. */
+        container-type: normal;
+        width: fit-content;
+        max-width: calc(var(--auralis-navbar-available-width, 100vw) - ${FLOATING_GAP * 2}px);
+      }
+      :host([data-portal][data-floating][data-position="top"]) {
+        top: calc(var(--auralis-navbar-visual-top, 0px) + env(safe-area-inset-top, 0px) + ${FLOATING_GAP}px);
+      }
+      :host([data-portal][data-floating][data-position="bottom"]) {
+        bottom: calc(var(--auralis-navbar-visual-bottom, 0px) + env(safe-area-inset-bottom, 0px) + ${FLOATING_GAP}px);
+      }
+      :host([data-portal][data-floating][data-position="left"]) { left: calc(var(--auralis-navbar-inset-left, 0px) + ${FLOATING_GAP}px); }
+      :host([data-portal][data-floating][data-position="right"]) { right: calc(var(--auralis-navbar-inset-right, 0px) + ${FLOATING_GAP}px); }
+      :host([data-portal][data-floating][data-position="left"]),
+      :host([data-portal][data-floating][data-position="right"]) { max-height: calc(100dvh - ${FLOATING_GAP * 2}px); }
+      :host([data-floating]) ha-card {
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.24);
+      }
+      :host([data-floating][data-position="top"]) nav,
+      :host([data-floating][data-position="bottom"]) nav { padding-top: 0; padding-bottom: 0; }
+      :host([data-floating][data-position="top"]) .nav-item,
+      :host([data-floating][data-position="bottom"]) .nav-item { flex: 0 0 auto; min-width: 64px; }
       ha-card {
         height: var(--navbar-height-desktop, 76px);
         box-sizing: border-box;
@@ -487,16 +520,19 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       }
       @media (max-width: 600px) {
         ha-card { height: var(--navbar-height-mobile, 72px); }
-        :host([data-position="bottom"]) ha-card {
+        :host([data-position="bottom"]:not([data-floating])) ha-card {
           height: calc(var(--navbar-height-mobile, 72px) + env(safe-area-inset-bottom, 0px));
         }
-        :host([data-position="top"]) ha-card {
+        :host([data-position="top"]:not([data-floating])) ha-card {
           height: calc(var(--navbar-height-mobile, 72px) + env(safe-area-inset-top, 0px));
         }
         .navbar-shell { padding: 6px; }
         .nav-item { padding: 2px 6px; gap: 2px; }
         .compact .nav-item { min-height: 0; padding: 2px 6px; }
         ha-icon { --mdc-icon-size: 20px; }
+        /* La barre flottante n'est pas un conteneur de requêtes : même empilement icône / libellé ici. */
+        :host([data-floating]) .nav-item { min-width: 56px; flex-direction: column; gap: 2px; }
+        :host([data-floating]) .label { max-width: 74px; font-size: var(--auralis-text-xs); }
       }
     `,
   ];
@@ -730,6 +766,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
 
   protected willUpdate(): void {
     this.toggleAttribute("data-edit-mode", this.editing);
+    // Seule la barre posée sur l'écran flotte ; la carte affichée dans l'éditeur garde sa place.
+    this.toggleAttribute("data-floating", this.isPortal && this.config?.floating === true);
   }
 
   protected updated(): void {
@@ -771,7 +809,8 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
       theme: "Thème", accent_color: "Couleur d’accent", position: "Position", phone_position: "Position sur téléphone",
       tablet_position: "Position sur tablette", height_desktop: "Hauteur sur ordinateur (px)", height_tablet: "Hauteur sur tablette (px)",
       height_mobile: "Hauteur sur téléphone (px)", hide_native_header: "Masquer l’en-tête Home Assistant (sauf administrateurs)",
-      show_labels: "Afficher les libellés", compact: "Présentation compacte", items: "Destinations",
+      show_labels: "Afficher les libellés", compact: "Présentation compacte",
+      floating: "Barre flottante (détachée du bord, coins arrondis)", items: "Destinations",
     };
     return {
       schema: [
@@ -786,6 +825,7 @@ export class AuralisNavbarCard extends AuralisBaseCard<NavbarCardConfig> {
         { name: "hide_native_header", selector: { boolean: {} } },
         { name: "show_labels", selector: { boolean: {} } },
         { name: "compact", selector: { boolean: {} } },
+        { name: "floating", selector: { boolean: {} } },
         { name: "items", selector: listSelector({
           label: { label: "Libellé", required: true, selector: TEXT },
           icon: { label: "Icône", selector: ICON },

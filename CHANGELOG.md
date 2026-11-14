@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.2
+
+- **Navigation** : nouvelle option `floating`. La barre se détache de 12 px du bord de l'écran, ses quatre coins arrondis restent visibles et une ombre la pose au-dessus des cartes. En haut ou en bas, sa largeur s'ajuste aux onglets (une barre d'icônes seules devient une pastille compacte) ; elle défile si les onglets ne tiennent pas. L'espace laissé sous les cartes inclut cet écart. Réglable dans l'éditeur visuel (« Barre flottante »). La carte affichée dans l'éditeur ne flotte pas.
+
 ## 0.24.1
 
 Affichage sur téléphone.

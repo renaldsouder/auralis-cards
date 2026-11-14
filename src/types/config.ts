@@ -49,6 +49,8 @@ export interface NavbarCardConfig extends BaseCardConfig {
   hide_native_header?: boolean;
   show_labels?: boolean;
   compact?: boolean;
+  /** Barre détachée du bord de l'écran, coins arrondis visibles et largeur ajustée aux onglets. */
+  floating?: boolean;
   aria_label?: string;
 }
 
