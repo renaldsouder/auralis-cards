@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.1
+
+- **Volets** : deux groupes restent côte à côte dans une colonne de tableau de bord sur tablette (environ 350 px de contenu) ; la carte ne passe sur une colonne qu'en dessous de 330 px, comme sur un téléphone.
+- **Pièce** : un appui sur la photo ouvre la vue d'ensemble de la pièce, comme sur les autres cartes ; la petite icône de réglages le signale, dans le premier coin laissé libre par le thermostat et le bouton Ambiance. Les commandes posées sur la photo gardent leur propre action.
+- **Pièce** : la vue d'ensemble liste toutes les entités de la carte (lumières, volets, thermostat, température, humidité, lecteur, commandes latérales), chacune ouvrant sa fiche Home Assistant.
+
 ## 0.26.0
 
 - **Consommation par appareil** : nouvelle carte `custom:auralis-consumption-card`. Un graphe global avec une courbe par appareil, comme celui des températures : puissance (W) ou énergie cumulée sur la période (kWh), sur 24 h, 3 jours ou 7 jours. À droite, la liste des appareils (puissance actuelle, énergie de la période) ; un appui isole une courbe. La maison (`total_power_entity`, `total_energy_entity`) sert de référence en tête de liste. Résumé : puissance de la maison, part des appareils suivis, plus gros poste. Voir [docs/CONSUMPTION_CARD.md](docs/CONSUMPTION_CARD.md).

@@ -33,6 +33,7 @@ import {
   summarizeRange,
 } from "../utils/entities";
 import { activateEntity } from "../utils/actions";
+import { photoHint } from "../utils/photo-hint";
 import { resolveAreaEntities, suggestArea, type AreaResolution, type HomeAssistantWithRegistries, type ResolvedArea } from "../utils/areas";
 
 /** Au-delà de 10 jours (rétention par défaut de l'enregistreur), les courbes passent aux statistiques long terme. */
@@ -369,6 +370,29 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         box-shadow: inset 0 -45px 70px rgba(0, 0, 0, 0.24);
       }
 
+      /* Toute la photo ouvre la vue d'ensemble ; les commandes posées dessus restent au-dessus. */
+      .photo-open {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        padding: 0;
+        border: 0;
+        border-radius: inherit;
+        background: transparent;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .photo-open:focus-visible {
+        outline: 2px solid var(--room-accent, var(--auralis-info));
+        outline-offset: -2px;
+      }
+
+      .room-photo .photo-hint.top-left { right: auto; left: 12px; top: 12px; }
+      .room-photo .photo-hint.top-right { top: 12px; right: 12px; }
+      .room-photo .photo-hint.bottom-left { top: auto; right: auto; bottom: 12px; left: 12px; }
+      .room-photo .photo-hint.bottom-right { top: auto; right: 12px; bottom: 12px; }
+
       .room-photo::before {
         position: absolute;
         inset: 0;
@@ -432,6 +456,11 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
         right: 12px;
         bottom: 12px;
         align-items: flex-end;
+      }
+
+      /* Carte étroite : le bouton Ambiance remonte en haut à droite, l'indice passe en haut à gauche. */
+      @container (max-width: 420px) {
+        .room-photo.split-bottom-controls .photo-hint.top-right { right: auto; left: 12px; }
       }
 
       @container (max-width: 420px) {
@@ -1482,6 +1511,35 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
     `;
   }
 
+  /** Coins de la photo occupés par le thermostat ou le bouton Ambiance. */
+  private occupiedCorners(modes: RoomSceneConfig[]): Set<RoomOverlayPosition> {
+    const corners = new Set<RoomOverlayPosition>();
+    if (this.room?.thermostat?.show !== false && this.thermostatEntityId()) {
+      corners.add(this.overlayPosition(this.room?.thermostat?.position, "bottom-left"));
+    }
+    if (modes.length) corners.add(this.ambiancePosition(modes));
+    return corners;
+  }
+
+  /** Indice « réglages » dans le premier coin libre de la photo : un appui ouvre tous les appareils. */
+  private renderPhotoHint(modes: RoomSceneConfig[]): TemplateResult {
+    const occupied = this.occupiedCorners(modes);
+    const corner = (["top-right", "top-left", "bottom-right", "bottom-left"] as const).find((item) => !occupied.has(item)) ?? "top-right";
+    return photoHint(false, corner);
+  }
+
+  /** Toutes les entités de la carte, sans doublon : lumières, volets, climat, multimédia et commandes latérales. */
+  public roomEntities(): string[] {
+    const room = this.room;
+    if (!room) return [];
+    const controls = [...this.sideControls("left"), ...this.sideControls("right")].map((control) => control.entity);
+    return [...new Set([
+      ...(room.lights || []), ...(room.covers || []),
+      this.thermostatEntityId(), room.climate_entity, room.temperature_entity, room.humidity_entity,
+      room.media_player_entity, ...controls,
+    ].filter((id): id is string => typeof id === "string" && id.includes(".")))];
+  }
+
   private renderOverlaySlot(position: RoomOverlayPosition, modes: RoomSceneConfig[]): TemplateResult | typeof nothing {
     const thermostatPosition = this.overlayPosition(this.room?.thermostat?.position, "bottom-left");
     const showThermostat = this.room?.thermostat?.show !== false
@@ -1586,6 +1644,9 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
           <div class="cinema-body ${bodyClass}">
             ${this.renderSideColumn("left", leftControls)}
             <div class="room-photo ${splitBottomControls ? "split-bottom-controls" : ""}" style=${roomImageStyle}>
+              <button class="photo-open" type="button" aria-haspopup="dialog" aria-label=${`Tous les appareils de ${name}`}
+                title=${`Tous les appareils de ${name}`} @click=${() => this.openDialog("details")}></button>
+              ${this.renderPhotoHint(sceneModes)}
               ${this.renderOverlaySlot("top-left", sceneModes)}
               ${this.renderOverlaySlot("top-right", sceneModes)}
               ${this.renderOverlaySlot("bottom-left", sceneModes)}
@@ -1825,7 +1886,7 @@ export class AuralisRoomCard extends AuralisBaseCard<RoomCardConfig> {
   private renderDetailsDialog(): TemplateResult {
     const lights = this.room?.lights || [];
     const covers = this.room?.covers || [];
-    const all = [...lights, ...covers];
+    const all = this.roomEntities();
     const activeLights = lights.filter((id) => isActive(entity(this.hass, id))).length;
     const temperature = displayState(this.hass, this.room?.temperature_entity);
     const humidity = displayState(this.hass, this.room?.humidity_entity);

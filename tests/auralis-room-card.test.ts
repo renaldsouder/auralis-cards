@@ -23,6 +23,42 @@ beforeAll(async () => {
   roomCard = await import("../src/cards/auralis-room-card");
 });
 
+describe("Auralis room photo", () => {
+  it("lists every entity of the card once in the overview window", () => {
+    const card = new roomCard.AuralisRoomCard();
+    card.setConfig(config({
+      humidity_entity: "sensor.salon_humidity",
+      climate_entity: "climate.salon",
+      media_player_entity: "media_player.salon",
+      lights: ["light.plafond", "light.ruban"],
+      covers: ["cover.baie"],
+      right_controls: [
+        { type: "media", entity: "media_player.salon" },
+        { type: "entity", entity: "switch.enceintes", action: "toggle" },
+      ],
+    }));
+    expect(card.roomEntities()).toEqual([
+      "light.plafond", "light.ruban", "cover.baie", "climate.salon", "sensor.salon_temperature",
+      "sensor.salon_humidity", "media_player.salon", "switch.enceintes",
+    ]);
+  });
+
+  it("puts the settings hint in the first corner left free by the thermostat and the ambiance button", () => {
+    const card = new roomCard.AuralisRoomCard();
+    const internals = card as unknown as {
+      occupiedCorners(modes: RoomSceneConfig[]): Set<RoomOverlayPosition>;
+      sceneModes(): RoomSceneConfig[];
+    };
+    card.setConfig(config({
+      climate_entity: "climate.salon",
+      thermostat: { show: true, position: "bottom-left" },
+      ambiance: { position: "top-right" },
+      scenes: [{ entity: "scene.soiree" }],
+    }));
+    expect([...internals.occupiedCorners(internals.sceneModes())].sort()).toEqual(["bottom-left", "top-right"]);
+  });
+});
+
 describe("Auralis room ambiance", () => {
   it("uses one shared button position for every configured scene", () => {
     const card = new roomCard.AuralisRoomCard();
