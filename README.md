@@ -81,7 +81,7 @@ Chaque carte accepte `theme` : `halo` (clair), `aurora` (clair, teinté), `carbo
 
 Les surfaces planes suivent le thème : fond de carte, tuiles, lignes, puces, en-têtes, fenêtres de détail, confirmations et formulaires. Une fenêtre ouverte depuis une carte `halo` ou `aurora` est donc claire.
 
-Les façades photo restent sombres dans tous les thèmes, avec un texte clair : façade des cartes PC, UNRAID, Proxmox et Frigo, ciel de la carte Météo, pochette de la carte Multimédia, images des caméras, photo de la carte Pièce et tuiles photo des volets et des prises. Une image n'a pas de couleur fixe : le voile sombre garantit la lecture quelle que soit la photo. Les couleurs vives (seuils de température, conditions météo, accents) sont assombries automatiquement quand elles servent de texte sur un fond clair.
+Les façades photo restent sombres dans tous les thèmes, avec un texte clair : façade des cartes PC, UNRAID, Proxmox et Frigo, pochette de la carte Multimédia, images des caméras, photo de la carte Pièce et tuiles photo des volets et des prises. Une image n'a pas de couleur fixe : le voile sombre garantit la lecture quelle que soit la photo. Les couleurs vives (seuils de température, conditions météo, accents) sont assombries automatiquement quand elles servent de texte sur un fond clair. La carte Météo suit le thème : ciel pâle et texte sombre en `halo` et `aurora`, ciel sombre en `carbon` et `mono` ou avec une photo de fond.
 
 ## Développement
 

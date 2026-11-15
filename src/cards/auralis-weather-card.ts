@@ -51,6 +51,8 @@ export interface ConditionStyle {
   icon: string;
   color: string;
   sky: string;
+  /** Ciel pâle des thèmes clairs (halo, aurora). */
+  lightSky: string;
   stars: boolean;
 }
 
@@ -98,6 +100,21 @@ const SKIES: Record<SkyFamily, string> = {
 };
 
 const NIGHT_VEIL = "linear-gradient(rgba(3,5,16,.48),rgba(3,5,16,.48))";
+
+/** Ciels des thèmes clairs : mêmes teintes que SKIES, en lavis pâle sur blanc. */
+const LIGHT_SKIES: Record<SkyFamily, string> = {
+  sun: "radial-gradient(circle at 88% 4%, rgba(255,196,95,.38), transparent 44%), linear-gradient(165deg,#f4f9ff 0%,#e3f0fd 55%,#d6e8fa 100%)",
+  partly: "radial-gradient(circle at 88% 4%, rgba(255,210,122,.3), transparent 42%), linear-gradient(165deg,#f5f8fc 0%,#e6eef7 55%,#dae5f1 100%)",
+  night: "radial-gradient(circle at 82% 8%, rgba(150,124,240,.22), transparent 42%), linear-gradient(165deg,#f3f2fd 0%,#e5e3f8 55%,#d9d7f2 100%)",
+  cloud: "linear-gradient(165deg,#f6f8fa 0%,#e9edf2 55%,#dde3ea 100%)",
+  fog: "linear-gradient(180deg,#f4f5f7 0%,#e8eaed 50%,#dcdfe3 100%)",
+  rain: "radial-gradient(circle at 85% 0%, rgba(90,169,255,.2), transparent 46%), linear-gradient(165deg,#f2f7fd 0%,#e1ecf8 55%,#d3e2f3 100%)",
+  storm: "radial-gradient(circle at 80% 0%, rgba(160,110,240,.2), transparent 44%), linear-gradient(165deg,#f5f2fc 0%,#e8e2f6 55%,#dcd4ef 100%)",
+  snow: "radial-gradient(circle at 85% 0%, rgba(150,200,240,.25), transparent 46%), linear-gradient(165deg,#f7fbfe 0%,#eaf3fa 55%,#dfebf5 100%)",
+  wind: "linear-gradient(165deg,#f2faf8 0%,#e1f2ee 55%,#d3e9e4 100%)",
+  alert: "linear-gradient(165deg,#fdf3f3 0%,#f9e3e4 55%,#f2d4d6 100%)",
+};
+const LIGHT_NIGHT_VEIL = "linear-gradient(rgba(70,62,140,.08),rgba(70,62,140,.08))";
 const UNKNOWN_CONDITION: ConditionDefinition = { label: "—", icon: "mdi:weather-partly-cloudy", color: "#c3cfdc", family: "cloud" };
 const FORECAST_FEATURES: Array<[ForecastType, number]> = [["daily", 1], ["hourly", 2], ["twice_daily", 4]];
 const DEFAULT_COUNTS: Record<ForecastType, number> = { daily: 5, hourly: 8, twice_daily: 6 };
@@ -133,6 +150,7 @@ export function conditionStyle(condition: string | undefined, night: boolean): C
     icon: (night && definition.nightIcon) || definition.icon,
     color: (night && definition.nightColor) || definition.color,
     sky: night && family !== "night" ? `${NIGHT_VEIL}, ${SKIES[family]}` : SKIES[family],
+    lightSky: night && family !== "night" ? `${LIGHT_NIGHT_VEIL}, ${LIGHT_SKIES[family]}` : LIGHT_SKIES[family],
     stars: night && (family === "night" || definition.family === "partly"),
   };
 }
@@ -313,6 +331,36 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     .track { position:relative; width:6px; height:44px; border-radius:999px; background:rgba(255,255,255,.08); }
     .track span { position:absolute; inset-inline:0; min-height:6px; border-radius:999px; background:var(--range); box-shadow:0 0 10px color-mix(in srgb,var(--band) 40%,transparent); }
     .forecast-empty { display:grid; min-height:60px; margin-top:14px; place-items:center; border-radius:18px; background:rgba(6,10,16,.35); color:#9aa8b9; font-size:11px; }
+    /*
+     * Façade claire (halo, aurora sans photo) : ciel pâle, jetons du thème rendus avec « inherit »
+     * comme les cartes planes, textes sombres, et couleurs de condition et de température
+     * assombries par --auralis-shade pour rester lisibles sur le blanc.
+     */
+    .weather-shell.light {
+      --auralis-text: inherit; --auralis-muted: inherit; --auralis-border: inherit; --auralis-layer: inherit;
+      --auralis-card: inherit; --auralis-shade: inherit; --auralis-info-ink: inherit; --auralis-healthy-ink: inherit;
+      --auralis-active-ink: inherit; --auralis-danger-ink: inherit;
+      --ink: color-mix(in oklab,var(--condition),#000 var(--auralis-shade));
+      color: var(--auralis-text);
+    }
+    .weather-shell.light::before { display:none; }
+    .light .eyebrow-line, .light .now-sub, .light .place, .light .slot-label { color:var(--auralis-muted); }
+    .light .clock, .light .place-name, .light .now-label, .light .chip strong { color:var(--auralis-text); }
+    .light .now-temp small { color:var(--auralis-muted); }
+    .light .now-temp, .light .slot-high { color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); }
+    .light .now-icon { color:var(--ink); filter:drop-shadow(0 0 14px color-mix(in srgb,var(--weather-accent,var(--condition)) 40%,transparent)); }
+    .light .slot ha-icon { color:color-mix(in oklab,var(--condition),#000 var(--auralis-shade)); filter:none; }
+    .light .chip { border-color:var(--auralis-border); background:rgba(255,255,255,.62); color:var(--auralis-muted); }
+    .light .chips .chip { border-color:color-mix(in srgb,var(--weather-accent,rgb(81,97,122)) 22%,transparent); }
+    .light .chip ha-icon { color:color-mix(in oklab,var(--weather-accent,var(--band)),#000 var(--auralis-shade)); }
+    .light .chip.alert { background:color-mix(in srgb,var(--band) 14%,#fff); color:color-mix(in oklab,var(--band),#000 var(--auralis-shade)); }
+    .light .chip.alert ha-icon { color:inherit; }
+    .light .forecast { border-color:var(--auralis-border); background:rgba(255,255,255,.55); }
+    .light .slot.current { background:color-mix(in srgb,var(--weather-accent,var(--auralis-info)) 10%,transparent); }
+    .light .slot-low { color:var(--auralis-muted); }
+    .light .track { background:rgba(81,97,122,.12); }
+    .light .track span { box-shadow:none; }
+    .light .forecast-empty { background:rgba(255,255,255,.5); color:var(--auralis-muted); }
     @keyframes float { 0%, 100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
     @media (prefers-reduced-motion: reduce) { .now-icon { animation:none; } .weather-shell { transition:none; } }
     @container (max-width:430px) {
@@ -704,7 +752,12 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     const accent = configuredAccent(config);
     const base = `${this.machineStyle(view.style.color)};--condition:${view.style.color}${accent ? `;--weather-accent:${accent}` : ""}`;
     if (config.card_background || config.dynamic_background === false) return base;
-    return `${base};--machine-base-background:${view.style.sky}`;
+    return `${base};--machine-base-background:${this.lightFace ? view.style.lightSky : view.style.sky}`;
+  }
+
+  /** Façade claire : thème clair (halo, aurora) sans photo de fond. */
+  private get lightFace(): boolean {
+    return (this.theme === "halo" || this.theme === "aurora") && !this.config?.background_image;
   }
 
   private slots(view: WeatherView): { type: ForecastType; slots: Slot[] } {
@@ -941,8 +994,8 @@ export class AuralisWeatherCard extends AuralisBaseCard<WeatherCardConfig> {
     const description = view.available
       ? `${view.place} : ${view.style.label}, ${view.temperature === undefined ? "" : `${formatNumber(view.temperature, 1)} ${view.temperatureUnit}`}. Voir le détail.`
       : `${view.place} : ${view.state ? "météo indisponible" : "entité introuvable"}`;
-    return html`<ha-card><div class="machine-shell weather-shell ${this.machineGridClass()}" style=${this.shellStyle(view)}>
-      ${view.style.stars && !config.card_background && config.dynamic_background !== false ? html`<div class="stars" aria-hidden="true"></div>` : nothing}
+    return html`<ha-card><div class="machine-shell weather-shell ${this.lightFace ? "light" : ""} ${this.machineGridClass()}" style=${this.shellStyle(view)}>
+      ${view.style.stars && !this.lightFace && !config.card_background && config.dynamic_background !== false ? html`<div class="stars" aria-hidden="true"></div>` : nothing}
       <div class="machine-content weather-content">
         <div class="weather-top">
           <span class="eyebrow-line">${eyebrow}</span>

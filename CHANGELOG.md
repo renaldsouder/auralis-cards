@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.30.0
+
+- **Météo** : la carte suit enfin le thème clair. En `halo` et `aurora`, la façade prend un ciel pâle dans la teinte du temps (bleu ciel au soleil, gris-bleu sous la pluie, lavande la nuit), avec un texte sombre et des couleurs de température assombries pour rester lisibles. Elle reste sombre en `carbon` et `mono`, ou avec une photo de fond.
+
 ## 0.29.2
 
 - **PC, UNRAID, Proxmox** : les blocs s'empilent depuis le haut avec un écart régulier de 14 px. Plus de hauteur minimale de 530 px ni de bloc du bas repoussé au pied de la carte, qui laissaient un grand vide dans une colonne étroite. Le bloc d'informations (utilisateur, array) occupe toute la largeur.
