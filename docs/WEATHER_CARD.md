@@ -36,7 +36,7 @@ Dans l'éditeur visuel, Home Assistant propose la carte quand vous partez d'une 
 | `icon` | `mdi:map-marker-outline` | Icône devant le nom du lieu. |
 | `thresholds` | paliers extérieurs | Paliers de couleur des températures, au même format que la [carte Climat](CLIMATE_CARD.md#paliers-de-couleur). |
 
-Les options visuelles communes `theme`, `accent_color` et `card_background` sont acceptées. Un `card_background` remplace le fond dynamique. Sans `accent_color`, l'accent prend la couleur du temps actuel ; avec, il colore les pastilles (icônes et contour), le halo de l'icône du temps actuel et la prévision en cours du bandeau.
+Les options visuelles communes `theme`, `accent_color` et `card_background` sont acceptées. Un `card_background` remplace le fond dynamique. Le ciel suit le thème : en `halo` et `aurora`, la façade prend un ciel pâle avec un texte sombre ; en `carbon` et `mono`, ou avec un `background_image`, elle reste sombre. Sans `accent_color`, l'accent prend la couleur du temps actuel ; avec, il colore les pastilles (icônes et contour), le halo de l'icône du temps actuel et la prévision en cours du bandeau.
 
 ## Couleurs
 

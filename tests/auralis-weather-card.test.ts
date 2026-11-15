@@ -41,6 +41,21 @@ describe("Auralis weather card", () => {
     expect(rainyNight).toMatchObject({ label: "Pluie", stars: false });
     expect(rainyNight.sky.startsWith("linear-gradient(rgba(3,5,16,.48)")).toBe(true);
     expect(weather.conditionStyle("nouvelle-condition", false)).toMatchObject({ label: "nouvelle-condition", icon: "mdi:weather-partly-cloudy" });
+    expect(rainyNight.lightSky.startsWith("linear-gradient(rgba(70,62,140,.08)")).toBe(true);
+    expect(weather.conditionStyle("sunny", false).lightSky).toContain("#f4f9ff");
+  });
+
+  it("uses the pale sky face on light themes without a photo", () => {
+    const card = new weather.AuralisWeatherCard();
+    const face = () => (card as unknown as { lightFace: boolean }).lightFace;
+    card.setConfig({ ...config, theme: "halo" });
+    expect(face()).toBe(true);
+    card.setConfig({ ...config, theme: "aurora" });
+    expect(face()).toBe(true);
+    card.setConfig({ ...config, theme: "carbon" });
+    expect(face()).toBe(false);
+    card.setConfig({ ...config, theme: "halo", background_image: "/local/ciel.jpg" });
+    expect(face()).toBe(false);
   });
 
   it("reads forecast features and parses forecast entries", () => {
